@@ -23,6 +23,9 @@ Payout simulator, github.com/johndoe/payout-sim | 2023
 Education
 MSc Interaction Design, TU Delft, 2015 – 2017
 
+Courses & certificates
+UX Writing Workshop, Content Design London, Oct 2021 (2 days)
+
 Publications
 Doe, J.*, & Roe, R.* (2024). Calm payouts. Journal of Studies, 12(3), 45–67. doi:10.5555/12345678
 
@@ -82,6 +85,11 @@ const answer = {
     { name: " ", link: null, startYear: null, startMonth: null, endYear: null, endMonth: null, current: false, bullets: [], skills: [] },
   ],
   education: [{ degree: "MSc Interaction Design", school: "TU Delft", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, notes: null }],
+  courses: [
+    { name: "UX Writing Workshop", provider: "Content Design London", startYear: 2021, startMonth: 10, endYear: null, endMonth: 14, duration: " 2 days ", link: null, notes: null },
+    { name: "Invented certificate", provider: null, startYear: 1820, startMonth: null, endYear: null, endMonth: null, duration: null, link: null, notes: null },
+    { name: " ", provider: null, startYear: null, startMonth: null, endYear: null, endMonth: null, duration: null, link: null, notes: null },
+  ],
   publications: [
     { citation: "Doe, J.*, & Roe, R.* (2024). Calm payouts. Journal of Studies, 12(3), 45–67.", link: "doi:10.5555/12345678" },
     { citation: "Doe, J. (2025). An invented paper.", link: null },
@@ -106,7 +114,7 @@ describe("extractProfile (E4-10)", () => {
   it("checks the answer: dates in range, levels, one of each skill, and names looked up in the resume", async () => {
     const provider = new MockProvider({ reply: () => answer });
     const { data, promptVersion } = await extractProfile(provider, { resume: RESUME, today: new Date("2026-09-29") }, options);
-    expect(promptVersion).toBe("extract-profile@3");
+    expect(promptVersion).toBe("extract-profile@4");
     expect(data.basics).toEqual({
       name: "John Doe",
       headline: "Senior Product Designer",
@@ -172,6 +180,12 @@ describe("extractProfile (E4-10)", () => {
       },
     ]);
     expect(data.education[0]).toMatchObject({ degree: "MSc Interaction Design", school: "TU Delft", unverified: [] });
+    // Courses apart from degrees, without "Present"; dates out of range dropped, one not in the resume marked.
+    expect(data.courses).toEqual([
+      { name: "UX Writing Workshop", provider: "Content Design London", duration: "2 days", link: "", notes: "", startYear: 2021, startMonth: 10, endYear: null, endMonth: null, unverified: [] },
+      { name: "Invented certificate", provider: "", duration: "", link: "", notes: "", startYear: null, startMonth: null, endYear: null, endMonth: null, unverified: ["Invented certificate"] },
+    ]);
+    expect(provider.calls[0].system).toMatch(/- courses: every workshop, short course, training, bootcamp or certificate/);
     // Publications (#218) word for word, their asterisks kept as asterisks; one not in the resume is marked.
     expect(data.publications).toEqual([
       { citation: "Doe, J.\\*, & Roe, R.\\* (2024). Calm payouts. Journal of Studies, 12(3), 45–67.", link: "https://doi.org/10.5555/12345678", unverified: [] },

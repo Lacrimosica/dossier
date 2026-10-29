@@ -9,14 +9,15 @@ import { renderPdf } from "@/lib/pdf/render";
 import { prisma } from "@/lib/prisma";
 import type { ProfileData } from "@/lib/profile";
 import { pagesInWords } from "@/lib/settings";
-import { bulletLines, isPublicationUnit } from "@/lib/unit-text";
+import { bulletLines, isCourseUnit, isPublicationUnit } from "@/lib/unit-text";
 import { citationExcerpt } from "@/lib/citation";
 
 // "Resume length" (E10-10, SET-9): a new tailored resume that runs over its
 // page limit is trimmed once, when the application is created (decided 28
-// September 2026). Measured in the real PDF: the oldest roles go first, then
-// the last bullets of the oldest roles left, then the oldest projects, then
-// publications from the bottom of the list (#218). What's cut is kept on the
+// September 2026). Measured in the real PDF: courses go first, the least
+// relevant (the last) first, since tailoring lists them by relevance; then the
+// oldest roles, then the last bullets of the oldest roles left, then the
+// oldest projects, then publications from the bottom of the list (#218). What's cut is kept on the
 // document, so it can be put back.
 
 /** Enough for any resume: roles and bullets run out long before. */
@@ -40,6 +41,10 @@ const leaveOut = (units: Unit[], { unit, index }: { unit: Unit; index: number })
 
 /** The next thing to leave out, or null when there's nothing left to cut. */
 export function nextCut(units: Unit[], profile: ProfileData): Cut | null {
+  // A short course matters less than any role.
+  const course = units.findLastIndex((unit) => isCourseUnit(unit.id));
+  if (course >= 0) return leaveOut(units, { unit: units[course], index: course });
+
   const roles = oldestFirst(units, profile.experience, "experience:");
 
   // The oldest role, while more than one is left.
@@ -129,6 +134,7 @@ export function describeTrim(trimmed: Trimmed, profile: ProfileData, fits: boole
     }
     const project = profile.projects.find((entry) => `project:${entry.id}` === cut.unit.id);
     if (project) return `Left out the ${project.name.trim() || "untitled"} project to fit ${limit}`;
+    if (isCourseUnit(cut.unit.id)) return `Left out the ${cut.unit.label.trim() || "untitled"} course to fit ${limit}`;
     if (isPublicationUnit(cut.unit.id)) return `Left out the publication “${citationExcerpt(cut.unit.text)}” to fit ${limit}`;
     const entry = profile.experience.find((role) => `experience:${role.id}` === cut.unit.id);
     const name = entry?.company.trim() || entry?.role.trim() || cut.unit.label;

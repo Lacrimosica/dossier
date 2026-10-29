@@ -72,6 +72,7 @@ describe("resumeContent", () => {
       experience: [],
       projects: [],
       education: [],
+      courses: [],
       publications: [],
       references: [],
       facts: [],
@@ -86,6 +87,7 @@ describe("resumeContent", () => {
       experience: [],
       projects: [],
       education: [],
+      courses: [],
       publications: [],
       skills: "",
       languages: "",
@@ -141,6 +143,37 @@ describe("resumeContent", () => {
       { id: "u1", citation: "Doe, J. (2016). *Edited.*", link: "doi.org/10.1038/s41388-024-03270-3", href: "https://doi.org/10.1038/s41388-024-03270-3" },
     ]);
     expect(resumeContent(profile, { units: [] }).publications).toEqual([]);
+  });
+
+  it("lists courses & certificates apart from degrees, without the ones kept off resumes", () => {
+    expect(resumeContent(profile).courses).toEqual([
+      {
+        id: "c1",
+        name: "Accessibility for Designers",
+        provider: "Deque University",
+        dates: "Mar 2023 – May 2023",
+        duration: "6 weekend sessions",
+        link: "example.com/certificates/jane-doe-a11y",
+        notes: "WCAG 2.2 audits of real product flows",
+      },
+      { id: "c2", name: "UX Writing Workshop", provider: "Content Design London", dates: "Oct 2021", duration: "2 days", link: "", notes: "" },
+    ]);
+    const hidden = { ...profile, courses: [{ ...profile.courses[0], onResumes: false }, { ...profile.courses[1], name: " " }] };
+    expect(resumeContent(hidden).courses).toEqual([]);
+  });
+
+  it("gives a tailored resume only the courses it has units for, in their order, never a hidden one", () => {
+    const units = [
+      { id: "course:c2", label: "UX Writing Workshop", text: "Microcopy for forms" },
+      { id: "course:c1", label: "Accessibility for Designers", text: "" },
+    ];
+    expect(resumeContent(profile, { units }).courses.map((entry) => [entry.id, entry.notes])).toEqual([
+      ["c2", "Microcopy for forms"],
+      ["c1", ""],
+    ]);
+    const hidden = { ...profile, courses: profile.courses.map((entry) => ({ ...entry, onResumes: entry.id !== "c2" })) };
+    expect(resumeContent(hidden, { units }).courses.map((entry) => entry.id)).toEqual(["c1"]);
+    expect(resumeContent(profile, { units: [] }).courses).toEqual([]);
   });
 
   it("includes only the parts a tailored resume has units for, in their order", () => {

@@ -16,7 +16,8 @@ vi.mock("@/lib/pdf/render", () => ({ renderPdf: vi.fn() }));
 
 const prisma = () => db.client!;
 const profile = demoProfile();
-const units = demoResumeUnits();
+// Without the demo's course, which would go first; "leaves out courses first" has it.
+const units = demoResumeUnits().filter((unit) => !unit.id.startsWith("course:"));
 // The demo roles, oldest first: Studio Brik (e3), Fieldnote (e2), Northwind (e1); one project (p1) and one publication (u1).
 const resume = async () => (await prisma().document.findFirstOrThrow({ where: { applicationId: "app-1", kind: "RESUME" } }));
 
@@ -27,6 +28,18 @@ beforeEach(async () => {
 afterAll(() => prisma().$disconnect());
 
 describe("nextCut (E10-10)", () => {
+  it("leaves out courses first, the least relevant (the last) first", () => {
+    const withCourses = demoResumeUnits();
+    const second = { id: "course:c2", label: "UX Writing Workshop", text: "" };
+    const both = withCourses.toSpliced(withCourses.findIndex((unit) => unit.id === "course:c1") + 1, 0, second);
+    const cut = nextCut(both, profile)!;
+    expect(cut.trimmed).toEqual({ kind: "unit", unit: second, index: both.indexOf(second) });
+    expect(describeTrim([cut.trimmed], profile, false, 1)[0]).toBe("Left out the UX Writing Workshop course to fit one page");
+    const next = nextCut(cut.units, profile)!;
+    expect(next.trimmed).toMatchObject({ kind: "unit", unit: { id: "course:c1" } });
+    expect(nextCut(next.units, profile)!.trimmed).toMatchObject({ kind: "unit", unit: { id: "experience:e3" } });
+  });
+
   it("leaves out the oldest role first", () => {
     const cut = nextCut(units, profile)!;
     expect(cut.trimmed).toEqual({ kind: "unit", unit: units.find((unit) => unit.id === "experience:e3"), index: units.findIndex((unit) => unit.id === "experience:e3") });

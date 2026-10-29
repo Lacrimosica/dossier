@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { factTexts, filledBasics, REQUIRED_BASICS, type EntryOrder, type ProfileData } from "@/lib/profile";
 
 import { BasicsSection } from "./basics-section";
+import { CoursesSection } from "./courses-section";
 import { EducationSection } from "./education-section";
 import { ExperienceSection } from "./experience-section";
 import { FactsSection } from "./facts-section";
@@ -25,8 +26,8 @@ import { SECTIONS, sectionHref, type SectionId } from "./sections";
  * The guided profile editor (PRD §6.2). It keeps the whole profile in state,
  * so section counts update as you type; each section saves its own changes.
  */
-/** How experience, projects and education are ordered (E4-9), from Settings. */
-export type ProfileOrder = { experience: EntryOrder; projects: EntryOrder; education: EntryOrder };
+/** How experience, projects, education and courses are ordered (E4-9), from Settings. */
+export type ProfileOrder = { experience: EntryOrder; projects: EntryOrder; education: EntryOrder; courses: EntryOrder };
 
 export function ProfileEditor({ initial, section, order }: { initial: ProfileData; section: SectionId; order: ProfileOrder }) {
   const [profile, setProfile] = useState(initial);
@@ -43,6 +44,7 @@ export function ProfileEditor({ initial, section, order }: { initial: ProfileDat
     experience: String(profile.experience.length),
     projects: String(profile.projects.length),
     education: String(profile.education.length),
+    courses: String(profile.courses.length),
     publications: String(profile.publications.length),
     references: String(profile.references.length),
     facts: String(factTexts(profile.facts).length),
@@ -61,6 +63,7 @@ export function ProfileEditor({ initial, section, order }: { initial: ProfileDat
     experience: <ExperienceSection profile={profile} update={setProfile} order={order.experience} />,
     projects: <ProjectsSection profile={profile} update={setProfile} order={order.projects} />,
     education: <EducationSection profile={profile} update={setProfile} order={order.education} />,
+    courses: <CoursesSection profile={profile} update={setProfile} order={order.courses} />,
     publications: <PublicationsSection profile={profile} update={setProfile} />,
     references: <ReferencesSection profile={profile} update={setProfile} />,
     facts: <FactsSection profile={profile} update={setProfile} />,

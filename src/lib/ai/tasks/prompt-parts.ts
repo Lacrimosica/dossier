@@ -1,7 +1,7 @@
 import type { Creativity } from "@/generated/prisma/enums";
 import type { Extracted, Match } from "@/lib/application-data";
 import { citationText } from "@/lib/citation";
-import { factTexts, formatDateRange, languageLevelLabel, resumePublications, type ProfileData } from "@/lib/profile";
+import { factTexts, formatDateRange, languageLevelLabel, resumeCourses, resumePublications, type ProfileData } from "@/lib/profile";
 
 import type { AIProvider } from "../provider";
 
@@ -31,14 +31,15 @@ const MAX_POSTING_CHARACTERS = 20_000;
 /**
  * The profile as the model sees it. Only what writing needs: no email,
  * phone, address, date of birth or links (PRD §7), and references only when
- * the document will include them. Ids let answers point at roles, projects
- * and degrees. "Facts about me" (PRO-14) come along when there are any.
+ * the document will include them. Ids let answers point at roles, projects,
+ * degrees and courses. "Facts about me" (PRO-14) come along when there are any.
  */
 export function profileForPrompt(profile: ProfileData, { includeReferences = false } = {}): string {
   const skillNames = new Map(profile.skills.map((skill) => [skill.id, skill.name]));
   const { basics } = profile;
   const facts = factTexts(profile.facts);
   const publications = resumePublications(profile.publications).map((entry) => citationText(entry.citation));
+  const courses = resumeCourses(profile.courses);
   return JSON.stringify(
     {
       name: basics.name,
@@ -72,6 +73,19 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
         dates: formatDateRange(entry),
         notes: entry.notes,
       })),
+      // Only those shown on resumes, without their links, like projects.
+      ...(courses.length > 0
+        ? {
+            courses: courses.map((entry) => ({
+              id: entry.id,
+              name: entry.name,
+              provider: entry.provider,
+              dates: formatDateRange({ ...entry, current: false }),
+              ...(entry.duration.trim() ? { length: entry.duration.trim() } : {}),
+              notes: entry.notes,
+            })),
+          }
+        : {}),
       // Citations as plain text, without their links, and only those shown on resumes (#218).
       ...(publications.length > 0 ? { publications } : {}),
       ...(includeReferences

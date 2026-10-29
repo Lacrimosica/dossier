@@ -1,7 +1,7 @@
 import type { Unit } from "@/lib/application-data";
 import { ageLabel, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { publicationHref, publicationLink } from "@/lib/citation";
-import { ageOn, formatDateRange, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
+import { ageOn, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
 
 // What a resume shows, worked out from the profile (the base resume) or from
 // a tailored document's units, so the renderer only has to lay it out.
@@ -34,6 +34,18 @@ export type ResumeContent = {
     skills: string[];
   }[];
   education: { id: string; degree: string; school: string; dates: string; notes: string }[];
+  /** Courses & certificates, after education; only the ones that help, on a tailored resume. */
+  courses: {
+    id: string;
+    name: string;
+    provider: string;
+    dates: string;
+    /** "3 weekend sessions", as typed. */
+    duration: string;
+    /** "example.com/certificate", without "https://". */
+    link: string;
+    notes: string;
+  }[];
   /** Publications (#218), word for word, in the profile's order. */
   publications: {
     id: string;
@@ -133,6 +145,15 @@ export function resumeContent(
     dates: formatDateRange(entry, dates),
     notes: notes.trim(),
   });
+  const course = (entry: ProfileData["courses"][number], notes: string) => ({
+    id: entry.id,
+    name: entry.name.trim(),
+    provider: entry.provider.trim(),
+    dates: formatDateRange({ ...entry, current: false }, dates),
+    duration: entry.duration.trim(),
+    link: displayLink(entry.link),
+    notes: notes.trim(),
+  });
 
   const content: ResumeContent = {
     name: basics.name.trim() || "Your name",
@@ -143,6 +164,7 @@ export function resumeContent(
     experience: profile.experience.map((entry) => experience(entry, entry.bullets)),
     projects: profile.projects.map((entry) => project(entry, entry.bullets)),
     education: profile.education.map((entry) => education(entry, entry.notes)),
+    courses: resumeCourses(profile.courses).map((entry) => course(entry, entry.notes)),
     publications: resumePublications(profile.publications).map((entry) => publication(entry, entry.citation)),
     skills: profile.skills.map((skill) => skill.name).join(" · "),
     languages: languagesLine(profile.languages, labels),
@@ -158,7 +180,7 @@ export function resumeContent(
 
   if (units) {
     // A tailored resume holds exactly what its units hold, in their order:
-    // a role, project, degree or publication without a unit was left out on purpose.
+    // a role, project, degree, course or publication without a unit was left out on purpose.
     const text = (id: string) => units.find((unit) => unit.id === id)?.text ?? "";
     const withUnit = <T extends { id: string }>(prefix: string, entries: T[]) =>
       units.flatMap((unit) => {
@@ -177,6 +199,7 @@ export function resumeContent(
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),
     );
+    content.courses = withUnit("course:", resumeCourses(profile.courses)).map(({ entry, text }) => course(entry, text));
     content.publications = withUnit("publication:", profile.publications).flatMap(({ entry, text }) =>
       text.trim() ? [publication(entry, text)] : [],
     );

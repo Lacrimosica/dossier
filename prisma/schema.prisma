@@ -120,7 +120,8 @@ model ProjectSkill {
   @@index([skillId])
 }
 
-/// A degree, course or certificate. Dates work as in Experience.
+/// A degree or longer programme. Dates work as in Experience. Shorter courses
+/// and certificates are Courses.
 model Education {
   id         String   @id @default(cuid())
   degree     String   @default("")
@@ -131,6 +132,31 @@ model Education {
   endMonth   Int?
   current    Boolean  @default(false)
   notes      String   @default("")
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+/// A course, workshop, bootcamp or certificate: anything shorter or less
+/// formal than a degree. A single month when it took a day or a few
+/// weekends; an end only when it ran longer. No "current": one under way just
+/// has no end yet.
+model Course {
+  id         String   @id @default(cuid())
+  name       String   @default("")
+  /// Who ran it: a school, studio, trainer, platform or meetup.
+  provider   String   @default("")
+  startYear  Int?
+  startMonth Int?
+  endYear    Int?
+  endMonth   Int?
+  /// How long it took, in the user's words: "3 weekend sessions", "16 hours".
+  duration   String   @default("")
+  /// A certificate or the course's page.
+  link       String   @default("")
+  notes      String   @default("")
+  /// "Show on resumes": off keeps it in the profile but off every resume.
+  onResumes  Boolean  @default(true)
   sort       Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

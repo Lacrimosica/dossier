@@ -32,6 +32,7 @@ const SCREENS = [
   "/profile?section=experience",
   "/profile?section=projects",
   "/profile?section=education",
+  "/profile?section=courses",
   "/profile?section=publications",
   "/profile?section=references",
   "/profile?section=facts",

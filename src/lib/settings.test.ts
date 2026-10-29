@@ -55,6 +55,7 @@ describe("stored settings", () => {
       experienceOrder: "date",
       projectOrder: "date",
       educationOrder: "date",
+      courseOrder: "date",
       backupProblem: null,
       jobSource: null,
       jsearchKeyEnc: null,

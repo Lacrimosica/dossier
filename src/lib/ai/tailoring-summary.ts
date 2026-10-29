@@ -1,7 +1,8 @@
 import type { Tone } from "@/generated/prisma/enums";
 import type { Match, Unit } from "@/lib/application-data";
 import { isParagraph } from "@/lib/letter-frame";
-import { sameName, type ProfileData } from "@/lib/profile";
+import { resumeCourses, sameName, type ProfileData } from "@/lib/profile";
+import { isCourseUnit } from "@/lib/unit-text";
 import { TONES } from "@/lib/tones";
 
 // The first message on a new application: what was tailored (E7-6, SET-5).
@@ -73,6 +74,11 @@ export function tailoringSummary({
   if (projects.length > 0) {
     list.push(`Reworded your ${listOf(projects.map((entry) => entry.name || "untitled"))} ${projects.length === 1 ? "project" : "projects"} for this job`);
   }
+
+  const courses = resumeCourses(profile.courses).length;
+  const keptCourses = resume.filter((entry) => isCourseUnit(entry.id)).length;
+  if (courses > 0 && keptCourses === 0) list.push("Left out your courses, since none of them are about this job");
+  else if (keptCourses < courses) list.push(`Kept ${keptCourses} of your ${courses} courses, the ones that help with this job`);
 
   const publications = resume.filter((entry) => entry.id.startsWith("publication:")).length;
   if (publications > 0) list.push(`Kept your ${publications === 1 ? "publication" : `${publications} publications`} word for word`);

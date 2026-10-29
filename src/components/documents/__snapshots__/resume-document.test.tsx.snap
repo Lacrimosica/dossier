@@ -338,6 +338,82 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
         <h2
           class="_sectionTitle_fa1ef7"
         >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
           Publications
         </h2>
         <div
@@ -748,6 +824,82 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
         <h2
           class="_sectionTitle_fa1ef7"
         >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
           Publications
         </h2>
         <div
@@ -1150,6 +1302,82 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -1619,6 +1847,82 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
         <h2
           class="_sectionTitle_fa1ef7"
         >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
           Publications
         </h2>
         <div
@@ -1985,6 +2289,82 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -2395,6 +2775,82 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -2864,6 +3320,82 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
         <h2
           class="_sectionTitle_fa1ef7"
         >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
           Publications
         </h2>
         <div
@@ -3230,6 +3762,82 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -3699,6 +4307,82 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
         <h2
           class="_sectionTitle_fa1ef7"
         >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
           Publications
         </h2>
         <div
@@ -4065,6 +4749,82 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -4442,6 +5202,82 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section
@@ -4951,6 +5787,82 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
               2010 – 2013
             </span>
           </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                Accessibility for Designers
+              </span>
+              , 
+              Deque University
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            6 weekend sessions
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+          <p
+            class="_muted_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p>
+              <span
+                class="_entryTitle_fa1ef7"
+              >
+                UX Writing Workshop
+              </span>
+              , 
+              Content Design London
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            2 days
+          </p>
         </div>
       </section>
       <section

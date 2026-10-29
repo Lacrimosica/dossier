@@ -3,7 +3,7 @@ import { z } from "zod";
 import { unitsSchema, type Extracted, type Match, type Unit } from "@/lib/application-data";
 import { publicationLabel } from "@/lib/citation";
 import { documentLabels, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
-import { resumePublications, sameName, type ProfileData } from "@/lib/profile";
+import { resumeCourses, resumePublications, sameName, type ProfileData } from "@/lib/profile";
 
 import { guardSources, guardUnits } from "../fact-guard";
 
@@ -21,7 +21,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@6";
+export const TAILOR_RESUME_VERSION = "tailor-resume@7";
 
 const answerSchema = z.object({
   summary: z.string(),
@@ -30,6 +30,8 @@ const answerSchema = z.object({
   /** The profile's skills, most relevant first; leave out ones that don't help. */
   skills: z.array(z.string()),
   education: z.array(z.object({ id: z.string(), notes: z.string() })),
+  /** Only the courses that help with this job, most relevant first. */
+  courses: z.array(z.object({ id: z.string(), notes: z.string() })),
 });
 
 const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
@@ -39,15 +41,16 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
 - skills: the candidate's own skills, most relevant to this job first. Copy their names exactly; you may leave out ones that don't help.
 - education: every entry by id, with its notes shortened or left empty.
+- courses: only the courses and certificates from the profile that help with this job, by id, most relevant first, with their notes shortened or left empty. Leave out the rest; an empty list is fine.
 - The profile's publications go on the resume word for word, so don't answer with them; the summary may mention them.`;
 
 /** SET-9: asked for when "Resume length" has a limit; anything still over is trimmed afterwards (E10-10). */
 function pageFit(maxPages: number | null | undefined): string | null {
   if (maxPages === 1) {
-    return "The resume has to fit on one page: keep the summary to two sentences, give the most relevant roles 3–4 bullets and older roles 2, and keep education and project notes to a few words.";
+    return "The resume has to fit on one page: keep the summary to two sentences, give the most relevant roles 3–4 bullets and older roles 2, keep education, course and project notes to a few words, and list only the courses that matter most.";
   }
   if (maxPages === 2) {
-    return "The resume has to fit on two pages: keep the summary to three sentences, give the most relevant roles 4–5 bullets and older roles 2–3, and keep education and project notes short.";
+    return "The resume has to fit on two pages: keep the summary to three sentences, give the most relevant roles 4–5 bullets and older roles 2–3, and keep education, course and project notes short.";
   }
   return null;
 }
@@ -62,7 +65,7 @@ export type TailorInput = {
   posting: string;
 };
 
-/** APP-4: the tailored resume as units (summary, each role, each project, skills, each degree, each publication, languages). */
+/** APP-4: the tailored resume as units (summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
 export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profile, extracted, match, facts, posting }, options) => {
   const answer = await provider.complete({
     system: system(
@@ -102,9 +105,10 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
 };
 
 /**
- * Turns the answer into units, trusting nothing: unknown roles, projects and
- * degrees are dropped, skills must be the profile's own, and a role or
- * project the model skipped keeps its bullets from the profile. The publications and languages
+ * Turns the answer into units, trusting nothing: unknown roles, projects,
+ * degrees and courses are dropped, skills must be the profile's own, and a role or
+ * project the model skipped keeps its bullets from the profile. Courses are the
+ * exception: the resume has only those the model chose, in its order. The publications and languages
  * come from the profile, publications word for word (#218), and languages with their levels in
  * the words of `labels`.
  */
@@ -131,6 +135,7 @@ export function resumeUnits(profile: ProfileData, answer: z.infer<typeof answerS
       label: entry.degree || entry.school,
       text: (notes.get(entry.id) ?? entry.notes).trim(),
     })),
+    ...courseUnits(profile, answer.courses),
     ...resumePublications(profile.publications).map((entry) => ({
       id: `publication:${entry.id}`,
       label: publicationLabel(entry.citation),
@@ -143,4 +148,16 @@ export function resumeUnits(profile: ProfileData, answer: z.infer<typeof answerS
     },
   ];
   return unitsSchema.parse(units);
+}
+
+/** The courses the model chose, in its order: each once, only those shown on resumes. */
+function courseUnits(profile: ProfileData, chosen: { id: string; notes: string }[]): Unit[] {
+  const courses = new Map(resumeCourses(profile.courses).map((entry) => [entry.id, entry]));
+  const seen = new Set<string>();
+  return chosen.flatMap(({ id, notes }) => {
+    const entry = courses.get(id);
+    if (!entry || seen.has(id)) return [];
+    seen.add(id);
+    return [{ id: `course:${id}`, label: entry.name.trim(), text: notes.trim() }];
+  });
 }

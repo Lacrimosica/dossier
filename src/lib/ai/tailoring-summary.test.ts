@@ -32,6 +32,7 @@ describe("tailoringSummary (E7-6)", () => {
     expect(summary.list).toEqual([
       "Rewrote your summary for the Senior Product Designer role",
       "Reworded your Northwind Logistics and Fieldnote roles for this job",
+      "Kept 1 of your 2 courses, the ones that help with this job",
       "Kept your publication word for word",
       "Ordered your skills by what Ledgerly asks for",
       "Left out references, since the posting doesn't ask for them",
@@ -39,6 +40,13 @@ describe("tailoringSummary (E7-6)", () => {
       "Worth being ready to talk about “Experience with payments or fintech”, since it isn't in your profile",
     ]);
     expect(summary.foot).toBe("Nothing invented: every line comes from your profile.");
+  });
+
+  it("says which courses it kept or left out", () => {
+    const withoutCourses = base.resume.filter((unit) => !unit.id.startsWith("course:"));
+    expect(tailoringSummary({ ...base, resume: withoutCourses }).list).toContain("Left out your courses, since none of them are about this job");
+    const noneOnResumes = { ...profile, courses: profile.courses.map((entry) => ({ ...entry, onResumes: false })) };
+    expect(tailoringSummary({ ...base, profile: noneOnResumes, resume: withoutCourses }).list.join("\n")).not.toMatch(/course/);
   });
 
   it("mentions projects it reworded (PRO-13)", () => {
@@ -54,6 +62,7 @@ describe("tailoringSummary (E7-6)", () => {
         { id: "summary", label: "Summary", text: profile.basics.summary },
         ...profile.experience.map((entry) => ({ id: `experience:${entry.id}`, label: "", text: entry.bullets })),
         { id: "skills", label: "Skills", text: profile.skills.map((skill) => skill.name).join(" · ") },
+        ...profile.courses.map((entry) => ({ id: `course:${entry.id}`, label: entry.name, text: entry.notes })),
       ],
       letter: [],
     });

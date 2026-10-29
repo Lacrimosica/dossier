@@ -17,8 +17,8 @@ import { TONES } from "@/lib/tones";
 // (#221, save_application): Claude reads the profile and the posting, writes
 // the tailored resume and cover letter itself, and Dossier keeps them as a
 // Draft application, as if it had written them. So Dossier needs no AI model
-// of its own for this. The parts are checked like the AI's: roles, projects
-// and degrees must be the profile's, skills its own skills, publications come
+// of its own for this. The parts are checked like the AI's: roles, projects,
+// degrees and courses must be the profile's, skills its own skills, publications come
 // from the profile word for word, and with "Never invent experience" on,
 // names and numbers the profile and posting don't back are marked "check this".
 
@@ -33,6 +33,10 @@ export const writtenResumeSchema = z.object({
   projects: z.array(z.object({ id: z.string(), bullets: z.array(z.string().max(400)).max(6) })).default([]),
   skills: z.array(z.string().max(100)).describe("The profile's own skills, most relevant first; others are dropped"),
   education: z.array(z.object({ id: z.string(), notes: z.string().max(600) })).default([]),
+  courses: z
+    .array(z.object({ id: z.string(), notes: z.string().max(600) }))
+    .default([])
+    .describe("Only the courses from get_profile that help with this job, by id, most relevant first; the rest are left out"),
 });
 
 export const writtenLetterSchema = z.object({

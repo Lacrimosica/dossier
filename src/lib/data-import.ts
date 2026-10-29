@@ -107,6 +107,7 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
         tx.profileField.deleteMany(),
         tx.language.deleteMany(),
         tx.education.deleteMany(),
+        tx.course.deleteMany(),
         tx.publication.deleteMany(),
         tx.reference.deleteMany(),
         tx.fact.deleteMany(),
@@ -129,6 +130,7 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
         skipDuplicates: true,
       });
       await tx.education.createMany({ data: profile.education });
+      await tx.course.createMany({ data: profile.courses });
       await tx.publication.createMany({ data: profile.publications });
       await tx.reference.createMany({ data: profile.references });
       await tx.fact.createMany({ data: profile.facts });

@@ -36,7 +36,14 @@ export const SECTIONS = [
     optional: false,
     label: "Education",
     title: "Education",
-    hint: "Degrees, courses, certificates: anything that helps tell your story.",
+    hint: "Degrees and longer programmes. Workshops, short courses and certificates go under Courses & certificates.",
+  },
+  {
+    id: "courses",
+    optional: true,
+    label: "Courses & certificates",
+    title: "Courses & certificates",
+    hint: "Workshops, short courses, bootcamps and certificates: anything shorter than a degree. Tailored resumes keep the ones that help with the job.",
   },
   {
     id: "publications",

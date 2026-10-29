@@ -9,12 +9,15 @@ import {
   addSkill,
   attachNewProjectSkill,
   attachNewSkill,
+  createCourse,
   createEducation,
   createExperience,
   createProject,
   createPublication,
   createReference,
   discardProfileImport,
+  moveEducationToCourses,
+  removeCourse,
   removeEducation,
   removeExperience,
   removeProject,
@@ -30,8 +33,10 @@ import {
   saveReference,
   removeLanguage,
   removeReference,
+  restoreCourse,
   restoreEducation,
   restoreReference,
+  saveCourse,
   saveEducation,
   removeSkill,
   removePhoto,
@@ -252,6 +257,92 @@ describe("publications (#218)", () => {
     expect(await reorderPublications({ ids: [ids[2], ids[0], ids[1]] })).toEqual({ ok: true, data: null });
     expect((await loadProfile()).publications.map((entry) => entry.id)).toEqual([ids[2], ids[0], ids[1]]);
     expect(await reorderPublications({ ids: [ids[0], ids[1]] })).toMatchObject({ ok: false, error: expect.stringMatching(/^The list changed/) });
+  });
+});
+
+describe("courses & certificates", () => {
+  it("creates, saves, removes and restores a course", async () => {
+    const created = await createCourse({});
+    if (!created.ok) throw new Error("create failed");
+    expect(created.data).toEqual({
+      id: created.data.id,
+      name: "",
+      provider: "",
+      duration: "",
+      link: "",
+      notes: "",
+      onResumes: true,
+      startYear: null,
+      startMonth: null,
+      endYear: null,
+      endMonth: null,
+    });
+
+    const course = { ...created.data, name: "UX Writing Workshop", provider: "Content Design London", duration: "3 weekend sessions", startYear: 2021, startMonth: 10, onResumes: false };
+    await saveCourse(course);
+    expect((await loadProfile()).courses).toEqual([course]);
+
+    await removeCourse({ id: course.id });
+    expect(await prisma().course.count()).toBe(0);
+    await expect(restoreCourse(course)).resolves.toEqual({ ok: true, data: course });
+    expect(await saveCourse({ ...course, startMonth: 13 })).toMatchObject({ ok: false });
+  });
+
+  it("is ordered like education, with its own setting", async () => {
+    const a = await createCourse({});
+    const b = await createCourse({});
+    if (!a.ok || !b.ok) throw new Error("not created");
+    await saveCourse({ ...a.data, name: "Older", startYear: 2019 });
+    await saveCourse({ ...b.data, name: "Newer", startYear: 2024 });
+    expect((await loadProfile()).courses.map((entry) => entry.name)).toEqual(["Newer", "Older"]);
+    await reorderEntries({ section: "course", ids: [a.data.id, b.data.id] });
+    expect((await loadProfile()).courses.map((entry) => entry.name)).toEqual(["Older", "Newer"]);
+    expect((await prisma().setting.findUnique({ where: { key: "courseOrder" } }))?.value).toBe("manual");
+    expect(await prisma().setting.findUnique({ where: { key: "educationOrder" } })).toBeNull();
+    expect(await sortEntriesByDate({ section: "course" })).toEqual({ ok: true, data: [b.data.id, a.data.id] });
+  });
+
+  it("moves an education entry to courses, and back with Undo", async () => {
+    const created = await createEducation({});
+    if (!created.ok) throw new Error("create failed");
+    const entry = { ...created.data, degree: "Accessibility for Designers", school: "Deque University", notes: "WCAG audits", startYear: 2023, startMonth: 3, endYear: 2023, endMonth: 5 };
+    await saveEducation(entry);
+
+    const moved = await moveEducationToCourses({ id: entry.id });
+    if (!moved.ok) throw new Error(moved.error);
+    expect(moved.data.education).toEqual(entry);
+    expect(moved.data.course).toMatchObject({
+      name: "Accessibility for Designers",
+      provider: "Deque University",
+      notes: "WCAG audits",
+      startYear: 2023,
+      startMonth: 3,
+      endYear: 2023,
+      endMonth: 5,
+      duration: "",
+      onResumes: true,
+    });
+    const profile = await loadProfile();
+    expect(profile.education).toEqual([]);
+    expect(profile.courses).toEqual([moved.data.course]);
+
+    // Undo: the toast puts the entry back and removes the course.
+    await restoreEducation(moved.data.education);
+    await removeCourse({ id: moved.data.course.id });
+    expect((await loadProfile()).education).toEqual([entry]);
+    expect(await prisma().course.count()).toBe(0);
+  });
+
+  it("leaves out the end of one still under way, and refuses one that's gone", async () => {
+    const created = await createEducation({});
+    if (!created.ok) throw new Error("create failed");
+    await saveEducation({ ...created.data, degree: "Data bootcamp", startYear: 2026, endYear: 2026, endMonth: 12, current: true });
+    const moved = await moveEducationToCourses({ id: created.data.id });
+    expect(moved).toMatchObject({ ok: true, data: { course: { startYear: 2026, endYear: null, endMonth: null } } });
+    expect(await moveEducationToCourses({ id: created.data.id })).toEqual({
+      ok: false,
+      error: "That entry is no longer there. Reload the page and try again.",
+    });
   });
 });
 

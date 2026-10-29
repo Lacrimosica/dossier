@@ -126,6 +126,19 @@ export type ProjectItem = DateSpan & {
   skillIds: string[];
 };
 export type EducationItem = DateSpan & { id: string; degree: string; school: string; notes: string };
+/**
+ * A course, workshop or certificate: shorter or less formal than a degree.
+ * Its dates are a single month, or a range when it ran longer; it has no "Present".
+ */
+export type CourseItem = Omit<DateSpan, "current"> & {
+  id: string;
+  name: string;
+  provider: string;
+  duration: string;
+  link: string;
+  notes: string;
+  onResumes: boolean;
+};
 /** A publication (#218): the citation as written, with **bold** and *italic*, and where to read it. */
 export type PublicationItem = { id: string; citation: string; link: string; onResumes: boolean };
 export type ReferenceItem = {
@@ -147,6 +160,8 @@ export type ProfileData = {
   experience: ExperienceItem[];
   projects: ProjectItem[];
   education: EducationItem[];
+  /** Courses and certificates, with the ones kept off resumes too. */
+  courses: CourseItem[];
   /** In the order set by hand, with the ones kept off resumes too. */
   publications: PublicationItem[];
   references: ReferenceItem[];
@@ -162,6 +177,11 @@ export function factTexts(facts: { text: string }[]): string[] {
 /** The publications a resume shows: those with "Show on resumes" on and a citation. */
 export function resumePublications(publications: readonly PublicationItem[]): PublicationItem[] {
   return publications.filter((entry) => entry.onResumes && entry.citation.trim() !== "");
+}
+
+/** The courses a resume shows: those with "Show on resumes" on and a name. */
+export function resumeCourses(courses: readonly CourseItem[]): CourseItem[] {
+  return courses.filter((entry) => entry.onResumes && entry.name.trim() !== "");
 }
 
 /** How many required Basics fields have something in them. */
@@ -209,24 +229,24 @@ export function profileStrength(profile: {
   return { percent, hint };
 }
 
+type StartDate = Pick<DateSpan, "startYear" | "startMonth">;
+
 /**
  * Orders entries newest first by start date (entries without one go last),
  * then by their `sort` value.
  */
-export function byStartDateDesc(
-  a: DateSpan & { sort: number },
-  b: DateSpan & { sort: number },
-): number {
-  const key = (entry: DateSpan) =>
+
+export function byStartDateDesc(a: StartDate & { sort: number }, b: StartDate & { sort: number }): number {
+  const key = (entry: StartDate) =>
     entry.startYear === null ? -Infinity : entry.startYear * 12 + (entry.startMonth ?? 0);
   return key(b) - key(a) || a.sort - b.sort;
 }
 
-/** How experience, projects and education are ordered (E4-9): by date until an entry is moved by hand. */
+/** How experience, projects, education and courses are ordered (E4-9): by date until an entry is moved by hand. */
 export type EntryOrder = "date" | "manual";
 
 /** The entries in the section's order, as a new array. */
-export function inEntryOrder<T extends DateSpan & { sort: number }>(entries: readonly T[], order: EntryOrder): T[] {
+export function inEntryOrder<T extends StartDate & { sort: number }>(entries: readonly T[], order: EntryOrder): T[] {
   return entries.toSorted(order === "manual" ? (a, b) => a.sort - b.sort : byStartDateDesc);
 }
 

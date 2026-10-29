@@ -90,6 +90,28 @@
         "notes": ""
       }
     ],
+    "courses": [
+      {
+        "id": "c1",
+        "name": "Accessibility for Designers",
+        "provider": "Deque University",
+        "start": "Mar 2023",
+        "end": "May 2023",
+        "duration": "6 weekend sessions",
+        "link": "https://example.com/certificates/jane-doe-a11y",
+        "notes": "WCAG 2.2 audits of real product flows"
+      },
+      {
+        "id": "c2",
+        "name": "UX Writing Workshop",
+        "provider": "Content Design London",
+        "start": "Oct 2021",
+        "end": "",
+        "duration": "2 days",
+        "link": "",
+        "notes": ""
+      }
+    ],
     "publications": [
       {
         "id": "u1",

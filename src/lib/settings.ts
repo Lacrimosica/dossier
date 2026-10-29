@@ -138,10 +138,11 @@ export const settingsSchema = z.object({
   dashboardPeriod: z.enum(["30d", "90d", "all"]).catch("all"),
   /** Days without news before "Worth a look" suggests a follow-up (E9-9). */
   quietDays: z.coerce.number().int().min(1).max(60).catch(7),
-  /** Experience, projects and education: newest first by date, or the order set by hand (E4-9). */
+  /** Experience, projects, education and courses: newest first by date, or the order set by hand (E4-9). */
   experienceOrder: z.enum(["date", "manual"]).catch("date"),
   projectOrder: z.enum(["date", "manual"]).catch("date"),
   educationOrder: z.enum(["date", "manual"]).catch("date"),
+  courseOrder: z.enum(["date", "manual"]).catch("date"),
   /** Why the last nightly backup failed; null once one works again (E10-7). */
   backupProblem: z.string().nullable().catch(null),
   // Job search (E14-4). Null means "not set in the app": DOSSIER_JOBS_SOURCE

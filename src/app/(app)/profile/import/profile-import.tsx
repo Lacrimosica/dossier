@@ -196,7 +196,7 @@ export function ProfileImport({
               open={confirmReplace}
               onOpenChange={setConfirmReplace}
               title="Replace your profile?"
-              description="Your basics, skills, languages, roles, projects, education, publications and references are removed first; then your profile holds exactly what was read from the resume. Your applications and their documents stay as they are."
+              description="Your basics, skills, languages, roles, projects, education, courses, publications and references are removed first; then your profile holds exactly what was read from the resume. Your applications and their documents stay as they are."
               confirmLabel="Replace my profile"
               onConfirm={() => void apply("replace")}
             />
@@ -316,6 +316,21 @@ function Preview({ profile }: { profile: ImportedProfile }) {
               key={index}
               title={[entry.degree, entry.school].filter(Boolean).join(" · ")}
               meta={formatDateRange(entry)}
+              unverified={entry.unverified}
+            >
+              {entry.notes && <p>{entry.notes}</p>}
+            </Entry>
+          ))}
+        </Section>
+      )}
+
+      {profile.courses.length > 0 && (
+        <Section title="Courses & certificates">
+          {profile.courses.map((entry, index) => (
+            <Entry
+              key={index}
+              title={[entry.name, entry.provider].filter(Boolean).join(" · ")}
+              meta={[formatDateRange({ ...entry, current: false }), entry.duration, entry.link].filter(Boolean).join(" · ")}
               unverified={entry.unverified}
             >
               {entry.notes && <p>{entry.notes}</p>}

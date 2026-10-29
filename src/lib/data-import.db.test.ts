@@ -253,6 +253,21 @@ describe("importExport (E10-6)", () => {
     expect(await prisma().publication.count()).toBe(0);
   });
 
+  it("restores courses & certificates, and reads files from before them as having none", async () => {
+    await prisma().course.updateMany({ where: { name: "UX Writing Workshop" }, data: { onResumes: false } });
+    const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
+    const before = await prisma().course.findMany({ orderBy: { sort: "asc" } });
+    expect(before).toHaveLength(2);
+    await importExport(prisma(), exportSchema.parse(file));
+    expect(await prisma().course.findMany({ orderBy: { sort: "asc" } })).toEqual(before);
+
+    const parsed = parseExport(JSON.stringify({ ...file, schemaVersion: 5, profile: { ...file.profile, courses: undefined } }));
+    expect(parsed).toMatchObject({ ok: true, data: { schemaVersion: 5, profile: { courses: [] } } });
+    if (!parsed.ok) return;
+    await importExport(prisma(), parsed.data);
+    expect(await prisma().course.count()).toBe(0);
+  });
+
   it("restores the photo, the themes' photo options and each application's Photo switch, and reads older files with the defaults (#224)", async () => {
     const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     await prisma().profileField.createMany({ data: [{ key: "photo", value: png }, { key: "photoOnResumes", value: "false" }] });

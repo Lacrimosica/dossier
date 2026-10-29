@@ -354,6 +354,93 @@ export const restoreEducation = action(educationFields, async (entry) =>
   ),
 );
 
+/**
+ * "Move to courses & certificates": the entry becomes a course with the same
+ * name, school (as provider), dates and notes, in one go. Undo moves it back
+ * with restoreEducation and removeCourse.
+ */
+export const moveEducationToCourses = action(z.object({ id }), async ({ id }) => {
+  const manual = (await loadSettings()).courseOrder === "manual";
+  return prisma.$transaction(async (tx) => {
+    const entry = await tx.education.findUnique({ where: { id } });
+    if (!entry) throw new ActionError("That entry is no longer there. Reload the page and try again.");
+    const sort = manual ? await firstSort(tx.course) : await nextSort(tx.course);
+    const course = await tx.course.create({
+      data: {
+        name: entry.degree,
+        provider: entry.school,
+        startYear: entry.startYear,
+        startMonth: entry.startMonth,
+        // Still under way: no end yet, as a course without "Present" has.
+        endYear: entry.current ? null : entry.endYear,
+        endMonth: entry.current ? null : entry.endMonth,
+        notes: entry.notes,
+        sort,
+      },
+    });
+    await tx.education.delete({ where: { id } });
+    return { education: educationItem(entry), course: courseItem(course) };
+  });
+});
+
+// ─── Courses & certificates ──────────────────────────────────────────────────
+
+const courseFields = z.object({
+  id,
+  name: text(200),
+  provider: text(200),
+  duration: text(100),
+  link: text(500),
+  notes: text(5000),
+  onResumes: z.boolean(),
+  startYear: year,
+  startMonth: month,
+  endYear: year,
+  endMonth: month,
+});
+
+const courseItem = (entry: z.infer<typeof courseFields>) => ({
+  id: entry.id,
+  name: entry.name,
+  provider: entry.provider,
+  duration: entry.duration,
+  link: entry.link,
+  notes: entry.notes,
+  onResumes: entry.onResumes,
+  startYear: entry.startYear,
+  startMonth: entry.startMonth,
+  endYear: entry.endYear,
+  endMonth: entry.endMonth,
+});
+
+/** "+ Add a course": a blank entry, placed like a new role. */
+export const createCourse = action(z.object({}), async () => {
+  const manual = (await loadSettings()).courseOrder === "manual";
+  const sort = manual ? await firstSort(prisma.course) : await nextSort(prisma.course);
+  return courseItem(await prisma.course.create({ data: { sort } }));
+});
+
+/** Autosaves a course. Saving one that was just removed does nothing. */
+export const saveCourse = action(courseFields, async ({ id, ...data }) => {
+  await prisma.course.updateMany({ where: { id }, data });
+  return null;
+});
+
+export const removeCourse = action(z.object({ id }), async ({ id }) => {
+  await prisma.course.deleteMany({ where: { id } });
+  return null;
+});
+
+export const restoreCourse = action(courseFields, async (entry) =>
+  courseItem(
+    await prisma.course.upsert({
+      where: { id: entry.id },
+      create: { ...entry, sort: await nextSort(prisma.course) },
+      update: {},
+    }),
+  ),
+);
+
 // ─── Publications (#218) ─────────────────────────────────────────────────────
 
 const publicationFields = z.object({
@@ -411,15 +498,20 @@ export const reorderPublications = action(z.object({ ids: z.array(id) }), async 
 
 // ─── Order (E4-9) ────────────────────────────────────────────────────────────
 
-const section = z.enum(["experience", "project", "education"]);
+const section = z.enum(["experience", "project", "education", "course"]);
 type Section = z.infer<typeof section>;
 
 /** Each ordered section's setting. */
-const ORDER_SETTING = { experience: "experienceOrder", project: "projectOrder", education: "educationOrder" } as const;
+const ORDER_SETTING = {
+  experience: "experienceOrder",
+  project: "projectOrder",
+  education: "educationOrder",
+  course: "courseOrder",
+} as const;
 
 /** The section's table, as far as ordering needs it. */
 function entries(db: Prisma.TransactionClient, section: Section) {
-  const select = { id: true, sort: true, startYear: true, startMonth: true, endYear: true, endMonth: true, current: true } as const;
+  const select = { id: true, sort: true, startYear: true, startMonth: true } as const;
   const setSort = (entryId: string, sort: number) => ({ where: { id: entryId }, data: { sort } });
   if (section === "experience") {
     return { list: () => db.experience.findMany({ select }), setSort: (entryId: string, sort: number) => db.experience.update(setSort(entryId, sort)) };
@@ -427,7 +519,10 @@ function entries(db: Prisma.TransactionClient, section: Section) {
   if (section === "project") {
     return { list: () => db.project.findMany({ select }), setSort: (entryId: string, sort: number) => db.project.update(setSort(entryId, sort)) };
   }
-  return { list: () => db.education.findMany({ select }), setSort: (entryId: string, sort: number) => db.education.update(setSort(entryId, sort)) };
+  if (section === "education") {
+    return { list: () => db.education.findMany({ select }), setSort: (entryId: string, sort: number) => db.education.update(setSort(entryId, sort)) };
+  }
+  return { list: () => db.course.findMany({ select }), setSort: (entryId: string, sort: number) => db.course.update(setSort(entryId, sort)) };
 }
 
 /**

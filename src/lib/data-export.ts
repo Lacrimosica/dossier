@@ -40,10 +40,10 @@ import { appVersion } from "@/lib/version";
 // behind: they belong to the server or the mailbox, not the user's data.
 
 export const EXPORT_FORMAT = "dossier-export";
-/** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222). */
-export const EXPORT_SCHEMA_VERSION = 5;
+/** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222), 6 courses & certificates. */
+export const EXPORT_SCHEMA_VERSION = 6;
 /** The versions imports can read. */
-export const EXPORT_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4, 5];
+export const EXPORT_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6];
 
 /** The setting that holds the encrypted API key, which only this server can read. */
 const API_KEY_SETTING = "apiKeyEnc";
@@ -112,6 +112,23 @@ const project = z.object({
   updatedAt: date,
 });
 const education = z.object({ id: text, degree: text, school: text, ...span, notes: text, sort: int, createdAt: date, updatedAt: date });
+/** A course, workshop or certificate: dates without "Present". */
+const course = z.object({
+  id: text,
+  name: text,
+  provider: text,
+  startYear: int.nullable(),
+  startMonth: int.nullable(),
+  endYear: int.nullable(),
+  endMonth: int.nullable(),
+  duration: text,
+  link: text,
+  notes: text,
+  onResumes: z.boolean(),
+  sort: int,
+  createdAt: date,
+  updatedAt: date,
+});
 /** A publication (#218): its citation as written, with **bold** and *italic*. */
 const publication = z.object({ id: text, citation: text, link: text, onResumes: z.boolean(), sort: int, createdAt: date, updatedAt: date });
 const reference = z.object({
@@ -318,7 +335,7 @@ const postingSearch = z.object({
 /** An export file as read back (E10-6). */
 export const exportSchema = z.object({
   format: z.literal(EXPORT_FORMAT),
-  schemaVersion: z.literal([1, 2, 3, 4, 5]),
+  schemaVersion: z.literal([1, 2, 3, 4, 5, 6]),
   appVersion: text,
   exportedAt: date,
   profile: z.object({
@@ -329,6 +346,8 @@ export const exportSchema = z.object({
     /** Absent in files before version 3. */
     projects: z.array(project).default([]),
     education: z.array(education),
+    /** Absent in files before version 6. */
+    courses: z.array(course).default([]),
     /** Absent in files before version 5. */
     publications: z.array(publication).default([]),
     references: z.array(reference),
@@ -372,13 +391,14 @@ export async function buildExport(
   { includeApiKey = false, now = new Date() }: { includeApiKey?: boolean; now?: Date } = {},
 ): Promise<DossierExport> {
   return db.$transaction(async (tx) => {
-    const [fields, skills, languages, experience, projects, education, publications, references, facts, themes, settings, applications, postings, searches, agentCandidates, startups, startupBlocks] = await Promise.all([
+    const [fields, skills, languages, experience, projects, education, courses, publications, references, facts, themes, settings, applications, postings, searches, agentCandidates, startups, startupBlocks] = await Promise.all([
       tx.profileField.findMany({ select: { key: true, value: true }, orderBy: { key: "asc" } }),
       tx.skill.findMany({ select: { id: true, name: true, sort: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
       tx.language.findMany({ select: { id: true, name: true, level: true, sort: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
       tx.experience.findMany({ include: { skills: { select: { skillId: true } } }, orderBy: { createdAt: "asc" } }),
       tx.project.findMany({ include: { skills: { select: { skillId: true } } }, orderBy: { createdAt: "asc" } }),
       tx.education.findMany({ orderBy: { createdAt: "asc" } }),
+      tx.course.findMany({ orderBy: { createdAt: "asc" } }),
       tx.publication.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
       tx.reference.findMany({ orderBy: { createdAt: "asc" } }),
       tx.fact.findMany({ where: { applicationId: null }, omit: { applicationId: true }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
@@ -436,6 +456,7 @@ export async function buildExport(
         experience: experience.map(({ skills: links, ...entry }) => ({ ...entry, skillIds: links.map((link) => link.skillId) })),
         projects: projects.map(({ skills: links, ...entry }) => ({ ...entry, skillIds: links.map((link) => link.skillId) })),
         education,
+        courses,
         publications,
         references,
         facts,

@@ -25,6 +25,8 @@ type Profile = {
   experience: { id: string; bullets: string[] }[];
   projects: { id: string; bullets: string[] }[];
   education: { id: string; notes: string }[];
+  /** Left out when the profile has none on resumes. */
+  courses?: { id: string; notes: string }[];
 };
 type Unit = { id: string; label: string; text: string };
 
@@ -76,6 +78,8 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
       projects: profile.projects.map((entry) => ({ id: entry.id, bullets: entry.bullets })),
       skills: profile.skills,
       education: profile.education.map((entry) => ({ id: entry.id, notes: entry.notes })),
+      // Only the first course, as if the rest didn't help with this job.
+      courses: (profile.courses ?? []).slice(0, 1).map((entry) => ({ id: entry.id, notes: entry.notes })),
     };
   },
 
@@ -167,6 +171,7 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
     ],
     projects: [],
     education: [],
+    courses: [],
     publications: [],
     references: [],
   }),

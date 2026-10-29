@@ -34,6 +34,7 @@ function Harness() {
     experience: [],
     projects: [],
     education: [],
+    courses: [],
     publications: [rossi, hidden],
     references: [],
     facts: [],

@@ -47,6 +47,7 @@ function Harness() {
     experience: [],
     projects: [churn, thesis],
     education: [],
+    courses: [],
     publications: [],
     references: [],
     facts: [],

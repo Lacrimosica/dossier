@@ -31,5 +31,7 @@ describe("unitName", () => {
     expect(unitName({ id: "paragraph:2", label: "Middle paragraph" })).toBe("middle paragraph");
     expect(unitName({ id: "experience:e1", label: "Northwind Logistics role" })).toBe("Northwind Logistics role");
     expect(unitName({ id: "education:d1", label: "MSc Design for Interaction" })).toBe("MSc Design for Interaction");
+    expect(unitName({ id: "course:c1", label: "UX Writing Workshop" })).toBe("UX Writing Workshop");
+    expect(unitName({ id: "course:c2", label: "" })).toBe("entry");
   });
 });

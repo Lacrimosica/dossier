@@ -42,6 +42,7 @@ const written = (overrides: Partial<WrittenApplication> = {}): WrittenApplicatio
     projects: [],
     skills: [profile.skills[0].name, "Not a skill of theirs"],
     education: [],
+    courses: [],
   },
   letter: {
     recipient: "Acme · Hiring team\nBerlin",
@@ -89,6 +90,14 @@ describe("an application written in Claude chat (#221)", () => {
     expect(letter.find((unit) => unit.id === "paragraph:1")?.text).toBe("I'd like to help Acme design its product.");
     expect(letter.find((unit) => unit.id === "paragraph:2")?.text).toBe("Let's talk.");
     expect(letter.some((unit) => unit.id === "sender")).toBe(true);
+  });
+
+  it("keeps only the courses Claude chose, by the profile's own ids", async () => {
+    const resume = { ...written().resume, courses: [{ id: "c2", notes: "Microcopy" }, { id: "made-up", notes: "Invented" }] };
+    const { applicationId } = await saveWrittenApplication(written({ resume }));
+    const document = await prisma().document.findFirstOrThrow({ where: { applicationId, kind: "RESUME" } });
+    const units = document.units as { id: string; text: string }[];
+    expect(units.filter((unit) => unit.id.startsWith("course:"))).toEqual([{ id: "course:c2", label: "UX Writing Workshop", text: "Microcopy" }]);
   });
 
   it("marks names and numbers the profile and posting don't back when Never invent experience is on", async () => {

@@ -29,6 +29,12 @@ export function dateSpan(start: string, end: string): DateSpan {
   };
 }
 
+/** A course's dates ("Mar 2023" to "May 2023", or to "" for a single month): a course has no "Present". */
+export function courseDates(start: string, end: string): Omit<DateSpan, "current"> {
+  const { startYear, startMonth, endYear, endMonth } = dateSpan(start, end);
+  return { startYear, startMonth, endYear, endMonth };
+}
+
 /** Language levels by their label in the prototype, e.g. "Fluent (C2)". */
 export const LEVELS_BY_LABEL = new Map<string, LanguageLevel>(
   LANGUAGE_LEVELS.map(({ value, label }) => [label, value]),
@@ -36,7 +42,7 @@ export const LEVELS_BY_LABEL = new Map<string, LanguageLevel>(
 
 /** The sample profile as `loadProfile()` returns it, with the prototype's ids. */
 export function demoProfile(): ProfileData {
-  const { experience, projects, education, publications, skills, languages, references, facts, showAge, ...basics } = sample.profile;
+  const { experience, projects, education, courses, publications, skills, languages, references, facts, showAge, ...basics } = sample.profile;
   const skillId = (name: string) => `skill-${skills.indexOf(name) + 1}`;
   return {
     basics: {
@@ -83,6 +89,7 @@ export function demoProfile(): ProfileData {
       notes: entry.notes,
       ...dateSpan(entry.start, entry.end),
     })),
+    courses: courses.map(({ start, end, ...entry }) => ({ ...entry, ...courseDates(start, end), onResumes: true })),
     publications: publications.map(({ id, citation, link }) => ({ id, citation, link, onResumes: true })),
     references: references.map(({ id, name, relation, company, email, phone }) => ({
       id,
@@ -106,8 +113,9 @@ export function demoResumeUnits(
   educationId: (sampleId: string) => string = (id) => id,
   projectId: (sampleId: string) => string = (id) => id,
   publicationId: (sampleId: string) => string = (id) => id,
+  courseId: (sampleId: string) => string = (id) => id,
 ): Unit[] {
-  const { experience, projects, education, publications, skills, languages } = sample.profile;
+  const { experience, projects, education, courses, publications, skills, languages } = sample.profile;
   const { resume, requirements } = sample.ledgerly;
   // Skills the posting asks for come first.
   const asked = requirements.flatMap((requirement) =>
@@ -127,6 +135,8 @@ export function demoResumeUnits(
       label: entry.degree,
       text: entry.notes,
     })),
+    // Only the course that helps with a payments design role.
+    ...courses.slice(0, 1).map((entry) => ({ id: `course:${courseId(entry.id)}`, label: entry.name, text: entry.notes })),
     ...publications.map((entry) => ({
       id: `publication:${publicationId(entry.id)}`,
       label: publicationLabel(entry.citation),

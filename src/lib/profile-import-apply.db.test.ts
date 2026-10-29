@@ -37,6 +37,10 @@ const imported: ImportedProfile = {
     { name: "Design tokens CLI", link: "", bullets: "Built a CLI", skills: ["figma"], startYear: 2024, startMonth: null, endYear: null, endMonth: null, current: true, unverified: [] },
   ],
   education: [{ degree: "MSc Interaction Design", school: "TU Delft", notes: "", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, unverified: [] }],
+  courses: [
+    { name: "ux writing workshop", provider: "Content Design London", duration: "2 days", link: "", notes: "", startYear: null, startMonth: null, endYear: null, endMonth: null, unverified: [] },
+    { name: "Data bootcamp", provider: "Le Wagon", duration: "", link: "", notes: "", startYear: 2024, startMonth: 2, endYear: 2024, endMonth: 3, unverified: [] },
+  ],
   publications: [
     { citation: "Doe, J. (2024). Calm payouts.", link: "https://doi.org/10.5555/1", unverified: [] },
     { citation: "Doe, J. (2025). A new one.", link: "", unverified: [] },
@@ -56,6 +60,7 @@ async function existingProfile() {
   await prisma().reference.create({ data: { name: "jane doe", relation: "", company: "Fieldnote", sort: 0 } });
   await prisma().project.create({ data: { name: "Payout simulator", bullets: "My own project bullets", startYear: 2023, sort: 0 } });
   await prisma().publication.create({ data: { citation: "**Doe, J.** (2024). *Calm payouts.*", onResumes: false, sort: 0 } });
+  await prisma().course.create({ data: { name: "UX Writing Workshop", provider: "Content Design London", notes: "My own notes", startYear: 2021, startMonth: 10, sort: 0 } });
 }
 
 describe("applyImportedProfile (E4-10)", () => {
@@ -97,6 +102,12 @@ describe("applyImportedProfile (E4-10)", () => {
       { citation: "Doe, J. (2025). A new one.", link: "", onResumes: true },
     ]);
 
+    // Courses match by name and provider, like degrees by degree and school.
+    expect(await prisma().course.findMany({ orderBy: { sort: "asc" }, select: { name: true, duration: true, notes: true, startYear: true, endMonth: true } })).toEqual([
+      { name: "ux writing workshop", duration: "2 days", notes: "My own notes", startYear: 2021, endMonth: null },
+      { name: "Data bootcamp", duration: "", notes: "", startYear: 2024, endMonth: 3 },
+    ]);
+
     expect(await prisma().education.count()).toBe(1);
     const references = await prisma().reference.findMany();
     expect(references).toHaveLength(1);
@@ -115,6 +126,7 @@ describe("applyImportedProfile (E4-10)", () => {
     await existingProfile();
     await prisma().setting.create({ data: { key: "experienceOrder", value: "manual" } });
     await prisma().setting.create({ data: { key: "projectOrder", value: "manual" } });
+    await prisma().setting.create({ data: { key: "courseOrder", value: "manual" } });
     await prisma().profileField.create({ data: { key: "showAge", value: "false" } });
     // A resume's text has no photo, so the profile's stays (#224).
     await prisma().profileField.createMany({ data: [{ key: "photo", value: "data:image/png;base64,iVBORw0KGgo=" }, { key: "photoOnResumes", value: "false" }] });
@@ -131,5 +143,7 @@ describe("applyImportedProfile (E4-10)", () => {
       "Doe, J. (2024). Calm payouts.",
       "Doe, J. (2025). A new one.",
     ]);
+    expect((await prisma().course.findMany()).map((entry) => entry.name).sort()).toEqual(["Data bootcamp", "ux writing workshop"]);
+    expect((await prisma().setting.findUnique({ where: { key: "courseOrder" } }))?.value).toBe("date");
   });
 });

@@ -37,6 +37,11 @@ describe("buildExport (E10-4)", () => {
     expect(file.profile.projects.flatMap((entry) => entry.skillIds).length).toBe(await prisma().projectSkill.count());
     // Publications in their order, with their switch (#218).
     expect(file.profile.publications).toEqual([expect.objectContaining({ citation: expect.stringMatching(/^\*\*Doe, J\.\*\*/), onResumes: true, sort: 0 })]);
+    // Courses & certificates, with their switch.
+    expect(file.profile.courses.map((entry) => [entry.name, entry.duration, entry.onResumes])).toEqual([
+      ["Accessibility for Designers", "6 weekend sessions", true],
+      ["UX Writing Workshop", "2 days", true],
+    ]);
     expect(file.profile.references.length).toBe(await prisma().reference.count());
     // Facts about me, and each application's own (PRO-14, APP-15).
     expect(file.profile.facts.map((fact) => fact.text)).toEqual((await prisma().fact.findMany({ where: { applicationId: null }, orderBy: { sort: "asc" } })).map((fact) => fact.text));

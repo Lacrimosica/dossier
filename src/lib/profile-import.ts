@@ -29,6 +29,23 @@ export const importedProfileSchema = z.object({
     .array(z.object({ name: z.string(), link: z.string(), bullets: z.string(), skills: z.array(z.string()), ...span, unverified }))
     .default([]),
   education: z.array(z.object({ degree: z.string(), school: z.string(), notes: z.string(), ...span, unverified })),
+  /** Absent in readings made before courses & certificates. */
+  courses: z
+    .array(
+      z.object({
+        name: z.string(),
+        provider: z.string(),
+        duration: z.string(),
+        link: z.string(),
+        notes: z.string(),
+        startYear: span.startYear,
+        startMonth: span.startMonth,
+        endYear: span.endYear,
+        endMonth: span.endMonth,
+        unverified,
+      }),
+    )
+    .default([]),
   /** Absent in readings made before publications (#218). */
   publications: z.array(z.object({ citation: z.string(), link: z.string(), unverified })).default([]),
   references: z.array(
@@ -50,7 +67,8 @@ export function importCounts(profile: ImportedProfile): string {
     plural(profile.experience.length, "role", "roles"),
     plural(profile.projects.length, "project", "projects"),
     plural(profile.education.length, "degree", "degrees"),
-    // Optional and rare: only said when there are some (#218).
+    // Optional: only said when there are some (#218).
+    ...(profile.courses.length > 0 ? [plural(profile.courses.length, "course or certificate", "courses and certificates")] : []),
     ...(profile.publications.length > 0 ? [plural(profile.publications.length, "publication", "publications")] : []),
     plural(profile.skills.length, "skill", "skills"),
     plural(profile.languages.length, "language", "languages"),

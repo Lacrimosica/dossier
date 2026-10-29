@@ -55,6 +55,7 @@ const profile: ImportedProfile = {
   ],
   projects: [],
   education: [],
+  courses: [],
   publications: [],
   references: [],
 };

@@ -187,6 +187,7 @@ describe("tailorResume", () => {
     ],
     skills: ["Design systems", "figma", "Kubernetes", "User research"],
     education: [{ id: "d1", notes: "Thesis on trust in automation" }],
+    courses: [],
   };
 
   it("sends the profile without contact details, with the guardrails, the language and the facts (PRD §7, SET-4, PRO-14, APP-15)", async () => {
@@ -217,7 +218,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@6");
+    expect(promptVersion).toBe("tailor-resume@7");
     expect(data.map((unit) => unit.id)).toEqual([
       "summary",
       "experience:e1",
@@ -255,6 +256,24 @@ describe("tailorResume", () => {
     expect(text).not.toContain("Kept off resumes");
   });
 
+  it("keeps only the courses the model chose, in its order, and never sends or keeps a hidden one", async () => {
+    const hidden = { ...profile.courses[1], id: "c3", name: "Kept off resumes", onResumes: false };
+    const chosen = { ...answer, courses: [{ id: "c2", notes: " Microcopy " }, { id: "c9", notes: "Invented" }, { id: "c3", notes: "" }, { id: "c2", notes: "Twice" }] };
+    const provider = model(chosen);
+    const { data } = await tailorResume(provider, { profile: { ...profile, courses: [...profile.courses, hidden] }, extracted, match: null, facts: [], posting }, options);
+    expect(data.filter((unit) => unit.id.startsWith("course:"))).toEqual([{ id: "course:c2", label: "UX Writing Workshop", text: "Microcopy" }]);
+    // Degrees before courses, courses before publications.
+    expect(data.map((unit) => unit.id).slice(-4)).toEqual(["education:d2", "course:c2", "publication:u1", "languages"]);
+    const text = prompt(provider);
+    expect(text).toContain(`"name": "Accessibility for Designers"`);
+    expect(text).toContain(`"length": "6 weekend sessions"`);
+    expect(text).not.toContain("example.com/certificates");
+    expect(text).not.toContain("Kept off resumes");
+    // Courses can all be left out.
+    const { data: none } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
+    expect(none.some((unit) => unit.id.startsWith("course:"))).toBe(false);
+  });
+
   it("names language levels in the resume's language: the chosen one, or the posting's", async () => {
     const levels = async (language: string | null, postingLanguage: string) => {
       const { data } = await tailorResume(model(answer), { profile, extracted: { ...extracted, language: postingLanguage }, match: null, facts: [], posting }, { ...options, language });
@@ -266,7 +285,7 @@ describe("tailorResume", () => {
 
   it("asks for a resume that fits the page limit, when there is one (E10-10)", async () => {
     const system = async (maxPages: number | null) => {
-      const provider = model({ summary: "Designer.", roles: [], projects: [], skills: [], education: [] });
+      const provider = model({ summary: "Designer.", roles: [], projects: [], skills: [], education: [], courses: [] });
       await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, { ...options, maxPages });
       return sent(provider).system;
     };
@@ -544,6 +563,7 @@ describe("the fact guard in the writing tasks (E6-6)", () => {
     projects: [],
     skills: ["Figma"],
     education: [],
+    courses: [],
   };
 
   it("notes what the profile and posting don't back, in strict mode", async () => {
