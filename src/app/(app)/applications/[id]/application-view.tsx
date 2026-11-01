@@ -30,6 +30,7 @@ import type { RefineResult } from "@/lib/jobs/refine";
 import type { RegenerateUnitResult } from "@/lib/jobs/regenerate-unit";
 import type { JobView } from "@/lib/jobs/runner";
 import type { WriteEmailResult } from "@/lib/jobs/write-email";
+import type { WriteLetterResult } from "@/lib/jobs/write-letter";
 import type { FactItem, ProfileData } from "@/lib/profile";
 import type { RefineSuggestions } from "@/lib/refine-suggestions";
 import { hasSidebar, type ThemeData } from "@/lib/themes";
@@ -48,6 +49,7 @@ import {
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
+  startWritingLetter,
   undoEmailRewrite,
   undoMessage,
 } from "./actions";
@@ -129,6 +131,8 @@ export type ApplicationViewProps = {
   meta: string[];
   resume: DocumentData | null;
   letter: DocumentData | null;
+  /** The cover letter being written for an application created without one, e.g. since before a reload. */
+  writingLetter: string | null;
   /** Every theme, for the Theme menu (#226), and which is the base theme. */
   themes: ThemeData[];
   baseThemeId: string;
@@ -177,6 +181,7 @@ export function ApplicationView({
   activity,
   resume,
   letter,
+  writingLetter,
   themes,
   baseThemeId,
   email,
@@ -230,6 +235,7 @@ export function ApplicationView({
     Object.fromEntries(rewritingAtLoad.map(({ jobId, document, unitId }) => [keyOf(document, unitId), { jobId, revision: 0 }])),
   );
   const [emailJob, setEmailJob] = useState<Rewrite | null>(writingEmail ? { jobId: writingEmail, revision: 0 } : null);
+  const [letterJob, setLetterJob] = useState<Rewrite | null>(writingLetter ? { jobId: writingLetter, revision: 0 } : null);
 
   /** The document on screen, which a chat message without a target is most likely about. */
   const onScreen = (): DocumentKind | null =>
@@ -458,6 +464,41 @@ export function ApplicationView({
     });
   };
 
+  /** "Write a cover letter" on the Cover letter tab of an application created without one. */
+  const writeLetter = async () => {
+    if (!aiReady) return needsAi();
+    if (letterJob) return;
+    setLetterJob({ jobId: "", revision: 0 });
+    const result = await startWritingLetter({ id: application.id });
+    if (result.ok) setLetterJob({ jobId: result.data, revision: 0 });
+    else {
+      setLetterJob(null);
+      toast(result.error);
+    }
+  };
+
+  const letterChanged = (job: JobView<WriteLetterResult>) => {
+    if (job.status === "FAILED") {
+      setLetterJob(null);
+      toast(job.error ?? "That didn't work. Try again.", {
+        action: {
+          label: "Retry",
+          onClick: () =>
+            void retry({ id: job.id }).then((retried) => {
+              if (retried.ok) setLetterJob((current) => ({ jobId: job.id, revision: (current?.revision ?? 0) + 1 }));
+              else toast(retried.error);
+            }),
+        },
+      });
+      return;
+    }
+    if (job.status !== "DONE" || !job.result) return;
+    setLetterJob(null);
+    startTransition(() => router.refresh());
+    flashing.start(job.result.units.map((unit) => keyOf(DocumentKind.COVER_LETTER, unit.id)));
+    toast("Wrote your cover letter. Refine it like the resume.");
+  };
+
   /** "+ Add to profile" on the Job posting tab (E8-7). */
   const addSkill = (index: number) =>
     startTransition(async () => {
@@ -612,6 +653,9 @@ export function ApplicationView({
         ) : null,
       )}
       {reply && <JobWatcher<RefineResult> key={reply.jobId} id={reply.jobId} revision={reply.revision} onChange={replyChanged} />}
+      {letterJob?.jobId && (
+        <JobWatcher<WriteLetterResult> key={letterJob.jobId} id={letterJob.jobId} revision={letterJob.revision} onChange={letterChanged} />
+      )}
       {emailJob?.jobId && (
         <JobWatcher<WriteEmailResult> key={emailJob.jobId} id={emailJob.jobId} revision={emailJob.revision} onChange={emailChanged} />
       )}
@@ -627,8 +671,8 @@ export function ApplicationView({
               </Link>
             )}
             <StatusControl id={application.id} status={application.status} interviewAt={application.nextInterviewAt} timeZone={timeZone} />
-            {(resume || letter) && (
-              // The document on screen; from the Job posting tab, the resume (E8-8).
+            {(tab === "letter" ? letter : resume) && (
+              // The document on screen; from the Job posting tab, the resume (E8-8). An application may have no letter.
               <DownloadPdfButton
                 variant="secondary"
                 href={`/api/pdf?doc=${tab === "letter" ? "letter" : "resume"}&application=${application.id}`}
@@ -637,7 +681,7 @@ export function ApplicationView({
                 Download PDF
               </DownloadPdfButton>
             )}
-            <ApplicationMenu id={application.id} archived={application.archived} />
+            <ApplicationMenu id={application.id} title={application.title} archived={application.archived} />
           </>
         }
       >
@@ -722,7 +766,7 @@ export function ApplicationView({
               />
             </DocumentPreview>
           ) : (
-            <MissingDocument>This application has no cover letter.</MissingDocument>
+            <MissingLetter writing={letterJob !== null} onWrite={() => void writeLetter()} />
           )}
         </TabsContent>
 
@@ -853,6 +897,24 @@ function PreviewSwitch({ label, checked, onCheckedChange }: { label: string; che
 }
 
 /** The canvas with a note in place of a document the application doesn't have. */
+/** The Cover letter tab of an application created without one: it can be written now, from the resume. */
+function MissingLetter({ writing, onWrite }: { writing: boolean; onWrite: () => void }) {
+  return (
+    <div className="flex flex-1 flex-col items-center overflow-auto bg-canvas px-10 pt-11 pb-16">
+      <div className="flex w-full max-w-[560px] flex-col items-start gap-3 rounded-panel border border-line-card bg-card px-7 py-7">
+        <h2 className="font-serif text-section">No cover letter yet</h2>
+        <p className="text-sm text-muted">
+          This application was created without one. I&apos;ll write it from your tailored resume as it is now, changes included, so the
+          letter adds to it rather than repeating it.
+        </p>
+        <Button className="mt-1" aria-disabled={writing || undefined} onClick={() => !writing && onWrite()}>
+          {writing ? "Writing your cover letter…" : "Write a cover letter"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function MissingDocument({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-1 justify-center overflow-auto bg-canvas px-10 pt-16 pb-16">

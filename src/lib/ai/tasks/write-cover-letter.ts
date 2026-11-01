@@ -23,7 +23,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const WRITE_COVER_LETTER_VERSION = "write-cover-letter@5";
+export const WRITE_COVER_LETTER_VERSION = "write-cover-letter@6";
 
 const answerSchema = z.object({
   recipient: z.string(),
@@ -51,6 +51,11 @@ export type CoverLetterInput = {
   facts: string[];
   /** The posting as pasted, for the fact guard. */
   posting: string;
+  /**
+   * The tailored resume as it is now, refined or edited, when the letter is
+   * written after it: the letter then builds on it rather than repeating it.
+   */
+  resume?: Unit[];
 };
 
 /**
@@ -59,7 +64,7 @@ export type CoverLetterInput = {
  * "sign-off"), which matches the tone. The sender, date and signature come
  * from the profile when the application is created (src/lib/letter-frame.ts).
  */
-export const writeCoverLetter: Task<CoverLetterInput, Unit[]> = async (provider, { profile, extracted, match, tone, facts, posting }, options) => {
+export const writeCoverLetter: Task<CoverLetterInput, Unit[]> = async (provider, { profile, extracted, match, tone, facts, posting, resume }, options) => {
   const answer = await provider.complete({
     system: system(
       INSTRUCTIONS,
@@ -78,6 +83,7 @@ export const writeCoverLetter: Task<CoverLetterInput, Unit[]> = async (provider,
         content: [
           `The candidate's profile:\n${profileForPrompt(profile)}`,
           `The job:\n${jobForPrompt(extracted, match)}`,
+          resume?.length && `The tailored resume the letter goes with:\n${resume.map((unit) => `${unit.label}: ${unit.text}`).join("\n\n")}`,
           applicationFacts(facts),
         ]
           .filter(Boolean)

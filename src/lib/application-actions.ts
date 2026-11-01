@@ -7,13 +7,29 @@ import { action, ActionError } from "@/lib/action";
 import { cancelApplicationJobs } from "@/lib/jobs/runner";
 import { prisma } from "@/lib/prisma";
 
-// Archiving and deleting an application (E9-5, LST-8), from its page, a
-// card or a table row.
+// Renaming, archiving and deleting an application (E9-5, LST-8), from its
+// page, a card or a table row.
 
 const GONE = "That application no longer exists.";
 
 // The list, the dashboard and the application all show it.
 const refreshEverything = () => revalidatePath("/", "layout");
+
+/**
+ * Renames an application: the name it shows in the list, on the dashboard
+ * and on its page. Like archiving, tidying up isn't news, so "Updated" stays
+ * as it was.
+ */
+export const renameApplication = action(
+  z.object({ id: z.string().min(1), title: z.string().trim().min(1, "Give it a name first.").max(300) }),
+  async ({ id, title }) => {
+    const current = await prisma.application.findUnique({ where: { id }, select: { updatedAt: true } });
+    if (!current) throw new ActionError(GONE);
+    await prisma.application.update({ where: { id }, data: { title, updatedAt: current.updatedAt } });
+    refreshEverything();
+    return null;
+  },
+);
 
 /**
  * Archives an application, or brings it back. Archived ones leave the board

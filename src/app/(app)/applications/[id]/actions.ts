@@ -19,6 +19,7 @@ import { refineJob, refineJobKey } from "@/lib/jobs/refine";
 import { regenerateUnitJob, unitJobKey } from "@/lib/jobs/regenerate-unit";
 import { findUnfinishedJobs, startJob } from "@/lib/jobs/runner";
 import { emailJobKey, writeEmailJob } from "@/lib/jobs/write-email";
+import { letterJobKey, writeLetterJob } from "@/lib/jobs/write-letter";
 import { prisma } from "@/lib/prisma";
 import { findOrCreateSkill } from "@/lib/profile-entries";
 import { cleanUnitText, isPublicationUnit, unitName } from "@/lib/unit-text";
@@ -484,6 +485,22 @@ export const restoreVersion = action(z.object({ id: z.string().min(1), versionId
   toast(`Restored the ${DOCUMENT_LABELS[kind].toLowerCase()} as it was then. The version you had is in the history too.`);
   refresh(id);
   return null;
+});
+
+// ─── The cover letter, written later (Cover letter tab) ──────────────────────
+
+/**
+ * "Write a cover letter", for an application created without one: writes it
+ * from the tailored resume in the background and returns the job's id.
+ * Asking again while it's being written follows the same job.
+ */
+export const startWritingLetter = action(z.object({ id: z.string().min(1) }), async ({ id }) => {
+  const application = await prisma.application.findUnique({ where: { id }, select: { documents: { where: { kind: DocumentKind.COVER_LETTER }, select: { id: true } } } });
+  if (!application) throw new ActionError(GONE);
+  if (application.documents.length > 0) throw new ActionError("This application has a cover letter already. Reload the page to see it.");
+  if (!(await isAiConfigured())) throw new ActionError("That needs an AI provider. Choose one in Settings → AI provider.");
+  const [running] = await findUnfinishedJobs(letterJobKey(id));
+  return running?.id ?? startJob(writeLetterJob, { applicationId: id }, { key: letterJobKey(id), applicationId: id });
 });
 
 // ─── The email (Email tab) ───────────────────────────────────────────────────

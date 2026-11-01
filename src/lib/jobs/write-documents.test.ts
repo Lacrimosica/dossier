@@ -28,14 +28,31 @@ describe("writeDocumentsJob (E7-6)", () => {
       requirements: [], asksForReferences: false, language: "English",
     };
     const result = await writeDocumentsJob.run(
-      { readJobId: "read-job", posting: "Ledgerly is hiring.", extracted, match: { items: [] }, tone: "WARM", note: "" },
+      { readJobId: "read-job", posting: "Ledgerly is hiring.", extracted, match: { items: [] }, tone: "WARM", note: "", coverLetter: true },
       { id: "test-job", step: async (name) => void steps.push(name), signal: new AbortController().signal },
     );
     expect(steps).toEqual(WRITE_DOCUMENTS_STEPS.slice(0, 2));
     expect(result.resumeWith).toBe("tailor-resume@8");
-    expect(result.letterWith).toBe("write-cover-letter@5");
+    expect(result.letterWith).toBe("write-cover-letter@6");
     // Strict mode: the fact guard marks what the profile doesn't back.
     expect(result.resume[1]).toMatchObject({ id: "summary", unverified: ["Google"] });
-    expect(result.letter.map((unit) => unit.id)).toEqual(["recipient", "greeting", "paragraph:1", "sign-off"]);
+    expect(result.letter?.map((unit) => unit.id)).toEqual(["recipient", "greeting", "paragraph:1", "sign-off"]);
+  });
+
+  it("skips the cover letter, and its call to the AI, when it isn't wanted", async () => {
+    const mock = new MockProvider({ reply: () => ({ headline: "", summary: "Designer.", roles: [], projects: [], skills: ["Figma"], education: [], courses: [] }) });
+    provider.current = mock;
+    const steps: string[] = [];
+    const extracted = {
+      title: "Designer · Ledgerly", company: "Ledgerly", role: "Designer", location: null, mode: null, salary: null, deadline: null,
+      requirements: [], asksForReferences: false, language: "English",
+    };
+    const result = await writeDocumentsJob.run(
+      { readJobId: "read-job", posting: "Ledgerly is hiring.", extracted, match: { items: [] }, tone: "WARM", note: "", coverLetter: false },
+      { id: "test-job", step: async (name) => void steps.push(name), signal: new AbortController().signal },
+    );
+    expect(steps).toEqual([WRITE_DOCUMENTS_STEPS[0]]);
+    expect(mock.calls).toHaveLength(1);
+    expect(result).toMatchObject({ letter: null, letterWith: null });
   });
 });

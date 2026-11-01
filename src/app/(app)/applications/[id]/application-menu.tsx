@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
-import { archiveApplication, DeleteApplicationDialog } from "@/components/application-lifecycle";
+import { archiveApplication, DeleteApplicationDialog, RenameApplicationDialog } from "@/components/application-lifecycle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-/** The application's "⋯" menu (E9-5): Archive or Unarchive, and Delete. */
-export function ApplicationMenu({ id, archived }: { id: string; archived: boolean }) {
+/** The application's "⋯" menu (E9-5): Rename, Archive or Unarchive, and Delete. */
+export function ApplicationMenu({ id, title, archived }: { id: string; title: string; archived: boolean }) {
   const router = useRouter();
+  const [renaming, setRenaming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   return (
@@ -24,12 +25,14 @@ export function ApplicationMenu({ id, archived }: { id: string; archived: boolea
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="min-w-[180px]">
+          <DropdownMenuItem onSelect={() => setRenaming(true)}>Rename…</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => void archiveApplication(id, !archived)}>{archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setDeleting(true)} className="text-danger data-highlighted:text-error-strong">
             Delete…
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <RenameApplicationDialog id={id} title={title} open={renaming} onOpenChange={setRenaming} returnFocusTo={trigger} />
       <DeleteApplicationDialog id={id} open={deleting} onOpenChange={setDeleting} onDeleted={() => router.push("/applications")} returnFocusTo={trigger} />
     </>
   );

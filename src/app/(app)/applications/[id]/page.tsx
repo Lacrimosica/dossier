@@ -11,6 +11,7 @@ import { refineJobKey } from "@/lib/jobs/refine";
 import { regenerateUnitJob, unitJobKey } from "@/lib/jobs/regenerate-unit";
 import { findUnfinishedJobs } from "@/lib/jobs/runner";
 import { emailJobKey } from "@/lib/jobs/write-email";
+import { letterJobKey } from "@/lib/jobs/write-letter";
 import { googleConnection } from "@/lib/google/account";
 import { pullInterviewEvents } from "@/lib/google/availability";
 import { loadConversation } from "@/lib/google/inbox-data";
@@ -40,13 +41,14 @@ export async function generateMetadata({ params }: PageProps<"/applications/[id]
 export default async function ApplicationPage({ params, searchParams }: PageProps<"/applications/[id]">) {
   const [{ id }, { tab }] = await Promise.all([params, searchParams]);
   await pullCalendar(id);
-  const [{ application, profile, settings, extracted, resume, letter, email, includeReferences, letterDate }, aiReady, unitJobs, refineJobs, emailJobs, timeZone, google, emails, themes] =
+  const [{ application, profile, settings, extracted, resume, letter, email, includeReferences, letterDate }, aiReady, unitJobs, refineJobs, emailJobs, letterJobs, timeZone, google, emails, themes] =
     await Promise.all([
       loadDocuments(id),
       isAiConfigured(),
       findUnfinishedJobs(unitJobKey(id)),
       findUnfinishedJobs(refineJobKey(id)),
       findUnfinishedJobs(emailJobKey(id)),
+      findUnfinishedJobs(letterJobKey(id)),
       userTimeZone(),
       googleConnection(),
       loadConversation(id),
@@ -107,6 +109,7 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
       meta={metaLine(application)}
       resume={resume}
       letter={letter}
+      writingLetter={letterJobs.at(-1)?.id ?? null}
       themes={themes}
       baseThemeId={settings.baseThemeId}
       email={email}

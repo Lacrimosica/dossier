@@ -86,7 +86,7 @@ export async function draftCandidate(candidateId: string, context: JobContext): 
     await context.step(`Writing the draft for ${name}`);
     const settings = await loadSettings();
     const documents = await writeDocumentsJob.run(
-      { readJobId: context.id, posting, extracted: reading.extracted, match: reading.match, tone: settings.defaultTone, note: "" },
+      { readJobId: context.id, posting, extracted: reading.extracted, match: reading.match, tone: settings.defaultTone, note: "", coverLetter: true },
       context,
     );
     // Keep the whole text, so a retry doesn't fetch it again.

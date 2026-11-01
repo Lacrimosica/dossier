@@ -4,7 +4,7 @@ import { AgentCandidateStatus, ApplicationOrigin, type Tone } from "@/generated/
 import { ActionError } from "@/lib/action";
 import { summaryText, tailoringSummary } from "@/lib/ai/tailoring-summary";
 import { calendarDay } from "@/lib/application-documents";
-import type { Extracted, Match } from "@/lib/application-data";
+import type { Extracted, Match, Unit } from "@/lib/application-data";
 import { documentLabels } from "@/lib/document-labels";
 import { documentLanguage } from "@/lib/document-language";
 import type { WriteDocumentsResult } from "@/lib/jobs/write-documents";
@@ -12,13 +12,14 @@ import { newFrame, withFrame } from "@/lib/letter-frame";
 import { logServerError } from "@/lib/log";
 import { describeTrim, fitResumeToPages } from "@/lib/page-limit";
 import { prisma } from "@/lib/prisma";
+import type { ProfileData } from "@/lib/profile";
 import { loadProfile } from "@/lib/profile-data";
-import { maxPages } from "@/lib/settings";
+import { maxPages, type SettingsData } from "@/lib/settings";
 import { loadSettings } from "@/lib/settings-data";
 
 // Creating an application from finished documents (E7-6), shared by New
 // application and the job agent (E16-5): the Draft application, its resume
-// and cover letter in the base theme, and the opening chat message, in one
+// and cover letter (when one was written) in the base theme, and the opening chat message, in one
 // transaction; then the resume is trimmed to the page limit (E10-10).
 
 export type ApplicationDetails = {
@@ -66,26 +67,36 @@ export type CreateApplicationInput = {
 
 const CLAIMED = "application:";
 
+/**
+ * E8-11: every part of the letter is a unit. The AI wrote the recipient and
+ * greeting; the sender and signature come from the profile, and the date is
+ * written now, in the letter's language. Also used for a letter written
+ * after the application was created.
+ */
+export function framedLetter(
+  units: Unit[],
+  { profile, settings, company, location, language }: { profile: ProfileData; settings: SettingsData; company: string; location: string; language: string },
+): Unit[] {
+  return withFrame(
+    units,
+    newFrame({
+      basics: profile.basics,
+      company,
+      location,
+      date: calendarDay(),
+      dateFormat: settings.dateFormat,
+      lang: documentLanguage(language, units.map((unit) => unit.text).join(" ")).lang,
+      labels: documentLabels(language),
+    }),
+  );
+}
+
 /** Creates the application once; creating again with the same claim returns the one that exists. */
 export async function createApplicationFromDocuments({ reading, documents, match, details, postingUrl, tone, note, claim }: CreateApplicationInput): Promise<string> {
   const [settings, profile] = await Promise.all([loadSettings(), loadProfile()]);
   const { extracted, extractedWith, matchedWith } = reading;
   const language = settings.docLanguage ?? extracted.language ?? "English";
-  // E8-11: every part of the letter is a unit. The AI wrote the recipient
-  // and greeting; the sender and signature come from the profile, and the
-  // date is written now, in the letter's language.
-  const letter = withFrame(
-    documents.letter,
-    newFrame({
-      basics: profile.basics,
-      company: details.company,
-      location: details.location,
-      date: calendarDay(),
-      dateFormat: settings.dateFormat,
-      lang: documentLanguage(language, documents.letter.map((unit) => unit.text).join(" ")).lang,
-      labels: documentLabels(language),
-    }),
-  );
+  const letter = documents.letter && framedLetter(documents.letter, { profile, settings, company: details.company, location: details.location, language });
   const summary = tailoringSummary({
     profile,
     company: details.company,
@@ -149,13 +160,17 @@ export async function createApplicationFromDocuments({ reading, documents, match
               writtenWith: documents.resumeWith,
               versions: { create: { units: documents.resume, cause: "WRITTEN" } },
             },
-            {
-              kind: "COVER_LETTER",
-              units: letter,
-              themeId: settings.baseThemeId,
-              writtenWith: documents.letterWith,
-              versions: { create: { units: letter, cause: "WRITTEN" } },
-            },
+            ...(letter
+              ? [
+                  {
+                    kind: "COVER_LETTER" as const,
+                    units: letter,
+                    themeId: settings.baseThemeId,
+                    writtenWith: documents.letterWith,
+                    versions: { create: { units: letter, cause: "WRITTEN" as const } },
+                  },
+                ]
+              : []),
           ],
         },
         messages: { create: { role: "AI", text: summaryText(summary) } },

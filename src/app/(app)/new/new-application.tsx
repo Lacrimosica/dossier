@@ -56,6 +56,8 @@ export type Draft = {
   details: Details;
   tone: Tone;
   note: string;
+  /** Whether to write a cover letter too; missing in drafts from before, which did. */
+  coverLetter?: boolean;
   writeJobId: string | null;
   /** The Find jobs posting it was started from (E14-8); missing in drafts from before. */
   postingId?: string | null;
@@ -158,6 +160,7 @@ export function NewApplication({ aiReady, writeInClaude = false, samplePosting, 
     details: EMPTY_DETAILS,
     tone: defaultTone,
     note: "",
+    coverLetter: true,
     writeJobId: null,
     postingId: null,
   }));
@@ -311,13 +314,23 @@ export function NewApplication({ aiReady, writeInClaude = false, samplePosting, 
     if (!draft.read || !draft.readJobId || starting) return;
     setStarting(true);
     const result = toastResult(
-      await startWritingDocuments({ readJobId: draft.readJobId, details: draft.details, match: draft.read.match, tone: draft.tone, note: draft.note }),
+      await startWritingDocuments({
+        readJobId: draft.readJobId,
+        details: draft.details,
+        match: draft.read.match,
+        tone: draft.tone,
+        note: draft.note,
+        coverLetter: draft.coverLetter ?? true,
+      }),
     );
     setStarting(false);
     if (!result.ok) return;
     setSaveError(null);
     update({ step: "creating", writeJobId: result.data });
   };
+
+  // Without a cover letter, there's no step for writing one.
+  const writeSteps = (draft.coverLetter ?? true) ? WRITE_DOCUMENTS_STEPS : WRITE_DOCUMENTS_STEPS.filter((step) => step !== WRITE_DOCUMENTS_STEPS[1]);
 
   // Leaving while the AI works stops it; nothing gets created either way.
   const working =
@@ -443,7 +456,14 @@ export function NewApplication({ aiReady, writeInClaude = false, samplePosting, 
             <>
               <DetailsCard details={draft.details} onChange={(details) => update({ details })} />
               <MatchCard match={draft.read.match} requirements={draft.read.extracted.requirements} onAddSkill={(index, skill) => void addToProfile(index, skill)} />
-              <TailoringCard tone={draft.tone} note={draft.note} onTone={(tone) => update({ tone })} onNote={(note) => update({ note })} />
+              <TailoringCard
+                coverLetter={draft.coverLetter ?? true}
+                tone={draft.tone}
+                note={draft.note}
+                onCoverLetter={(coverLetter) => update({ coverLetter })}
+                onTone={(tone) => update({ tone })}
+                onNote={(note) => update({ note })}
+              />
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <Button variant="text" onClick={() => update({ step: "paste" })}>
                   ← Back to the posting
@@ -458,9 +478,9 @@ export function NewApplication({ aiReady, writeInClaude = false, samplePosting, 
           {draft.step === "creating" && (
             <JobProgress
               title="Putting your application together…"
-              steps={WRITE_DOCUMENTS_STEPS}
+              steps={writeSteps}
               // "Saving the application" is the last step, once the documents are written.
-              current={writeJob?.status === "DONE" ? 2 : jobStep(WRITE_DOCUMENTS_STEPS, writeJob)}
+              current={writeJob?.status === "DONE" ? writeSteps.length - 1 : jobStep(writeSteps, writeJob)}
               error={writeJob?.status === "FAILED" ? writeJob.error : saveError}
               onRetry={() => void retryCreating()}
               onBack={() => update({ step: "review" })}

@@ -2,7 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createTestClient, resetDatabase } from "@/test/db";
 
-import { deleteApplication, setArchived } from "./application-actions";
+import { deleteApplication, renameApplication, setArchived } from "./application-actions";
 
 const db = vi.hoisted(() => ({ client: undefined as ReturnType<typeof createTestClient> | undefined }));
 vi.mock("@/lib/prisma", async () => {
@@ -41,6 +41,22 @@ beforeEach(async () => {
   });
 });
 afterAll(() => prisma().$disconnect());
+
+describe("renameApplication", () => {
+  it("renames it, trimmed, keeping when it was last updated", async () => {
+    expect(await renameApplication({ id: "app-1", title: "  Ledgerly · Staff engineer  " })).toEqual({ ok: true, data: null });
+    expect(await prisma().application.findUniqueOrThrow({ where: { id: "app-1" } })).toMatchObject({ title: "Ledgerly · Staff engineer", updatedAt });
+  });
+
+  it("won't leave it without a name", async () => {
+    expect(await renameApplication({ id: "app-1", title: "   " })).toMatchObject({ ok: false });
+    expect(await prisma().application.findUniqueOrThrow({ where: { id: "app-1" } })).toMatchObject({ title: "" });
+  });
+
+  it("says so when the application is gone", async () => {
+    expect(await renameApplication({ id: "gone", title: "New name" })).toEqual({ ok: false, error: "That application no longer exists." });
+  });
+});
 
 describe("setArchived (E9-5)", () => {
   it("archives and brings back, keeping when it was last updated", async () => {

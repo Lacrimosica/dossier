@@ -54,7 +54,8 @@ async function finishedReading(id: string) {
 
 /**
  * "Create application →": writes the tailored documents in the background
- * (E7-6). The details as edited go into the prompts; nothing is saved yet.
+ * (E7-6), the cover letter only when asked for. The details as edited go
+ * into the prompts; nothing is saved yet.
  */
 export const startWritingDocuments = action(
   z.object({
@@ -63,8 +64,9 @@ export const startWritingDocuments = action(
     match: matchSchema,
     tone: z.enum(Tone),
     note: z.string().trim().max(2000),
+    coverLetter: z.boolean(),
   }),
-  async ({ readJobId, details, match, tone, note }) => {
+  async ({ readJobId, details, match, tone, note, coverLetter }) => {
     const reading = await finishedReading(readJobId);
     const orNull = (value: string) => value || null;
     const extracted = {
@@ -77,7 +79,7 @@ export const startWritingDocuments = action(
       salary: orNull(details.salary),
       deadline: orNull(details.deadline),
     };
-    return startJob(writeDocumentsJob, { readJobId, posting: reading.input.posting, extracted, match, tone, note });
+    return startJob(writeDocumentsJob, { readJobId, posting: reading.input.posting, extracted, match, tone, note, coverLetter });
   },
 );
 

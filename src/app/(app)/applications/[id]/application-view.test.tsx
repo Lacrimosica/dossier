@@ -28,6 +28,7 @@ import {
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
+  startWritingLetter,
   undoEmailRewrite,
   undoMessage,
   updateNote,
@@ -54,6 +55,7 @@ vi.mock("./actions", () => ({
   loadVersion: vi.fn(),
   restoreVersion: vi.fn(async () => ({ ok: true, data: null, toast: "Restored the resume as it was then." })),
   startWritingEmail: vi.fn(async () => ({ ok: true, data: "email-1" })),
+  startWritingLetter: vi.fn(async () => ({ ok: true, data: "letter-1" })),
   undoEmailRewrite: vi.fn(async () => ({ ok: true, data: null })),
 }));
 vi.mock("@/lib/copy-text", () => ({ copyText: vi.fn(async () => true) }));
@@ -108,6 +110,7 @@ const props: ApplicationViewProps = {
   meta: ["Amsterdam"],
   resume: { units: demoResumeUnits(), theme: theme("editorial") },
   letter: { units: demoLetterUnits(), theme: theme("editorial") },
+  writingLetter: null,
   themes: [...BUILT_IN_THEMES, { ...theme("modern"), id: "mine", name: "Mine", builtIn: false }],
   baseThemeId: "modern",
   email: null,
@@ -908,6 +911,32 @@ describe("version history (E8-10)", () => {
     expect(restoreVersion).toHaveBeenCalledWith({ id: props.application.id, versionId: "v1" });
     expect(router.refresh).toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Restore this version" })).not.toBeInTheDocument();
+  });
+});
+
+describe("a cover letter written later", () => {
+  it("offers to write one from the resume, then shows it", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ApplicationView {...props} initialTab="letter" letter={null} />);
+    expect(screen.getByRole("heading", { name: "No cover letter yet" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Download PDF" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Write a cover letter" }));
+    expect(startWritingLetter).toHaveBeenCalledWith({ id: "app-1" });
+    expect(screen.getByRole("button", { name: "Writing your cover letter…" })).toHaveAttribute("aria-disabled", "true");
+
+    report({ id: "letter-1", type: "write-letter", status: "DONE", result: { units: demoLetterUnits() } });
+    expect(router.refresh).toHaveBeenCalled();
+    expect(toast).toHaveBeenLastCalledWith("Wrote your cover letter. Refine it like the resume.");
+    rerender(<ApplicationView {...props} initialTab="letter" />);
+    expect(screen.getByRole("article", { name: "Cover letter" })).toBeInTheDocument();
+  });
+
+  it("keeps writing one started before a reload, and offers Retry when it fails", () => {
+    render(<ApplicationView {...props} initialTab="letter" letter={null} writingLetter="letter-7" />);
+    expect(screen.getByRole("button", { name: "Writing your cover letter…" })).toBeInTheDocument();
+    report({ id: "letter-7", type: "write-letter", status: "FAILED", error: "The AI server didn't answer in time." });
+    expect(screen.getByRole("button", { name: "Write a cover letter" })).toBeInTheDocument();
+    expect(toast).toHaveBeenLastCalledWith("The AI server didn't answer in time.", { action: expect.objectContaining({ label: "Retry" }) });
   });
 });
 

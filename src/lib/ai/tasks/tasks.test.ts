@@ -335,7 +335,7 @@ describe("writeCoverLetter", () => {
   it("returns the recipient, greeting, paragraphs and the tone's sign-off for an English letter (APP-10, E8-11)", async () => {
     const provider = model(answer);
     const { data, promptVersion } = await writeCoverLetter(provider, { profile, extracted, match, tone: "FORMAL", facts: [], posting }, options);
-    expect(promptVersion).toBe("write-cover-letter@5");
+    expect(promptVersion).toBe("write-cover-letter@6");
     expect(data).toEqual([
       { id: "recipient", label: "Recipient", text: "Ledgerly · Hiring team\nAmsterdam" },
       { id: "greeting", label: "Greeting", text: "Dear Ledgerly team," },
@@ -349,6 +349,17 @@ describe("writeCoverLetter", () => {
     expect(sent(provider).system).toContain(COVER_LETTER_APPROACH);
     // Gaps go along, so the letter can acknowledge them honestly.
     expect(prompt(provider)).toMatch(/"inProfile": "gap"/);
+  });
+
+  it("builds on the tailored resume when it's written afterwards", async () => {
+    const provider = model(answer);
+    const resume = [{ id: "summary", label: "Summary", text: "Product designer who ships payments flows." }];
+    await writeCoverLetter(provider, { profile, extracted, match, tone: "WARM", facts: [], posting, resume }, options);
+    expect(prompt(provider)).toContain("The tailored resume the letter goes with:\nSummary: Product designer who ships payments flows.");
+
+    const without = model(answer);
+    await writeCoverLetter(without, { profile, extracted, match, tone: "WARM", facts: [], posting }, options);
+    expect(prompt(without)).not.toContain("The tailored resume");
   });
 
   it("leaves out a recipient or greeting the model left empty, for the English ones to fill in", async () => {

@@ -37,7 +37,8 @@ export function tailoringSummary({
   role: string;
   match: Match;
   resume: Unit[];
-  letter: Unit[];
+  /** Null when the user chose not to have one written. */
+  letter: Unit[] | null;
   tone: Tone;
   note: string;
   /** Whether the tailored resume includes references, and why not when it doesn't. */
@@ -104,12 +105,12 @@ export function tailoringSummary({
     );
   }
 
-  if (letter.some(isParagraph)) list.push(`Wrote a ${TONES[tone].label.toLowerCase()} cover letter`);
+  if (letter?.some(isParagraph)) list.push(`Wrote a ${TONES[tone].label.toLowerCase()} cover letter`);
   const gaps = match.items.filter((item) => item.result === "gap").map((item) => `“${item.requirement}”`);
   if (gaps.length > 0) list.push(`Worth being ready to talk about ${listOf(gaps)}, since ${gaps.length === 1 ? "it isn't" : "they aren't"} in your profile`);
   if (note.trim()) list.push(`Took your note into account: “${note.trim()}”`);
 
-  const flagged = [...resume, ...letter].reduce((count, entry) => count + (entry.unverified?.length ?? 0), 0);
+  const flagged = [...resume, ...(letter ?? [])].reduce((count, entry) => count + (entry.unverified?.length ?? 0), 0);
   if (strict && flagged > 0) {
     list.push(`Marked ${flagged === 1 ? "one detail" : `${flagged} details`} to check (not in your profile or the posting)`);
   }
@@ -122,7 +123,7 @@ export function tailoringSummary({
 
   return showChanges
     ? { intro: `Here's what I tailored for ${where}:`, list, foot }
-    : { intro: `Your tailored resume and cover letter for ${where} are ready.`, list: [], foot };
+    : { intro: letter ? `Your tailored resume and cover letter for ${where} are ready.` : `Your tailored resume for ${where} is ready.`, list: [], foot };
 }
 
 /** The message as stored: intro, a bulleted list, the footnote. */

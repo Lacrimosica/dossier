@@ -325,6 +325,7 @@ describe("creating the application (E7-6)", () => {
       match: { items: [] },
       tone: "WARM",
       note: "Lean on research.",
+      coverLetter: true,
     });
     expect(screen.getByRole("heading", { name: "Putting your application together…" })).toBeInTheDocument();
     expect(screen.getByText("Tailored documents").closest("li")).toHaveAttribute("aria-current", "step");
@@ -334,6 +335,19 @@ describe("creating the application (E7-6)", () => {
     await vi.waitFor(() => expect(router.push).toHaveBeenCalledWith("/applications/app-1"));
     expect(createApplication).toHaveBeenCalledWith(expect.objectContaining({ writeJobId: "job-2", postingUrl: "" }));
     expect(toast).toHaveBeenCalledWith("Your application is ready. Nothing gets sent until you say so.");
+  });
+
+  it("can leave out the cover letter, and its step", async () => {
+    vi.mocked(startWritingDocuments).mockResolvedValue({ ok: true, data: "job-2" });
+    render(<NewApplication {...props} />);
+    await userEvent.type(screen.getByLabelText("Job posting"), "Ledgerly is hiring.");
+    await userEvent.click(screen.getByRole("button", { name: "Read the posting →" }));
+    emit({ status: "DONE", result: read });
+    await userEvent.click(screen.getByRole("switch", { name: "Write a cover letter" }));
+    expect(screen.queryByRole("radiogroup", { name: "Cover letter tone" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Create application →" }));
+    expect(startWritingDocuments).toHaveBeenCalledWith(expect.objectContaining({ coverLetter: false }));
+    expect(screen.queryByText("Writing your cover letter")).not.toBeInTheDocument();
   });
 
   it("offers Retry, keeping everything, when saving fails", async () => {

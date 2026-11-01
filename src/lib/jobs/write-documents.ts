@@ -15,7 +15,8 @@ import { defineJob } from "./runner";
 /**
  * Writes the tailored resume and cover letter (E7-6, NEW-7). Saves nothing:
  * the application is created from the result in one transaction afterwards,
- * so leaving midway leaves nothing behind.
+ * so leaving midway leaves nothing behind. Without a cover letter, its call
+ * to the AI isn't made at all, which saves the time and the tokens.
  */
 export const writeDocumentsJob = defineJob({
   type: "write-documents",
@@ -29,14 +30,18 @@ export const writeDocumentsJob = defineJob({
     match: matchSchema,
     tone: z.enum(Tone),
     note: z.string().max(2000),
+    /** Not every job asks for one; the agent and Claude chat always write it. */
+    coverLetter: z.boolean().default(true),
   }),
-  result: z.object({ resume: unitsSchema, resumeWith: z.string(), letter: unitsSchema, letterWith: z.string() }),
-  async run({ posting, extracted, match, tone, note }, { step, signal }) {
+  result: z.object({ resume: unitsSchema, resumeWith: z.string(), letter: unitsSchema.nullable(), letterWith: z.string().nullable() }),
+  async run({ posting, extracted, match, tone, note, coverLetter }, { step, signal }) {
     await step(WRITE_DOCUMENTS_STEPS[0]);
     const [provider, options, profile] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile()]);
     // "Anything I should know?" is the application's first fact (APP-15).
     const facts = note.trim() ? [note.trim()] : [];
     const resume = await tailorResume(provider, { profile, extracted, match, facts, posting }, { ...options, signal });
+
+    if (!coverLetter) return { resume: resume.data, resumeWith: resume.promptVersion, letter: null, letterWith: null };
 
     await step(WRITE_DOCUMENTS_STEPS[1]);
     const letter = await writeCoverLetter(provider, { profile, extracted, match, tone, facts, posting }, { ...options, signal });

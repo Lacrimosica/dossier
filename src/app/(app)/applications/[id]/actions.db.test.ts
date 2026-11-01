@@ -21,6 +21,7 @@ import {
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
+  startWritingLetter,
   undoEmailRewrite,
   undoMessage,
   updateNote,
@@ -577,6 +578,29 @@ describe("versions (E8-10)", () => {
     const version = await prisma().documentVersion.create({ data: { documentId: other.documents[0].id, units: resume, cause: "WRITTEN" } });
     expect(await loadVersion({ id: "app-1", versionId: version.id })).toMatchObject({ ok: false });
     expect(await restoreVersion({ id: "app-1", versionId: version.id })).toMatchObject({ ok: false });
+  });
+});
+
+describe("a cover letter written later", () => {
+  it("is written in the background, following a job already under way", async () => {
+    const first = await startWritingLetter({ id: "app-1" });
+    expect(first.ok).toBe(true);
+    expect(await prisma().job.findUniqueOrThrow({ where: { id: first.ok ? first.data : "" } })).toMatchObject({
+      type: "write-letter",
+      key: "letter:app-1",
+      applicationId: "app-1",
+      input: { applicationId: "app-1" },
+    });
+    expect(await startWritingLetter({ id: "app-1" })).toEqual(first);
+  });
+
+  it("isn't written over one there is, and needs an AI provider and the application", async () => {
+    expect(await startWritingLetter({ id: "gone" })).toEqual({ ok: false, error: "That application no longer exists." });
+    ai.ready = false;
+    expect(await startWritingLetter({ id: "app-1" })).toMatchObject({ ok: false, error: expect.stringMatching(/needs an AI provider/) });
+    ai.ready = true;
+    await prisma().document.create({ data: { applicationId: "app-1", kind: "COVER_LETTER", units: [] } });
+    expect(await startWritingLetter({ id: "app-1" })).toMatchObject({ ok: false, error: expect.stringMatching(/has a cover letter already/) });
   });
 });
 

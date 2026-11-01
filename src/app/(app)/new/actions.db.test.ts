@@ -50,7 +50,7 @@ const extracted = {
 const match = { items: [{ requirement: "Experience with payments", result: "gap" as const, skill: null, experienceIds: [], note: "Nothing in your profile" }] };
 const details = { title: "Designer at Ledgerly", company: "Ledgerly B.V.", role: "Senior Product Designer", location: "Amsterdam", mode: "Hybrid", salary: "", deadline: "2026-10-20" };
 
-async function finishedJobs() {
+async function finishedJobs({ coverLetter = true } = {}) {
   await prisma().job.create({
     data: {
       id: "read-job",
@@ -65,12 +65,12 @@ async function finishedJobs() {
       id: "write-job",
       type: "write-documents",
       status: "DONE",
-      input: { readJobId: "read-job", posting: "Ledgerly is hiring a Senior Product Designer.", extracted, match, tone: "FORMAL", note: "Relocating in January." },
+      input: { readJobId: "read-job", posting: "Ledgerly is hiring a Senior Product Designer.", extracted, match, tone: "FORMAL", note: "Relocating in January.", coverLetter },
       result: {
         resume: demoResumeUnits(),
         resumeWith: "tailor-resume@1",
-        letter: [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text: "Kind regards," }],
-        letterWith: "write-cover-letter@1",
+        letter: coverLetter ? [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text: "Kind regards," }] : null,
+        letterWith: coverLetter ? "write-cover-letter@1" : null,
       },
     },
   });
@@ -86,18 +86,19 @@ afterAll(() => prisma().$disconnect());
 describe("startWritingDocuments", () => {
   it("writes from the posting as read, with the details as edited (E7-6)", async () => {
     await finishedJobs();
-    expect(await startWritingDocuments({ readJobId: "read-job", details, match, tone: "WARM", note: "Hi" })).toEqual({ ok: true, data: "write-job" });
+    expect(await startWritingDocuments({ readJobId: "read-job", details, match, tone: "WARM", note: "Hi", coverLetter: false })).toEqual({ ok: true, data: "write-job" });
     expect(vi.mocked(startJob).mock.calls[0][1]).toMatchObject({
       readJobId: "read-job",
       posting: "Ledgerly is hiring a Senior Product Designer.",
       extracted: { company: "Ledgerly B.V.", title: "Designer at Ledgerly", salary: null, deadline: "2026-10-20", requirements: extracted.requirements },
       tone: "WARM",
       note: "Hi",
+      coverLetter: false,
     });
   });
 
   it("needs a finished reading", async () => {
-    expect(await startWritingDocuments({ readJobId: "gone", details, match, tone: "WARM", note: "" })).toMatchObject({
+    expect(await startWritingDocuments({ readJobId: "gone", details, match, tone: "WARM", note: "", coverLetter: true })).toMatchObject({
       ok: false,
       error: "That reading of the posting is no longer available. Read the posting again.",
     });
@@ -137,6 +138,15 @@ describe("createApplication", () => {
     expect(application.messages[0]).toMatchObject({ role: "AI", text: expect.stringMatching(/^Here's what I tailored for Ledgerly B\.V\.:\n\n- /) });
     expect(application.messages[0].text).toMatch(/Nothing invented: every line comes from your profile\.$/);
     expect(await prisma().job.count({ where: { key: `application:${id}`, applicationId: id } })).toBe(2);
+  });
+
+  it("creates it with only the resume when no cover letter was written", async () => {
+    await finishedJobs({ coverLetter: false });
+    const result = await createApplication({ writeJobId: "write-job", details, postingUrl: "" });
+    const id = result.ok ? result.data : "";
+    const application = await prisma().application.findUniqueOrThrow({ where: { id }, include: { documents: true, messages: true } });
+    expect(application.documents.map((document) => document.kind)).toEqual(["RESUME"]);
+    expect(application.messages[0].text).not.toMatch(/cover letter/);
   });
 
   it("links the Find jobs posting it was started from (E14-8)", async () => {
