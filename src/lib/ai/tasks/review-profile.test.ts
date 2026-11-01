@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { demoProfile } from "@/lib/demo-profile";
+import { buildFixes } from "@/lib/profile-review";
 
 import { MockProvider } from "../providers/mock";
 
@@ -21,7 +22,7 @@ describe("reviewProfile", () => {
   it("sends every entry with its id and raw dates, hidden courses too, and nothing private", async () => {
     const provider = new MockProvider({ reply: () => empty });
     const { data, promptVersion } = await reviewProfile(provider, { profile, skipped: ["merge:experience:x,y"] }, options);
-    expect(data).toEqual([]);
+    expect(data).toEqual(empty);
     expect(promptVersion).toBe(REVIEW_PROFILE_VERSION);
 
     const call = provider.calls[0];
@@ -38,11 +39,22 @@ describe("reviewProfile", () => {
     }
   });
 
-  it("builds the fixes from the profile, not from the answer's text", async () => {
-    const provider = new MockProvider({
-      reply: () => ({ ...empty, merges: [{ section: "experience", ids: [first.id, "copy", "gone"], keep: first.id, bullets: null, reason: "Entered twice." }, { section: "experience", ids: [first.id, "copy"], keep: "copy", bullets: null, reason: "Entered twice." }] }),
-    });
+  it("answers what the model said, for buildFixes to build from the profile", async () => {
+    const merges = [
+      { section: "experience", ids: [first.id, "copy", "gone"], keep: first.id, bullets: null, reason: "Entered twice." },
+      { section: "experience", ids: [first.id, "copy"], keep: "copy", bullets: null, reason: "Entered twice." },
+    ];
+    const provider = new MockProvider({ reply: () => ({ ...empty, merges }) });
     const { data } = await reviewProfile(provider, { profile, skipped: [] }, options);
-    expect(data).toEqual([{ kind: "merge", section: "experience", ids: [first.id, "copy"], keep: "copy", after: expect.objectContaining({ id: "copy", role: first.role.toUpperCase() }), reason: "Entered twice." }]);
+    expect(buildFixes(profile, data)).toEqual([
+      { kind: "merge", section: "experience", ids: [first.id, "copy"], keep: "copy", after: expect.objectContaining({ id: "copy", role: first.role.toUpperCase() }), reason: "Entered twice." },
+    ]);
+  });
+
+  it("asks again when the answer doesn't have the shape", async () => {
+    let calls = 0;
+    const provider = new MockProvider({ reply: () => (++calls === 1 ? { merges: "none" } : empty) });
+    await expect(reviewProfile(provider, { profile, skipped: [] }, options)).resolves.toMatchObject({ data: empty });
+    expect(provider.calls).toHaveLength(2);
   });
 });

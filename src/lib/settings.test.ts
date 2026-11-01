@@ -56,6 +56,7 @@ describe("stored settings", () => {
       projectOrder: "date",
       educationOrder: "date",
       courseOrder: "date",
+      reviewSkipped: [],
       backupProblem: null,
       jobSource: null,
       jsearchKeyEnc: null,

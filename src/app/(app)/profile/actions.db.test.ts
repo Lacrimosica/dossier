@@ -6,6 +6,7 @@ import { createTestClient, resetDatabase } from "@/test/db";
 import {
   addLanguage,
   applyProfileImport,
+  applyProfileReview,
   addSkill,
   attachNewProjectSkill,
   attachNewSkill,
@@ -16,6 +17,7 @@ import {
   createPublication,
   createReference,
   discardProfileImport,
+  discardProfileReview,
   moveEducationToCourses,
   removeCourse,
   removeEducation,
@@ -47,6 +49,7 @@ import {
   setExperienceSkill,
   setLanguageLevel,
   sortEntriesByDate,
+  startProfileReview,
 } from "./actions";
 
 // The actions run against the test database, signed in.
@@ -60,6 +63,8 @@ vi.mock("@/lib/auth/session", () => ({
   getSession: async () => ({ persistent: false, issuedAt: new Date(), expiresAt: new Date(Date.now() + 60_000) }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+// No AI provider from the environment: the review needs one set in Settings.
+vi.mock("@/lib/env", () => ({ env: { DOSSIER_SECRET: "a".repeat(32) } }));
 
 const prisma = () => db.client!;
 
@@ -499,3 +504,56 @@ describe("applying a profile read from a resume (E4-10)", () => {
   });
 });
 
+
+describe("the profile review (.scratch/profile-review)", () => {
+  const empty = { merges: [], edits: [], deletions: [], skillMerges: [] };
+  const merge = { section: "experience", ids: ["a", "b"], keep: "a", bullets: null, reason: "Entered twice." };
+  const finished = async (answer: object) => {
+    const versions = Object.fromEntries((await prisma().experience.findMany()).map((entry) => [`experience:${entry.id}`, entry.updatedAt.toISOString()]));
+    return prisma().job.create({ data: { type: "review-profile", input: {}, status: "DONE", result: { answer, versions, reviewedWith: "review-profile@1" } } });
+  };
+
+  beforeEach(async () => {
+    await prisma().experience.createMany({ data: [{ id: "a", role: "Designer", company: "Acme" }, { id: "b", role: "Designer", company: "ACME" }] });
+  });
+
+  it("needs an AI provider to start", async () => {
+    expect(await startProfileReview({})).toEqual({ ok: false, error: "Choose an AI provider in Settings first: it's what reviews your profile." });
+    expect(await prisma().job.count()).toBe(0);
+  });
+
+  it("applies the chosen fixes and says so", async () => {
+    const job = await finished({ ...empty, merges: [merge] });
+    expect(await applyProfileReview({ jobId: job.id, apply: ["merge:experience:a,b"] })).toEqual({ ok: true, data: null, toast: "Applied 1 fix." });
+    expect(await prisma().experience.findMany({ select: { id: true } })).toEqual([{ id: "a" }]);
+    expect(await prisma().job.count()).toBe(0);
+  });
+
+  it("says when a fix was left out because its entry changed after the review", async () => {
+    const job = await finished({ ...empty, merges: [merge] });
+    await prisma().experience.update({ where: { id: "b" }, data: { location: "Berlin" } });
+    expect(await applyProfileReview({ jobId: job.id, apply: ["merge:experience:a,b"] })).toEqual({
+      ok: true,
+      data: null,
+      toast: "Nothing changed. One was left out because you changed that entry after the review.",
+    });
+  });
+
+  it("refuses a review that isn't finished or isn't a review", async () => {
+    const running = await prisma().job.create({ data: { type: "review-profile", input: {}, status: "RUNNING" } });
+    const other = await prisma().job.create({ data: { type: "import-profile", input: {}, status: "DONE", result: {} } });
+    for (const job of [running, other]) {
+      expect(await applyProfileReview({ jobId: job.id, apply: [] })).toEqual({ ok: false, error: "That review isn't finished, or it's no longer there. Review your profile again." });
+    }
+  });
+
+  it("discards a finished review, remembering its fixes as skipped, and only that job", async () => {
+    const job = await finished({ ...empty, merges: [merge] });
+    const other = await prisma().job.create({ data: { type: "read-posting", input: {}, status: "DONE" } });
+    expect(await discardProfileReview({ jobId: job.id })).toEqual({ ok: true, data: null });
+    expect(await discardProfileReview({ jobId: other.id })).toEqual({ ok: true, data: null });
+    expect(await prisma().job.findMany({ select: { id: true } })).toEqual([{ id: other.id }]);
+    expect(await prisma().experience.count()).toBe(2);
+    expect(await prisma().setting.findUnique({ where: { key: "reviewSkipped" } })).toMatchObject({ value: '["merge:experience:a,b"]' });
+  });
+});

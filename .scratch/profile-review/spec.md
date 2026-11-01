@@ -79,9 +79,9 @@ An edit may only:
 
 A fix is dropped when any id doesn't exist in its section, `keep` isn't one of `ids`, an id appears in an earlier fix, an edit breaks the rules above or changes nothing, or it matches a skipped fix. Because nothing new can get in, the fact guard isn't needed, whatever the strict-mode setting.
 
-**Job.** A `review-profile` job in `src/lib/jobs/`, registered in `jobs/definitions.ts`, modelled on `import-profile`. Steps: "Reading your profile", "Looking for mistakes". Its result is the checked fixes plus, for each entry a fix touches, that entry's `updatedAt` at review time. The job holds a copy of profile data, so it follows the same rule as a resume import: it's deleted when the user applies or discards, and the retention sweep removes it if they never do. Starting a new review discards any earlier one.
+**Job.** A `review-profile` job in `src/lib/jobs/`, registered in `jobs/definitions.ts`, modelled on `import-profile`. Steps: "Reading your profile", "Looking for mistakes". Its result is the model's answer (shape-checked, nothing more) and when every entry was last saved (`updatedAt` by `section:id`). The fixes are never stored: the dialog and the apply action both rebuild them with `buildFixes` from the profile as it is then, so only values read from the database are ever written back. The job is deleted when the user applies or discards, and the retention sweep removes it if they never do. Starting a new review discards any earlier one.
 
-**Applying.** A `applyProfileReview` Server Action in the profile `actions.ts` takes the job id and the ids of the chosen fixes. In one transaction:
+**Applying.** A `applyProfileReview` Server Action in the profile `actions.ts` takes the job id and the fingerprints of the chosen fixes, rebuilds the fixes, and in one transaction (`settleProfileReview` in `src/lib/profile-review-apply.ts`):
 - skips any fix whose entries' `updatedAt` has changed since the review, and counts them for the toast
 - `merge`: updates the `keep` entry with `merged`, moves skill links from the others onto it (ignoring links it already has), deletes the others. Its `sort` stays, so manual order holds.
 - `edit`: updates only the fields in `patch`

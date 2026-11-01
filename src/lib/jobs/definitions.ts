@@ -9,6 +9,7 @@ import "./refine";
 import "./write-email";
 import "./zip-pdfs";
 import "./import-profile";
+import "./review-profile";
 import "./draft-reply";
 import "@/lib/agent/jobs";
 import "@/lib/agent/draft";

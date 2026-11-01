@@ -32,6 +32,9 @@ export type ProfileFix =
   | { [S in ReviewSection]: SectionFix<S> }[ReviewSection]
   | { kind: "mergeSkills"; ids: string[]; keep: string; reason: string };
 
+/** What the review's progress shows while it runs. */
+export const REVIEW_PROFILE_STEPS = ["Reading your profile", "Looking for mistakes"] as const;
+
 /** The most fixes one review shows; a profile needing more is better reviewed again after. */
 export const MAX_FIXES = 50;
 const MAX_REASON = 300;
@@ -105,6 +108,29 @@ export function buildFixes(profile: ProfileData, answer: ReviewAnswer, skipped: 
   }
 
   return fixes;
+}
+
+/** How many skipped fixes are remembered; the oldest go first. */
+export const MAX_SKIPPED = 200;
+
+/**
+ * The skipped fixes to keep: the earlier ones whose entries are all still
+ * there, then the new ones, without repeats and within MAX_SKIPPED.
+ */
+export function rememberSkipped(profile: ProfileData, earlier: readonly string[], added: readonly string[]): string[] {
+  const exists = (fingerprint: string) => {
+    const [, section, ids = ""] = fingerprint.split(":");
+    const known = section === "skills" ? profile.skills : (REVIEW_SECTIONS as readonly string[]).includes(section) ? profile[section as ReviewSection] : null;
+    return known !== null && ids.split(",").every((id) => known.some((entry) => entry.id === id));
+  };
+  const kept = [...new Set([...earlier.filter(exists), ...added])];
+  return kept.slice(Math.max(0, kept.length - MAX_SKIPPED));
+}
+
+/** The "section:id" of every profile entry a fix changes or deletes; skills aren't dated, so a skill merge has none. */
+export function fixEntryKeys(fix: ProfileFix): string[] {
+  if (fix.kind === "mergeSkills") return [];
+  return keysFor(fix.section, fix.kind === "merge" ? fix.ids : [fix.id]);
 }
 
 function keysFor(section: ReviewSection | "skills", ids: string[]): string[] {

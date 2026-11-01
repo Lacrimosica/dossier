@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import type { DateSpan, ProfileData } from "@/lib/profile";
-import { buildFixes, REVIEW_SECTIONS, type ProfileFix, type ReviewAnswer } from "@/lib/profile-review";
+import { REVIEW_SECTIONS, type ReviewAnswer } from "@/lib/profile-review";
 
 import { system, type Task } from "./prompt-parts";
 
@@ -9,12 +9,14 @@ export const REVIEW_PROFILE_VERSION = "review-profile@1";
 
 // The profile review (.scratch/profile-review): the model looks for the same
 // entry entered twice and for entries that contradict themselves. It only
-// points at entries by id; buildFixes assembles every fix from the profile.
-// Four plain lists rather than one union, which small local models and
-// strict JSON-schema modes handle best.
+// points at entries by id; buildFixes assembles every fix from the profile,
+// each time they're shown or applied, so nothing the model wrote is ever
+// saved. Four plain lists rather than one union, which small local models
+// and strict JSON-schema modes handle best.
 
 const section = z.enum(REVIEW_SECTIONS);
-const answerSchema = z.object({
+/** The answer's shape; buildFixes decides what in it can be trusted. */
+export const reviewAnswerSchema = z.object({
   merges: z.array(z.object({ section, ids: z.array(z.string()), keep: z.string(), bullets: z.array(z.string()).nullable(), reason: z.string() })),
   edits: z.array(
     z.object({
@@ -85,16 +87,16 @@ export function profileForReview(profile: ProfileData, skipped: readonly string[
   );
 }
 
-/** The fixes the profile needs, each built from the profile itself (buildFixes); `skipped` holds fingerprints the user turned down. */
-export const reviewProfile: Task<{ profile: ProfileData; skipped: readonly string[] }, ProfileFix[]> = async (provider, { profile, skipped }, { signal }) => {
+/** What the model thinks the profile needs, for buildFixes; `skipped` holds fingerprints the user turned down. */
+export const reviewProfile: Task<{ profile: ProfileData; skipped: readonly string[] }, ReviewAnswer> = async (provider, { profile, skipped }, { signal }) => {
   const answer = await provider.complete({
     system: system(INSTRUCTIONS),
     messages: [{ role: "user", content: `The candidate's profile:\n${profileForReview(profile, skipped)}` }],
-    schema: answerSchema,
+    schema: reviewAnswerSchema,
     schemaName: "profile_review",
     // Comparing, not writing: stay literal, and let it think it through.
     creativity: "FAITHFUL",
     signal,
   });
-  return { data: buildFixes(profile, answer, skipped), promptVersion: REVIEW_PROFILE_VERSION };
+  return { data: answer, promptVersion: REVIEW_PROFILE_VERSION };
 };

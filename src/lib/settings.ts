@@ -143,6 +143,8 @@ export const settingsSchema = z.object({
   projectOrder: z.enum(["date", "manual"]).catch("date"),
   educationOrder: z.enum(["date", "manual"]).catch("date"),
   courseOrder: z.enum(["date", "manual"]).catch("date"),
+  /** Profile review fixes the user turned down (fixFingerprint), so they aren't proposed again. */
+  reviewSkipped: stringList.catch([]),
   /** Why the last nightly backup failed; null once one works again (E10-7). */
   backupProblem: z.string().nullable().catch(null),
   // Job search (E14-4). Null means "not set in the app": DOSSIER_JOBS_SOURCE

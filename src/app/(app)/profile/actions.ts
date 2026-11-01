@@ -9,11 +9,16 @@ import { action, ActionError } from "@/lib/action";
 import { prisma } from "@/lib/prisma";
 import { fieldsFromBasics, inEntryOrder } from "@/lib/profile";
 import { findOrCreateSkill, firstSort, nextSort } from "@/lib/profile-entries";
+import { isAiConfigured } from "@/lib/ai/config";
 import { discardProfileImports, importProfileJob } from "@/lib/jobs/import-profile";
+import { discardProfileReviews, reviewProfileJob, type ReviewProfileResult } from "@/lib/jobs/review-profile";
+import { startJob } from "@/lib/jobs/runner";
 import { isPhotoDataUrl, PHOTO_KEY, PHOTO_MAX_LENGTH, PHOTO_ON_RESUMES_KEY } from "@/lib/photo";
 import { loadProfileName } from "@/lib/profile-data";
 import { importCounts } from "@/lib/profile-import";
 import { applyImportedProfile } from "@/lib/profile-import-apply";
+import { MAX_FIXES } from "@/lib/profile-review";
+import { settleProfileReview } from "@/lib/profile-review-apply";
 import { loadSettings, saveSettings } from "@/lib/settings-data";
 
 // Every profile change saves through these actions; they all check the
@@ -575,6 +580,54 @@ export const applyProfileImport = action(
 /** "Choose another file": the reading is deleted, with the resume's text, and stopped if it's under way. */
 export const discardProfileImport = action(z.object({ jobId: id }), async ({ jobId }) => {
   await discardProfileImports(jobId);
+  return null;
+});
+
+// ─── Profile review (.scratch/profile-review) ───────────────────────────────
+
+/** "Review my profile": starts a review, discarding any earlier one. */
+export const startProfileReview = action(z.object({}), async () => {
+  if (!(await isAiConfigured())) throw new ActionError("Choose an AI provider in Settings first: it's what reviews your profile.");
+  await discardProfileReviews();
+  return { jobId: await startJob(reviewProfileJob, {}, { key: "profile-review" }) };
+});
+
+/** A finished review's result, or an error the user can act on. */
+async function finishedReview(jobId: string): Promise<ReviewProfileResult> {
+  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { type: true, status: true, result: true } });
+  if (job?.type !== reviewProfileJob.type || job.status !== JobStatus.DONE) {
+    throw new ActionError("That review isn't finished, or it's no longer there. Review your profile again.");
+  }
+  return reviewProfileJob.result.parse(job.result);
+}
+
+const fingerprints = z.array(z.string().max(4_000)).max(MAX_FIXES);
+
+/** Applies the fixes the user kept (by fixFingerprint); the rest won't be proposed again. */
+export const applyProfileReview = action(z.object({ jobId: id, apply: fingerprints }), async ({ jobId, apply }, { toast }) => {
+  const review = await finishedReview(jobId);
+  const { applied, changed } = await settleProfileReview(prisma, { jobId, ...review }, apply);
+  revalidatePath("/", "layout");
+  const done =
+    applied === 0 ? "Nothing changed." : applied === 1 ? "Applied 1 fix." : `Applied ${applied} fixes.`;
+  const stale =
+    changed === 0
+      ? ""
+      : changed === 1
+        ? " One was left out because you changed that entry after the review."
+        : ` ${changed} were left out because you changed those entries after the review.`;
+  toast(done + stale);
+  return null;
+});
+
+/** "Discard": none of the fixes are applied, and none are proposed again. A review still under way is just stopped. */
+export const discardProfileReview = action(z.object({ jobId: id }), async ({ jobId }) => {
+  const job = await prisma.job.findUnique({ where: { id: jobId }, select: { type: true, status: true } });
+  if (job?.type === reviewProfileJob.type && job.status === JobStatus.DONE) {
+    await settleProfileReview(prisma, { jobId, ...(await finishedReview(jobId)) }, []);
+  } else {
+    await discardProfileReviews(jobId);
+  }
   return null;
 });
 

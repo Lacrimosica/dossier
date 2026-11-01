@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { demoProfile } from "@/lib/demo-profile";
 import type { CourseItem, ExperienceItem, ProfileData } from "@/lib/profile";
 
-import { buildFixes, fixFingerprint, MAX_FIXES, type ReviewAnswer } from "./profile-review";
+import { buildFixes, fixEntryKeys, fixFingerprint, MAX_FIXES, MAX_SKIPPED, rememberSkipped, type ReviewAnswer } from "./profile-review";
 
 const role = (id: string, fields: Partial<ExperienceItem> = {}): ExperienceItem => ({
   id,
@@ -206,5 +206,26 @@ describe("buildFixes: deletions, skills and the rules for every fix", () => {
     expect(fixes).toHaveLength(MAX_FIXES);
     expect(fixes[0].reason).toHaveLength(300);
     expect(fixes[1].reason).toBe("This entry looks empty.");
+  });
+});
+
+describe("rememberSkipped and fixEntryKeys", () => {
+  it("keeps earlier fingerprints whose entries are all there, adds new ones once, and drops the oldest past the limit", () => {
+    const known = profile({ experience: [role("a"), role("b")], skills: [{ id: "s1", name: "JS" }] });
+    expect(rememberSkipped(known, ["merge:experience:a,b", "merge:experience:a,gone", "delete:skills:s1", "nonsense"], ["delete:experience:a", "merge:experience:a,b"])).toEqual([
+      "merge:experience:a,b",
+      "delete:skills:s1",
+      "delete:experience:a",
+    ]);
+    const many = Array.from({ length: MAX_SKIPPED + 3 }, () => "delete:experience:a");
+    const added = many.map((_, index) => `merge:experience:a,b${"".padEnd(index, ",a")}`);
+    const kept = rememberSkipped(known, [], added);
+    expect(kept).toHaveLength(MAX_SKIPPED);
+    expect(kept.at(-1)).toBe(added.at(-1));
+  });
+
+  it("names the entries a fix changes, and none for skills", () => {
+    expect(fixEntryKeys({ kind: "delete", section: "courses", id: "c", reason: "" })).toEqual(["courses:c"]);
+    expect(fixEntryKeys({ kind: "mergeSkills", ids: ["s1", "s2"], keep: "s1", reason: "" })).toEqual([]);
   });
 });
