@@ -6,6 +6,7 @@ export { MATCH_REQUIREMENTS_VERSION, matchRequirements } from "./match-requireme
 export type { TaskOptions, TaskResult } from "./prompt-parts";
 export { REFINE_CHAT_VERSION, refineChat, type ChatTurn, type Refinement } from "./refine-chat";
 export { REGENERATE_UNIT_VERSION, regenerateUnit } from "./regenerate-unit";
+export { REVIEW_PROFILE_VERSION, reviewProfile } from "./review-profile";
 export { TAILOR_RESUME_VERSION, tailorResume } from "./tailor-resume";
 export { WRITE_COVER_LETTER_VERSION, writeCoverLetter } from "./write-cover-letter";
 export { WRITE_EMAIL_VERSION, writeEmail } from "./write-email";

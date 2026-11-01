@@ -95,6 +95,28 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
     };
   },
 
+  // The profile review: the first two roles at the same company, and the
+  // first two skills that are the same name but for case, punctuation and
+  // ".js", so a spec gets fixes once it sets up such duplicates.
+  profile_review: (messages) => {
+    const { experience, skills } = section(messages[1].content, "The candidate's profile:\n") as {
+      experience: { id: string; company: string }[];
+      skills: { id: string; name: string }[];
+    };
+    const company = (entry: { company: string }) => entry.company.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/inc$/, "");
+    const first = experience.find((entry, index) => experience.some((other, at) => at > index && company(other) === company(entry)));
+    const twin = first && experience.find((other) => other !== first && company(other) === company(first));
+    const skill = (name: string) => name.toLowerCase().replace(/\.js$/, "").replace(/[^a-z0-9]/g, "");
+    const one = skills.find((entry, index) => skills.some((other, at) => at > index && skill(other.name) === skill(entry.name)));
+    const two = one && skills.find((other) => other !== one && skill(other.name) === skill(one.name));
+    return {
+      merges: first && twin ? [{ section: "experience", ids: [first.id, twin.id], keep: first.id, bullets: null, reason: `Both are your role at ${first.company}, entered twice.` }] : [],
+      edits: [],
+      deletions: [],
+      skillMerges: one && two ? [{ ids: [one.id, two.id], keep: one.id, reason: `"${one.name}" and "${two.name}" are the same skill.` }] : [],
+    };
+  },
+
   cover_letter: () => ({
     recipient: "Ledgerly · Hiring team\nAmsterdam",
     greeting: "Dear Ledgerly team,",
