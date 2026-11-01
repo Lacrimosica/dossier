@@ -11,7 +11,10 @@ import { Select } from "@/components/ui/select";
 import { LanguageLevel } from "@/generated/prisma/enums";
 import { LANGUAGE_LEVELS, languageLevelLabel, sameName, type ProfileData } from "@/lib/profile";
 
+import { spokenLanguage } from "@/lib/languages";
+
 import { addLanguage, addSkill, removeLanguage, removeSkill, setLanguageLevel } from "./actions";
+import { LanguagePicker, type PickedLanguage } from "./language-picker";
 import { useTrackSave } from "@/components/save-tracker";
 
 export type UpdateProfile = (change: (profile: ProfileData) => ProfileData) => void;
@@ -142,14 +145,18 @@ function LevelOptions() {
 /** Languages with a CEFR-style level (PRO-4). */
 function LanguagesCard({ profile, update }: { profile: ProfileData; update: UpdateProfile }) {
   const track = useTrackSave();
-  const [name, setName] = useState("");
+  const [picked, setPicked] = useState<PickedLanguage>({ code: null, name: "" });
   const [level, setLevel] = useState<LanguageLevel>(LanguageLevel.B1);
 
   async function add() {
-    const trimmed = name.trim();
+    const trimmed = picked.name.trim();
     if (!trimmed) return;
-    const existing = profile.languages.find((language) => sameName(language.name, trimmed));
-    setName("");
+    // A typed name the list knows is that language: "Inglese" is the English already there (.scratch/language-codes).
+    const spoken = picked.code ? picked : spokenLanguage(trimmed);
+    const existing = profile.languages.find((language) =>
+      spoken.code ? language.code === spoken.code : !language.code && sameName(language.name, spoken.name),
+    );
+    setPicked({ code: null, name: "" });
     if (existing) {
       // Adding a language that's already there updates its level (PRO-4).
       update((current) => ({
@@ -160,9 +167,9 @@ function LanguagesCard({ profile, update }: { profile: ProfileData; update: Upda
       }));
       toast(`Updated ${existing.name} to ${languageLevelLabel(level)}.`);
     }
-    const result = await track(addLanguage({ name: trimmed, level }));
+    const result = await track(addLanguage({ name: spoken.name, code: spoken.code, level }));
     if (!result.ok) {
-      setName(trimmed);
+      setPicked(picked);
       toast(result.error);
       return;
     }
@@ -225,18 +232,7 @@ function LanguagesCard({ profile, update }: { profile: ProfileData; update: Upda
         </ul>
       )}
       <div className="flex flex-wrap gap-2">
-        <Input
-          className="min-w-0 flex-[1_1_180px]"
-          aria-label="Language"
-          placeholder="Language, e.g. French"
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            void add();
-          }}
-        />
+        <LanguagePicker className="min-w-0 flex-[1_1_180px]" value={picked} onChange={setPicked} onSubmit={() => void add()} />
         <Select
           className="flex-[0_1_220px]"
           aria-label="Level"

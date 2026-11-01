@@ -141,6 +141,13 @@ describe("matchRequirements", () => {
     expect(data.items[1]).toMatchObject({ skill: "Design systems", experienceIds: ["e1"] });
   });
 
+  it("matches a language by its code, however the posting or the model names it (.scratch/language-codes)", async () => {
+    const requirement = { text: "Ottima conoscenza dell'olandese", kind: "language" as const, skill: null, years: null, language: "Olandese" };
+    const provider = model({ matches: [{ requirement: 0, skill: null, language: "Nederlands" }] });
+    const { data } = await matchRequirements(provider, { requirements: [requirement], profile, today }, options);
+    expect(data.items[0]).toMatchObject({ result: "covered", skill: "Dutch", note: "Dutch: Native" });
+  });
+
   it("calls a skill in the profile but in no role partial", async () => {
     const unlinked = { ...profile, experience: profile.experience.map((entry) => ({ ...entry, skillIds: [] })) };
     const { data } = await matchRequirements(model(answer), { requirements: extracted.requirements, profile: unlinked, today }, options);
@@ -293,8 +300,9 @@ describe("tailorResume", () => {
       const { data } = await tailorResume(model(answer), { profile, extracted: { ...extracted, language: postingLanguage }, match: null, facts: [], posting }, { ...options, language });
       return data.find((unit) => unit.id === "languages")?.text;
     };
-    expect(await levels(null, "German")).toBe("Dutch: Muttersprache · English: Fließend (C2) · German: Mittelstufe (B1)");
-    expect(await levels("French", "German")).toBe("Dutch: Langue maternelle · English: Courant (C2) · German: Intermédiaire (B1)");
+    // Each language is named in the resume's language too (.scratch/language-codes).
+    expect(await levels(null, "German")).toBe("Niederländisch: Muttersprache · Englisch: Fließend (C2) · Deutsch: Mittelstufe (B1)");
+    expect(await levels("French", "German")).toBe("Néerlandais: Langue maternelle · Anglais: Courant (C2) · Allemand: Intermédiaire (B1)");
   });
 
   it("asks for a resume that fits the page limit, when there is one (E10-10)", async () => {

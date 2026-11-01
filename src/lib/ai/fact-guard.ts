@@ -1,5 +1,6 @@
 import type { Extracted, Unit } from "@/lib/application-data";
 import { citationText } from "@/lib/citation";
+import { languageNames } from "@/lib/languages";
 import { experienceMonths, formatDateRange, languageLevelLabel, type ProfileData } from "@/lib/profile";
 
 // The fact guard (E6-6, PRD §7, §12 "zero invented facts"): after each
@@ -67,6 +68,8 @@ export function sourcesFor(profile: ProfileData, extracted: Extracted | null, po
     basics.name, basics.headline, basics.city, basics.country, basics.summary,
     ...profile.skills.map((skill) => skill.name),
     ...profile.languages.map((language) => `${language.name} ${languageLevelLabel(language.level)}`),
+    // A document in another language names them in its own words: "Inglese" (.scratch/language-codes).
+    ...profile.languages.flatMap((language) => (language.code ? languageNames(language.code) : [])),
     ...profile.experience.flatMap((entry) => [entry.role, entry.company, entry.location, formatDateRange(entry), entry.bullets]),
     ...profile.projects.flatMap((entry) => [entry.name, entry.link, formatDateRange(entry), entry.bullets]),
     ...profile.education.flatMap((entry) => [entry.degree, entry.school, formatDateRange(entry), entry.notes]),

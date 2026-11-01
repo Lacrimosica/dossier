@@ -2,6 +2,8 @@ import "server-only";
 
 import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { citationText } from "@/lib/citation";
+import { findSpokenLanguage } from "@/lib/language-data";
+import { spokenLanguage } from "@/lib/languages";
 import { BASICS_FIELDS, sameName } from "@/lib/profile";
 import type { ImportedProfile, ImportMode } from "@/lib/profile-import";
 import { settingsFromRows } from "@/lib/settings";
@@ -131,9 +133,11 @@ async function applySkills(tx: Tx, profile: ImportedProfile): Promise<Map<string
 async function applyLanguages(tx: Tx, profile: ImportedProfile): Promise<void> {
   let sort = ((await tx.language.aggregate({ _max: { sort: true } }))._max.sort ?? -1) + 1;
   for (const { name, level, levelGiven } of profile.languages) {
-    const existing = await tx.language.findUnique({ where: { name } });
-    if (!existing) await tx.language.create({ data: { name, level, sort: sort++ } });
-    else if (levelGiven) await tx.language.update({ where: { id: existing.id }, data: { level } });
+    // "Italiano" from an Italian resume is the `it` already there (.scratch/language-codes).
+    const spoken = spokenLanguage(name);
+    const existing = await findSpokenLanguage(tx, spoken);
+    if (!existing) await tx.language.create({ data: { ...spoken, level, sort: sort++ } });
+    else await tx.language.update({ where: { id: existing.id }, data: { ...spoken, ...(levelGiven ? { level } : {}) } });
   }
 }
 

@@ -1,5 +1,6 @@
 import { LanguageLevel } from "@/generated/prisma/enums";
 import { knownLanguage } from "@/lib/document-language";
+import { spokenLanguageName } from "@/lib/languages";
 import { LANGUAGE_LEVELS } from "@/lib/profile";
 
 // The words a document adds around the profile's own: section headings,
@@ -419,8 +420,9 @@ export function documentLabels(language: string | null | undefined): DocumentLab
 }
 
 /** "Dutch: Native · English: Fluent (C2)", the profile's languages as a resume lists them. */
-export function languagesLine(languages: readonly { name: string; level: LanguageLevel }[], labels: DocumentLabels): string {
-  return languages.map((language) => `${language.name}: ${labels.levels[language.level]}`).join(" · ");
+export function languagesLine(languages: readonly { code?: string | null; name: string; level: LanguageLevel }[], labels: DocumentLabels): string {
+  // Each language named in the document's language: "Inglese" on an Italian resume (.scratch/language-codes).
+  return languages.map((language) => `${spokenLanguageName(language, labels.locale)}: ${labels.levels[language.level]}`).join(" · ");
 }
 
 /** "Age 34", in the document's language and digits. */

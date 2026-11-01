@@ -16,7 +16,7 @@ describe("profile schema", () => {
     );
   });
 
-  it("treats skill and language names as unique ignoring case", async () => {
+  it("treats skill names as unique ignoring case, and languages as unique by code", async () => {
     await db.skill.create({ data: { name: "Figma" } });
     await expect(db.skill.create({ data: { name: "figma" } })).rejects.toSatisfy(
       (error) => error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002",
@@ -25,8 +25,9 @@ describe("profile schema", () => {
       name: "Figma",
     });
 
-    await db.language.create({ data: { name: "Dutch", level: "NATIVE" } });
-    await expect(db.language.create({ data: { name: "DUTCH", level: "C1" } })).rejects.toThrow();
+    // "Nederlands" and "Dutch" are the same `nl` (.scratch/language-codes).
+    await db.language.create({ data: { code: "nl", name: "Dutch", level: "NATIVE" } });
+    await expect(db.language.create({ data: { code: "nl", name: "Nederlands", level: "C1" } })).rejects.toThrow();
   });
 
   it("removes a skill's role links when the skill or the role is deleted", async () => {

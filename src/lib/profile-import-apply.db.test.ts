@@ -114,6 +114,23 @@ describe("applyImportedProfile (E4-10)", () => {
     expect(references[0]).toMatchObject({ relation: "Manager", company: "Fieldnote", email: "jane.doe@example.com" });
   });
 
+  it("recognises a language the file names in its own language, and one it lists twice (.scratch/language-codes)", async () => {
+    await prisma().language.create({ data: { code: "it", name: "Italian", level: LanguageLevel.B1, sort: 0 } });
+    await applyImportedProfile(prisma(), {
+      ...imported,
+      languages: [
+        { name: "Italiano", level: LanguageLevel.C1, levelGiven: true },
+        { name: "Inglese", level: LanguageLevel.C2, levelGiven: true },
+        { name: "English", level: LanguageLevel.B2, levelGiven: false },
+      ],
+    }, "merge");
+    const languages = await prisma().language.findMany({ orderBy: { sort: "asc" }, select: { code: true, name: true, level: true } });
+    expect(languages).toEqual([
+      { code: "it", name: "Italian", level: "C1" },
+      { code: "en", name: "English", level: "C2" },
+    ]);
+  });
+
   it("puts new entries first in a section ordered by hand", async () => {
     await existingProfile();
     await prisma().setting.create({ data: { key: "experienceOrder", value: "manual" } });

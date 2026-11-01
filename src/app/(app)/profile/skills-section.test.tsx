@@ -25,7 +25,7 @@ const profile = (): ProfileData => ({
     { id: "s1", name: "Figma" },
     { id: "s2", name: "User research" },
   ],
-  languages: [{ id: "l1", name: "Dutch", level: "NATIVE" }],
+  languages: [{ id: "l1", code: "nl", name: "Dutch", level: "NATIVE" }],
   experience: [
     { id: "e1", role: "A", company: "", location: "", bullets: "", skillIds: ["s1", "s2"], ...span },
     { id: "e2", role: "B", company: "", location: "", bullets: "", skillIds: ["s1"], ...span },
@@ -120,25 +120,43 @@ describe("Languages", () => {
     expect(latest.languages[0].level).toBe("C2");
   });
 
-  it("adds a language at the chosen level, Intermediate (B1) by default", async () => {
+  it("adds a language picked from the list, found in any language, at Intermediate (B1) by default", async () => {
     const user = userEvent.setup();
-    vi.mocked(addLanguage).mockResolvedValue({ ok: true, data: { added: true, language: { id: "l2", name: "French", level: "B1" } } });
+    vi.mocked(addLanguage).mockResolvedValue({ ok: true, data: { added: true, language: { id: "l2", code: "fr", name: "French", level: "B1" } } });
     render(<Harness />);
     expect(screen.getByLabelText("Level")).toHaveValue("B1");
-    await user.type(screen.getByLabelText("Language"), "French{Enter}");
-    expect(addLanguage).toHaveBeenCalledWith({ name: "French", level: "B1" });
+    const field = screen.getByRole("combobox", { name: "Language" });
+    await user.type(field, "Franç");
+    expect(field).toHaveAttribute("aria-expanded", "true");
+    expect(within(screen.getByRole("listbox", { name: "Languages" })).getAllByRole("option")[0]).toHaveTextContent("FrenchFrançais");
+    // Enter picks the first match, Enter again adds it.
+    await user.keyboard("{Enter}");
+    expect(field).toHaveValue("French");
+    await user.keyboard("{Enter}");
+    expect(addLanguage).toHaveBeenCalledWith({ name: "French", code: "fr", level: "B1" });
     expect(await screen.findByLabelText("French level")).toHaveValue("B1");
   });
 
-  it("updates the level instead of adding a language twice", async () => {
+  it("adds a language the list doesn't know, as written", async () => {
     const user = userEvent.setup();
-    vi.mocked(addLanguage).mockResolvedValue({ ok: true, data: { added: false, language: { id: "l1", name: "Dutch", level: "C1" } } });
+    vi.mocked(addLanguage).mockResolvedValue({ ok: true, data: { added: true, language: { id: "l2", code: null, name: "Sicilian sign language", level: "B1" } } });
+    render(<Harness />);
+    await user.type(screen.getByRole("combobox", { name: "Language" }), "Sicilian sign language");
+    await user.click(screen.getByRole("option", { name: "Add “Sicilian sign language” as written" }));
+    await user.click(screen.getByRole("button", { name: "Add" }));
+    expect(addLanguage).toHaveBeenCalledWith({ name: "Sicilian sign language", code: null, level: "B1" });
+  });
+
+  it("updates the level instead of adding a language twice, under any of its names", async () => {
+    const user = userEvent.setup();
+    vi.mocked(addLanguage).mockResolvedValue({ ok: true, data: { added: false, language: { id: "l1", code: "nl", name: "Dutch", level: "C1" } } });
     render(<Harness />);
     await user.selectOptions(screen.getByLabelText("Level"), "Advanced (C1)");
-    await user.type(screen.getByLabelText("Language"), "dutch");
+    await user.type(screen.getByRole("combobox", { name: "Language" }), "Olandese");
     await user.click(screen.getByRole("button", { name: "Add" }));
+    expect(addLanguage).toHaveBeenCalledWith({ name: "Dutch", code: "nl", level: "C1" });
     expect(toast).toHaveBeenCalledWith("Updated Dutch to Advanced (C1).");
-    await waitFor(() => expect(latest.languages).toEqual([{ id: "l1", name: "Dutch", level: "C1" }]));
+    await waitFor(() => expect(latest.languages).toEqual([{ id: "l1", code: "nl", name: "Dutch", level: "C1" }]));
   });
 
   it("removes a language", async () => {

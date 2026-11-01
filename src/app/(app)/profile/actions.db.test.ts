@@ -123,6 +123,23 @@ describe("profile actions", () => {
     expect(await prisma().language.count()).toBe(2);
   });
 
+  it("stores a language by its code, whatever language it's typed in, and keeps one typed the list doesn't know as written", async () => {
+    const english = await addLanguage({ name: "Inglese", level: "C1" });
+    expect(english).toMatchObject({ ok: true, data: { added: true, language: { code: "en", name: "English", level: "C1" } } });
+    expect(await addLanguage({ name: "anglais", level: "C2" })).toMatchObject({ ok: true, data: { added: false, language: { code: "en", level: "C2" } } });
+    // Picked from the list.
+    expect(await addLanguage({ name: "Persian", code: "fa", level: "NATIVE" })).toMatchObject({ ok: true, data: { language: { code: "fa", name: "Persian" } } });
+    expect(await addLanguage({ name: "Klingon", level: "A1" })).toMatchObject({ ok: true, data: { language: { code: null, name: "Klingon" } } });
+    expect(await addLanguage({ name: "Nope", code: "xx", level: "A1" })).toMatchObject({ ok: false });
+    expect(await prisma().language.count()).toBe(3);
+  });
+
+  it("gives a language saved by name before codes its code when it's added again", async () => {
+    await prisma().language.create({ data: { name: "Italiano", level: "B1" } });
+    expect(await addLanguage({ name: "Italian", level: "B2" })).toMatchObject({ ok: true, data: { added: false, language: { code: "it", name: "Italian", level: "B2" } } });
+    expect(await prisma().language.count()).toBe(1);
+  });
+
   it("changes a language's level and removes it", async () => {
     const { id } = await prisma().language.create({ data: { name: "English", level: "C1" } });
     await setLanguageLevel({ id, level: "C2" });

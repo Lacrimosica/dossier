@@ -99,6 +99,11 @@ test.describe("dark, with the sidebar collapsed", () => {
     await page.goto(application);
     await page.getByRole("button", { name: "More actions" }).click();
     await expectAccessible(page);
+    // The language picker's list (.scratch/language-codes).
+    await page.goto("/profile?section=skills");
+    await page.getByRole("combobox", { name: "Language" }).fill("Ital");
+    await expect(page.getByRole("listbox", { name: "Languages" })).toBeVisible();
+    await expectAccessible(page);
     await context.clearCookies({ name: "dossier_session" });
     await context.addCookies([{ name: "dossier_theme", value: "dark", url: baseURL! }]);
     await page.goto("/login");

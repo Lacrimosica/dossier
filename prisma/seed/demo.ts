@@ -7,6 +7,7 @@ import {
   type Match,
 } from "@/lib/application-data";
 import { courseDates, dateSpan, demoLetterUnits, demoProfile, demoResumeUnits, LEVELS_BY_LABEL } from "@/lib/demo-profile";
+import { spokenLanguage } from "@/lib/languages";
 import { basicsFromFields, fieldsFromBasics } from "@/lib/profile";
 import { advance, type StatusFields } from "@/lib/status";
 
@@ -126,7 +127,7 @@ export async function seedDemo(
         skillIds.set(name, skill.id);
       }
       await tx.language.createMany({
-        data: languages.map(({ name, level }, sort) => ({ name, level: LEVELS_BY_LABEL.get(level)!, sort })),
+        data: languages.map(({ name, level }, sort) => ({ ...spokenLanguage(name), level: LEVELS_BY_LABEL.get(level)!, sort })),
       });
 
       const experienceIds = new Map<string, string>();

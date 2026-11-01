@@ -6,6 +6,8 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { JobStatus, LanguageLevel } from "@/generated/prisma/enums";
 import { action, ActionError } from "@/lib/action";
+import { findSpokenLanguage } from "@/lib/language-data";
+import { LANGUAGE_CODES, languageName, spokenLanguage } from "@/lib/languages";
 import { prisma } from "@/lib/prisma";
 import { fieldsFromBasics, inEntryOrder } from "@/lib/profile";
 import { findOrCreateSkill, firstSort, nextSort } from "@/lib/profile-entries";
@@ -107,17 +109,23 @@ export const removeSkill = action(z.object({ id }), async ({ id }) => {
 const level = z.enum(LanguageLevel);
 
 /**
- * Adds a language with its level (PRO-4). Adding one that exists, in any
- * case, updates its level instead of adding a duplicate.
+ * Adds a language with its level (PRO-4): the one picked from the list, or one
+ * typed by name, which is stored by its code when it's known (.scratch/language-codes).
+ * Adding one that exists, under any of its names, updates its level instead.
  */
 export const addLanguage = action(
-  z.object({ name: z.string().trim().min(1, "Type a language first.").max(100), level }),
-  async ({ name, level }) => {
-    const existing = await prisma.language.findUnique({ where: { name } });
+  z.object({
+    name: z.string().trim().min(1, "Type a language first.").max(100),
+    code: z.string().refine((code) => LANGUAGE_CODES.includes(code)).nullable().default(null),
+    level,
+  }),
+  async ({ name, code, level }) => {
+    const spoken = code ? { code, name: languageName(code) } : spokenLanguage(name);
+    const existing = await findSpokenLanguage(prisma, spoken);
     const language = existing
-      ? await prisma.language.update({ where: { id: existing.id }, data: { level } })
-      : await prisma.language.create({ data: { name, level, sort: await nextSort(prisma.language) } });
-    return { language: { id: language.id, name: language.name, level: language.level }, added: !existing };
+      ? await prisma.language.update({ where: { id: existing.id }, data: { ...spoken, level } })
+      : await prisma.language.create({ data: { ...spoken, level, sort: await nextSort(prisma.language) } });
+    return { language: { id: language.id, code: language.code, name: language.name, level: language.level }, added: !existing };
   },
 );
 

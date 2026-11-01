@@ -10,6 +10,13 @@ export async function register() {
     const { logServerError } = await import("@/lib/log");
     await recoverInterruptedJobs().catch((error: unknown) => logServerError("startup", error));
 
+    // Languages saved by name before they had codes: "Inglese" and "English" become one (.scratch/language-codes).
+    const { convertLanguages } = await import("@/lib/language-data");
+    const { prisma } = await import("@/lib/prisma");
+    await convertLanguages(prisma)
+      .then((changed) => changed > 0 && console.log(`Gave ${changed} profile languages their language codes.`))
+      .catch((error: unknown) => logServerError("languages", error));
+
     // Finished jobs, with what they were given and wrote, are deleted after a while.
     const { startJobSweep } = await import("@/lib/jobs/retention");
     startJobSweep();

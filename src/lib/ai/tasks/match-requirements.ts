@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 import { matchSchema, type Extracted, type Match } from "@/lib/application-data";
-import { experienceMonths, formatMonthYear, languageLevelLabel, sameName, type ProfileData } from "@/lib/profile";
+import { isSpokenLanguage } from "@/lib/languages";
+import { experienceMonths, formatMonthYear, languageLevelLabel, type ProfileData } from "@/lib/profile";
 
 import { system, UNTRUSTED_POSTING, type Task } from "./prompt-parts";
 
@@ -90,9 +91,10 @@ function classify(
       : { ...base, result: "gap", note: `${roles} (about ${years} ${years === 1 ? "year" : "years"})` };
   }
 
-  // Names must be the profile's own: a model can't add a skill by misspelling one.
+  // Names must be the profile's own: a model can't add a skill by misspelling one. A language
+  // goes by its code, so "Italian" in the posting is the profile's "Italiano" (.scratch/language-codes).
   const language = profile.languages.find(
-    (entry) => (mapped?.language && sameName(entry.name, mapped.language)) || (requirement.language && sameName(entry.name, requirement.language)),
+    (entry) => (mapped?.language && isSpokenLanguage(entry, mapped.language)) || (requirement.language && isSpokenLanguage(entry, requirement.language)),
   );
   if (requirement.kind === "language" || (language && !mapped?.skill)) {
     return language

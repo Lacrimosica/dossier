@@ -160,6 +160,10 @@ docker compose exec -e AI_LIVE=ollama app yarn vitest run src/lib/ai/providers.l
 
 `AI_LIVE=lmstudio` checks LM Studio, with the model saved in Settings while LM Studio is chosen there, or with `-e DOSSIER_AI_MODEL=…` (and `DOSSIER_AI_URL`, by default `http://host.docker.internal:1234`). A model that isn't loaded gets loaded and stays loaded until you eject it.
 
+## Spoken languages
+
+A language in the profile is stored by its code (`Language.code`, `en`, `fa`), with its English name in `name`; one the list doesn't know keeps its name as written and no code. `src/lib/languages.ts` (shared with the browser) holds the list and finds a language by its name in English, in each document language and in itself ("Inglese", "anglais" and "English" are all `en`), with `Intl.DisplayNames`. Each document names a language in its own language (`languagesLine`), so an Italian resume says "Inglese". The Languages card picks from that list; typing, importing a resume, an older data export and requirement matching all go through the same lookup, so the same language can't be added twice under two names. Languages saved by name before codes are converted at startup (`convertLanguages()` in `src/lib/language-data.ts`, from `instrumentation.ts`): two that turn out to be the same keep the better level.
+
 ## Profile review
 
 **Review my profile** (`/profile/review`) asks the AI for duplicates and contradictions in the profile: the same role, project, degree or course entered twice, the same skill under two names, impossible dates, repeated bullets, empty entries. The model only names ids; it never writes profile text.

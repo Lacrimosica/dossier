@@ -1,6 +1,6 @@
 # 02 — Picker, import and matching
 
-Status: ready-for-agent
+Status: done
 Blocked by: 01
 
 Spec: `../spec.md` ("Profile screen", "Import", "Matching", "Tailoring and the fact guard", "Connector").

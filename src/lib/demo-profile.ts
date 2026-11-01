@@ -1,6 +1,7 @@
 import type { LanguageLevel } from "@/generated/prisma/enums";
 import type { Unit } from "@/lib/application-data";
 import { publicationLabel } from "@/lib/citation";
+import { languageCode } from "@/lib/languages";
 import { LANGUAGE_LEVELS, type DateSpan, type ProfileData } from "@/lib/profile";
 
 import sample from "../../prisma/seed/prototype-sample.json";
@@ -62,6 +63,7 @@ export function demoProfile(): ProfileData {
     skills: skills.map((name) => ({ id: skillId(name), name })),
     languages: languages.map(({ name, level }, index) => ({
       id: `language-${index + 1}`,
+      code: languageCode(name),
       name,
       level: LEVELS_BY_LABEL.get(level)!,
     })),

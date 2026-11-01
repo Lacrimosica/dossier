@@ -52,8 +52,11 @@ enum LanguageLevel {
 
 model Language {
   id        String        @id @default(cuid())
-  /// Unique ignoring case; adding an existing language updates its level (PRO-4).
-  name      String        @unique @db.Citext
+  /// A BCP 47 language subtag ("en", "fa"), or null for one added as written
+  /// (.scratch/language-codes). Adding an existing language updates its level (PRO-4).
+  code      String?       @unique
+  /// The English name for a language with a code; as written otherwise.
+  name      String        @db.Citext
   level     LanguageLevel
   sort      Int           @default(0)
   createdAt DateTime      @default(now())

@@ -108,7 +108,8 @@ export function fieldsFromBasics(basics: Basics): Record<ProfileKey, string | nu
 }
 
 export type SkillItem = { id: string; name: string };
-export type LanguageItem = { id: string; name: string; level: LanguageLevel };
+/** A spoken language: by its code, named in English, or as written without one (.scratch/language-codes). */
+export type LanguageItem = { id: string; code: string | null; name: string; level: LanguageLevel };
 export type ExperienceItem = DateSpan & {
   id: string;
   role: string;

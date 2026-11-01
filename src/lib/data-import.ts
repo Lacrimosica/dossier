@@ -2,6 +2,8 @@ import "server-only";
 
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { encryptApiKey } from "@/lib/ai/api-key";
+import { levelRank } from "@/lib/language-data";
+import { spokenLanguage } from "@/lib/languages";
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, EXPORT_SCHEMA_VERSIONS, exportSchema, INSTALL_SETTINGS, SECRET_SETTINGS, type DossierExport } from "@/lib/data-export";
 import { encryptSecret, JOB_SOURCE_KEY } from "@/lib/secrets";
 
@@ -118,7 +120,7 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
       // In with the new.
       await tx.profileField.createMany({ data: profile.fields });
       await tx.skill.createMany({ data: profile.skills });
-      await tx.language.createMany({ data: profile.languages });
+      await tx.language.createMany({ data: importedLanguages(profile.languages) });
       await tx.experience.createMany({ data: profile.experience.map((entry) => omit(entry, "skillIds")) });
       await tx.experienceSkill.createMany({
         data: profile.experience.flatMap((entry) => entry.skillIds.map((skillId) => ({ experienceId: entry.id, skillId }))),
@@ -218,4 +220,30 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
     // A big export takes longer than the default five seconds.
     { timeout: 120_000, maxWait: 10_000 },
   );
+}
+
+/**
+ * The file's languages by code: an older file's, saved by name, converted as
+ * at startup, so "English" and "Inglese" become one `en` with the better level
+ * (.scratch/language-codes).
+ */
+export function importedLanguages(languages: DossierExport["profile"]["languages"]): DossierExport["profile"]["languages"] {
+  const byCode = new Map<string, DossierExport["profile"]["languages"][number]>();
+  const kept: DossierExport["profile"]["languages"] = [];
+  for (const language of languages) {
+    const spoken = language.code ? { code: language.code, name: language.name } : spokenLanguage(language.name);
+    if (!spoken.code) {
+      kept.push({ ...language, ...spoken });
+      continue;
+    }
+    const twin = byCode.get(spoken.code);
+    if (!twin) {
+      const entry = { ...language, ...spoken };
+      byCode.set(spoken.code, entry);
+      kept.push(entry);
+    } else if (levelRank(language.level) < levelRank(twin.level)) {
+      twin.level = language.level;
+    }
+  }
+  return kept;
 }

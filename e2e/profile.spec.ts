@@ -17,9 +17,19 @@ test("fills in the profile, keeps it and shows it on the base resume", async ({ 
   await page.getByLabel("Add a skill").fill("Accessibility");
   await page.getByLabel("Add a skill").press("Enter");
   await expect(page.getByRole("list", { name: "Your skills" })).toContainText("Accessibility");
-  await page.getByLabel("Language", { exact: true }).fill("French");
-  await page.getByLabel("Language", { exact: true }).press("Enter");
+  // Found in any language, picked from the list, then added (.scratch/language-codes).
+  const language = page.getByRole("combobox", { name: "Language" });
+  await language.fill("Franç");
+  await expect(page.getByRole("listbox", { name: "Languages" }).getByRole("option").first()).toContainText("French");
+  await language.press("Enter");
+  await expect(language).toHaveValue("French");
+  await language.press("Enter");
   await expect(page.getByLabel("French level")).toBeVisible();
+  // The same language under another name updates it instead of adding it twice.
+  await language.fill("Francese");
+  await language.press("Enter");
+  await language.press("Enter");
+  await expect(page.getByRole("list", { name: "Your languages" }).getByText("French", { exact: true })).toHaveCount(1);
 
   await page.getByRole("navigation", { name: "Profile sections" }).getByRole("link", { name: /Experience/ }).click();
   await page.getByRole("button", { name: "+ Add a role" }).click();

@@ -90,7 +90,7 @@ describe("ResumeDocument", () => {
     expect(sectionTitles()).toEqual(["Kontakt", "Kenntnisse", "Sprachen", "Profil", "Berufserfahrung", "Projekte", "Ausbildung", "Weiterbildung und Zertifikate", "Publikationen", "Referenzen"]);
     expect(screen.getByText("März 2021 – Heute")).toBeInTheDocument();
     expect(screen.getByText("UX Designer").closest("[data-unit]")).toHaveTextContent("Kenntnisse · HTML & CSS, Interaction design");
-    expect(screen.getByText(/^Dutch: Muttersprache · English: Fließend \(C2\)/)).toBeInTheDocument();
+    expect(screen.getByText(/^Niederländisch: Muttersprache · Englisch: Fließend \(C2\)/)).toBeInTheDocument();
     expect(screen.getByText("34 Jahre")).toBeInTheDocument();
   });
 

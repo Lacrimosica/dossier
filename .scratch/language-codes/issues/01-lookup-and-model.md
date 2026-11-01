@@ -1,6 +1,6 @@
 # 01 — Lookup, model and conversion
 
-Status: ready-for-agent
+Status: done
 
 Spec: `../spec.md` ("Model", "Lookup", "Converting existing data", "Export and import", "Demo and samples").
 
