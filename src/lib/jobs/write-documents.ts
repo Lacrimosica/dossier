@@ -44,7 +44,8 @@ export const writeDocumentsJob = defineJob({
     if (!coverLetter) return { resume: resume.data, resumeWith: resume.promptVersion, letter: null, letterWith: null };
 
     await step(WRITE_DOCUMENTS_STEPS[1]);
-    const letter = await writeCoverLetter(provider, { profile, extracted, match, tone, facts, posting }, { ...options, signal });
+    // The letter builds on the resume just tailored, rather than repeating it.
+    const letter = await writeCoverLetter(provider, { profile, extracted, match, tone, facts, posting, resume: resume.data }, { ...options, signal });
 
     return { resume: resume.data, resumeWith: resume.promptVersion, letter: letter.data, letterWith: letter.promptVersion };
   },

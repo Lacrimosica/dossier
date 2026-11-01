@@ -36,6 +36,9 @@ describe("writeDocumentsJob (E7-6)", () => {
     expect(result.letterWith).toBe("write-cover-letter@6");
     // Strict mode: the fact guard marks what the profile doesn't back.
     expect(result.resume[1]).toMatchObject({ id: "summary", unverified: ["Google"] });
+    // The letter is written from the resume just tailored.
+    const letterCall = (provider.current as MockProvider).calls[1];
+    expect(letterCall.messages.map((message) => message.content).join("\n")).toContain("The tailored resume the letter goes with:");
     expect(result.letter?.map((unit) => unit.id)).toEqual(["recipient", "greeting", "paragraph:1", "sign-off"]);
   });
 

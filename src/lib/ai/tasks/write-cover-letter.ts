@@ -52,8 +52,9 @@ export type CoverLetterInput = {
   /** The posting as pasted, for the fact guard. */
   posting: string;
   /**
-   * The tailored resume as it is now, refined or edited, when the letter is
-   * written after it: the letter then builds on it rather than repeating it.
+   * The tailored resume it goes with: just tailored, or as it is now when
+   * the letter is written later. The letter builds on it rather than
+   * repeating it.
    */
   resume?: Unit[];
 };
