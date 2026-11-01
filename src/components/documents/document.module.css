@@ -231,6 +231,25 @@
   color: var(--doc-muted);
 }
 
+/* Courses and certificates: short, so closer together than roles. */
+.course {
+  break-inside: avoid;
+}
+
+.course + .course {
+  margin-top: calc(var(--u) * 5);
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.courseDetails {
+  font-size: 0.9em;
+  color: var(--doc-muted);
+  text-wrap: pretty;
+}
+
 /* Publications (#218): one citation each, with its link after it. */
 .publication {
   text-wrap: pretty;
@@ -391,6 +410,10 @@
   margin-top: calc(var(--u) * (6 + var(--item-gap)));
 }
 
+.sideHeadings .section > .course + .course {
+  margin-top: calc(var(--u) * 11);
+}
+
 /*
  * Timeline: a role's or degree's dates float into a column before it. They
  * come first in its title line, and take its line height, so they sit on
@@ -404,7 +427,7 @@
   --date-width: 78;
 }
 
-.timeline .entry {
+.timeline :is(.entry, .course) {
   padding-inline-start: calc(var(--u) * var(--date-width));
 }
 

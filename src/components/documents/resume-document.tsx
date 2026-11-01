@@ -169,19 +169,32 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
           <Fragment key={entry.id}>
             {renderUnit({
               id: `course:${entry.id}`,
-              className: styles.entry,
-              head: <EntryHead title={entry.name} at={entry.provider} dates={entry.dates} timeline={resolved.timeline} />,
-              children: (
-                <>
-                  {(entry.duration || entry.link) && (
-                    <p className={styles.muted}>
-                      {entry.duration}
-                      {entry.duration && entry.link && " · "}
-                      {entry.link && <Contact>{entry.link}</Contact>}
-                    </p>
-                  )}
-                  {entry.notes && <p className={styles.muted}>{entry.notes}</p>}
-                </>
+              // A course is a line or two, not a role: the duration joins the
+              // title line, notes and link share one small line, and courses
+              // sit as close as publications do.
+              className: styles.course,
+              head: (
+                <EntryHead
+                  title={entry.name}
+                  at={
+                    (entry.provider || entry.duration) && (
+                      <>
+                        {entry.provider}
+                        {entry.provider && entry.duration && " · "}
+                        {entry.duration && <span className={styles.nowrap}>{entry.duration}</span>}
+                      </>
+                    )
+                  }
+                  dates={entry.dates}
+                  timeline={resolved.timeline}
+                />
+              ),
+              children: (entry.notes || entry.link) && (
+                <p className={styles.courseDetails}>
+                  {entry.notes}
+                  {entry.notes && entry.link && " · "}
+                  {entry.link && <Contact>{entry.link}</Contact>}
+                </p>
               ),
             })}
           </Fragment>

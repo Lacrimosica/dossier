@@ -341,7 +341,7 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -360,12 +360,18 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -373,14 +379,9 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -399,13 +400,14 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -827,7 +829,7 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -846,12 +848,18 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -859,14 +867,9 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -885,13 +888,14 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -1313,7 +1317,7 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -1327,6 +1331,12 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -1335,9 +1345,9 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -1345,14 +1355,9 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -1366,6 +1371,12 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -1373,11 +1384,6 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -1850,7 +1856,7 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -1864,6 +1870,12 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -1872,9 +1884,9 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -1882,14 +1894,9 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -1903,6 +1910,12 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -1910,11 +1923,6 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -2300,7 +2308,7 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -2314,6 +2322,12 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -2322,9 +2336,9 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -2332,14 +2346,9 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -2353,6 +2362,12 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -2360,11 +2375,6 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -2786,7 +2796,7 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -2800,6 +2810,12 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -2808,9 +2824,9 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -2818,14 +2834,9 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -2839,6 +2850,12 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -2846,11 +2863,6 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -3323,7 +3335,7 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -3337,6 +3349,12 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -3345,9 +3363,9 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -3355,14 +3373,9 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -3376,6 +3389,12 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -3383,11 +3402,6 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -3773,7 +3787,7 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -3787,6 +3801,12 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -3795,9 +3815,9 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -3805,14 +3825,9 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -3826,6 +3841,12 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -3833,11 +3854,6 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -4310,7 +4326,7 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -4324,6 +4340,12 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -4332,9 +4354,9 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -4342,14 +4364,9 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -4363,6 +4380,12 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -4370,11 +4393,6 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -4760,7 +4778,7 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -4774,6 +4792,12 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -4782,9 +4806,9 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -4792,14 +4816,9 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -4813,6 +4832,12 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -4820,11 +4845,6 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -5213,7 +5233,7 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -5227,6 +5247,12 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -5235,9 +5261,9 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -5245,14 +5271,9 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -5266,6 +5287,12 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -5273,11 +5300,6 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
@@ -5798,7 +5820,7 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
           Courses & certificates
         </h2>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c1"
         >
           <div
@@ -5812,6 +5834,12 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
               </span>
               , 
               Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -5820,9 +5848,9 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
             </span>
           </div>
           <p
-            class="_muted_fa1ef7"
+            class="_courseDetails_fa1ef7"
           >
-            6 weekend sessions
+            WCAG 2.2 audits of real product flows
              · 
             <bdi
               dir="ltr"
@@ -5830,14 +5858,9 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
               example.com/certificates/jane-doe-a11y
             </bdi>
           </p>
-          <p
-            class="_muted_fa1ef7"
-          >
-            WCAG 2.2 audits of real product flows
-          </p>
         </div>
         <div
-          class="_entry_fa1ef7"
+          class="_course_fa1ef7"
           data-unit="course:c2"
         >
           <div
@@ -5851,6 +5874,12 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
               </span>
               , 
               Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
             </p>
             <span
               class="_dates_fa1ef7"
@@ -5858,11 +5887,6 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
               Oct 2021
             </span>
           </div>
-          <p
-            class="_muted_fa1ef7"
-          >
-            2 days
-          </p>
         </div>
       </section>
       <section
