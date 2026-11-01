@@ -7,7 +7,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { ChatRole, DocumentKind, VersionCause } from "@/generated/prisma/enums";
 import { action, ActionError } from "@/lib/action";
 import { isAiConfigured } from "@/lib/ai/config";
-import { editsSchema, extractedSchema, matchSchema, trimmedSchema, unitsSchema, withSkillAdded } from "@/lib/application-data";
+import { editsSchema, extractedSchema, HEADLINE_UNIT, matchSchema, trimmedSchema, unitsSchema, withSkillAdded } from "@/lib/application-data";
 import { WRITTEN_EMAIL_UNITS } from "@/lib/application-email";
 import { updateDocuments } from "@/lib/document-units";
 import { DOCUMENT_LABELS } from "@/lib/file-name";
@@ -365,6 +365,8 @@ export const leaveOutUnit = action(z.object({ id: z.string().min(1), unitId: z.s
     const index = units ? units.findIndex((unit) => unit.id === unitId) : -1;
     if (!units || index < 0) throw new ActionError(PART_GONE);
     const [unit] = units.splice(index, 1);
+    // A resume without a headline shows the profile's, so a headline left out stays, empty.
+    if (unitId === HEADLINE_UNIT) units.splice(index, 0, { ...unit, text: "", unverified: undefined });
     return { kind: "unit" as const, unit, index, byHand: true as const };
   });
   // Written after the document itself: updateDocuments checks it wasn't changed meanwhile.
@@ -393,7 +395,10 @@ export const putBackTrimmed = action(z.object({ id: z.string().min(1), index: z.
     const units = documents[DocumentKind.RESUME];
     if (!units) throw new ActionError(PART_GONE);
     if (item.kind === "unit") {
-      if (!units.some((unit) => unit.id === item.unit.id)) units.splice(Math.min(item.index, units.length), 0, item.unit);
+      const at = units.findIndex((unit) => unit.id === item.unit.id);
+      if (at < 0) units.splice(Math.min(item.index, units.length), 0, item.unit);
+      // The headline left out in its place, empty.
+      else if (item.unit.id === HEADLINE_UNIT && !units[at].text) units[at] = item.unit;
       return;
     }
     const unit = units.find((entry) => entry.id === item.unitId);

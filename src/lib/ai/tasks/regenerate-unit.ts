@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { DocumentKind, type Tone } from "@/generated/prisma/enums";
-import { SIGN_OFF_UNIT, type Extracted, type Unit } from "@/lib/application-data";
+import { HEADLINE_UNIT, SIGN_OFF_UNIT, type Extracted, type Unit } from "@/lib/application-data";
 import { emailParts } from "@/lib/application-email";
 import { isFrameUnit } from "@/lib/letter-frame";
 import type { ProfileData } from "@/lib/profile";
@@ -25,7 +25,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const REGENERATE_UNIT_VERSION = "regenerate-unit@6";
+export const REGENERATE_UNIT_VERSION = "regenerate-unit@7";
 
 /** What the letter's frame parts are, for the model (E8-11). */
 const FRAME_PARTS: Record<string, string> = {
@@ -40,6 +40,10 @@ const EMAIL_PARTS: Record<string, string> = {
   subject: "It's the email's subject line: the role and the candidate's name, or the reference or subject line the posting asks for. One line.",
   body: "It's the email's whole message, sent with the resume and cover letter attached: the greeting (to the contact person the posting names, else the hiring team), two or three short paragraphs (about 80–150 words together) on the role the candidate is applying for, what makes them a strong fit and that the resume and cover letter are attached, then the sign-off and the candidate's name. A blank line between paragraphs. It doesn't repeat the cover letter.",
 };
+
+/** The resume's headline (.scratch/tailored-headline), as tailor-resume asks for it. */
+const HEADLINE_PART =
+  "It's the one short line under the candidate's name: a title, optionally with a focus after \" · \". Use titles the candidate has held and skills they have, not the job's title unless they've held it.";
 
 /** What each document is called in the prompt. */
 const DOCUMENT_NAMES: Record<DocumentKind, string> = {
@@ -86,6 +90,7 @@ export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, inpu
       kind !== DocumentKind.RESUME && `Tone: ${TONES[tone].label}. ${TONES[tone].description}`,
       kind === DocumentKind.COVER_LETTER && FRAME_PARTS[unit.id],
       kind === DocumentKind.EMAIL && EMAIL_PARTS[unit.id],
+      kind === DocumentKind.RESUME && unit.id === HEADLINE_UNIT && HEADLINE_PART,
       truthfulness(options.strict),
       candidateFacts(profile, facts),
       CREATIVITY[options.creativity],

@@ -34,6 +34,7 @@ const written = (overrides: Partial<WrittenApplication> = {}): WrittenApplicatio
   postingId: null,
   details: { company: "Acme", role: "Senior Product Designer", location: "Berlin", mode: "Hybrid", salary: "", deadline: null, language: "English" },
   resume: {
+    headline: "",
     summary: "Designer who ships calm, clear products.",
     roles: [
       { id: role.id, bullets: ["Led the redesign of the payments flow"] },
@@ -98,6 +99,16 @@ describe("an application written in Claude chat (#221)", () => {
     const document = await prisma().document.findFirstOrThrow({ where: { applicationId, kind: "RESUME" } });
     const units = document.units as { id: string; text: string }[];
     expect(units.filter((unit) => unit.id.startsWith("course:"))).toEqual([{ id: "course:c2", label: "UX Writing Workshop", text: "Microcopy" }]);
+  });
+
+  it("stores Claude's headline, or the profile's when Claude gives none (.scratch/tailored-headline)", async () => {
+    const headline = async (text: string) => {
+      const { applicationId } = await saveWrittenApplication(written({ resume: { ...written().resume, headline: text } }));
+      const document = await prisma().document.findFirstOrThrow({ where: { applicationId, kind: "RESUME" } });
+      return (document.units as { id: string; text: string }[]).find((unit) => unit.id === "headline")?.text;
+    };
+    expect(await headline("Product Designer · Payments")).toBe("Product Designer · Payments");
+    expect(await headline("")).toBe(profile.basics.headline);
   });
 
   it("marks names and numbers the profile and posting don't back when Never invent experience is on", async () => {

@@ -15,11 +15,15 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -503,11 +507,15 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -991,11 +999,15 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -1479,11 +1491,15 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
   </header>
   <div
     class="_columns_fa1ef7"
@@ -1982,11 +1998,15 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -2470,11 +2490,15 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -2958,11 +2982,15 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
   </header>
   <div
     class="_columns_fa1ef7"
@@ -3461,11 +3489,15 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -3949,11 +3981,15 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
   </header>
   <div
     class="_columns_fa1ef7"
@@ -4452,11 +4488,15 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
     <p
       class="_contactLine_fa1ef7"
     >
@@ -4940,11 +4980,15 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
   </header>
   <div
     class="_columns_fa1ef7"
@@ -5443,11 +5487,15 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
     >
       Jane Doe
     </h1>
-    <p
-      class="_headline_fa1ef7"
+    <div
+      data-unit="headline"
     >
-      Senior Product Designer
-    </p>
+      <p
+        class="_headline_fa1ef7"
+      >
+        Senior Product Designer
+      </p>
+    </div>
   </header>
   <div
     class="_columns_fa1ef7"

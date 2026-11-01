@@ -1,4 +1,4 @@
-import type { Unit } from "@/lib/application-data";
+import { HEADLINE_UNIT, type Unit } from "@/lib/application-data";
 import { ageLabel, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { publicationHref, publicationLink } from "@/lib/citation";
 import { ageOn, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
@@ -189,6 +189,9 @@ export function resumeContent(
         return entry ? [{ entry, text: unit.text }] : [];
       });
 
+    // A version saved before resumes had their own headline shows the profile's.
+    const headline = units.find((unit) => unit.id === HEADLINE_UNIT);
+    if (headline) content.headline = headline.text.trim();
     content.summary = text("summary").trim();
     content.skills = text("skills").trim();
     content.languages = text("languages").trim();

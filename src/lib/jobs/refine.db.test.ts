@@ -23,6 +23,7 @@ vi.mock("./runner", () => ({ defineJob: <T,>(definition: T) => definition }));
 
 const prisma = () => db.client!;
 const resume = demoResumeUnits();
+const summary = resume.find((unit) => unit.id === "summary")!;
 const letter = [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text: "Warm regards," }];
 const context = { id: "test-job", step: async () => {}, signal: new AbortController().signal };
 const reply = (answer: object) => new MockProvider({ reply: () => ({ edits: [], tone: null, declined: false, ...answer }) });
@@ -65,9 +66,9 @@ describe("refineJob (E8-5)", () => {
       text: "Trimmed your summary.",
       writtenWith: "refine-chat@7",
       previousTone: null,
-      edits: [{ document: "RESUME", unitId: "summary", text: "Designer of calm tools.", previousText: resume[0].text }],
+      edits: [{ document: "RESUME", unitId: "summary", text: "Designer of calm tools.", previousText: summary.text }],
     });
-    expect((await units("RESUME"))[0].text).toBe("Designer of calm tools.");
+    expect((await units("RESUME")).find((unit) => unit.id === "summary")?.text).toBe("Designer of calm tools.");
   });
 
   it("edits the email, which the model sees once there is one", async () => {
@@ -114,7 +115,7 @@ describe("refineJob (E8-5)", () => {
       },
     });
     expect(await ask("Shorter")).toMatchObject({ edited: [] });
-    expect((await units("RESUME"))[0].text).toBe("Mine");
+    expect((await units("RESUME")).find((unit) => unit.id === "summary")?.text).toBe("Mine");
     expect((await lastMessage()).text).toBe("Tightened it. I left the summary as it is: it changed while I was working.");
   });
 

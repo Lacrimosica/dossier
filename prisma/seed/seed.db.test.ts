@@ -131,6 +131,7 @@ describe("demo seed", () => {
 
     const [resume, letter] = ledgerly.documents.map((document) => unitsSchema.parse(document.units));
     expect(resume.map((unit) => unit.label)).toEqual([
+      "Headline",
       "Summary",
       "Northwind Logistics role",
       "Fieldnote role",

@@ -8,7 +8,7 @@ import { DocumentKind } from "@/generated/prisma/enums";
 
 /**
  * A part of a tailored document that can be edited, regenerated or refined
- * on its own (APP-4). Ids are stable: "summary", "skills", "languages",
+ * on its own (APP-4). Ids are stable: "headline", "summary", "skills", "languages",
  * "experience:<experience id>", "education:<education id>" in a resume, and
  * "paragraph:1", "paragraph:2"… and "sign-off" in a cover letter.
  */
@@ -24,6 +24,13 @@ export const unitSchema = z.object({
   unverified: z.array(z.string()).optional(),
 });
 export type Unit = z.infer<typeof unitSchema>;
+
+/**
+ * The line under the name on a tailored resume, written for the job
+ * (.scratch/tailored-headline). A resume without it (a version saved before)
+ * shows the profile's headline.
+ */
+export const HEADLINE_UNIT = "headline";
 
 /** The cover letter's closing line ("Warm regards,"), kept as a unit so it can be edited. */
 export const SIGN_OFF_UNIT = "sign-off";

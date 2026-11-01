@@ -20,6 +20,7 @@ function section(text: string, label: string): unknown {
 }
 
 type Profile = {
+  headline: string;
   summary: string;
   skills: string[];
   experience: { id: string; bullets: string[] }[];
@@ -73,6 +74,8 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
   tailored_resume: (messages) => {
     const profile = section(messages[1].content, "The candidate's profile:\n") as Profile;
     return {
+      // Recognisably written for the job, from the profile's own headline.
+      headline: `${profile.headline} · Payments`,
       summary: profile.summary,
       roles: profile.experience.map((entry) => ({ id: entry.id, bullets: entry.bullets })),
       projects: profile.projects.map((entry) => ({ id: entry.id, bullets: entry.bullets })),

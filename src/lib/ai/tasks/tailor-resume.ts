@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { unitsSchema, type Extracted, type Match, type Unit } from "@/lib/application-data";
+import { HEADLINE_UNIT, unitsSchema, type Extracted, type Match, type Unit } from "@/lib/application-data";
 import { publicationLabel } from "@/lib/citation";
 import { documentLabels, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { resumeCourses, resumePublications, sameName, type ProfileData } from "@/lib/profile";
@@ -21,9 +21,11 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@7";
+export const TAILOR_RESUME_VERSION = "tailor-resume@8";
 
 const answerSchema = z.object({
+  /** The line under the name, for this job (.scratch/tailored-headline). */
+  headline: z.string(),
   summary: z.string(),
   roles: z.array(z.object({ id: z.string(), bullets: z.array(z.string()) })),
   projects: z.array(z.object({ id: z.string(), bullets: z.array(z.string()) })),
@@ -36,6 +38,7 @@ const answerSchema = z.object({
 
 const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 
+- headline: the one short line under the candidate's name, for this job: a title, optionally with a focus after " · " (e.g. "Data Engineer · Streaming and analytics"). Use titles the candidate has held and skills they have, not the job's title unless they've held it. Start from their own headline.
 - summary: 2–3 sentences in the first person without "I" at the start of every sentence, about the candidate as this job would see them.
 - roles: every role from the profile, by id, with 2–5 bullets each. Lead with what this job cares about, keep each bullet to one line, and start with a verb.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
@@ -65,7 +68,7 @@ export type TailorInput = {
   posting: string;
 };
 
-/** APP-4: the tailored resume as units (summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
+/** APP-4: the tailored resume as units (headline, summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
 export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profile, extracted, match, facts, posting }, options) => {
   const answer = await provider.complete({
     system: system(
@@ -105,14 +108,18 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
 };
 
 /**
- * Turns the answer into units, trusting nothing: unknown roles, projects,
+ * Turns the answer into units, trusting nothing: an empty headline is the
+ * profile's (as is a missing one, from the connector), unknown roles, projects,
  * degrees and courses are dropped, skills must be the profile's own, and a role or
  * project the model skipped keeps its bullets from the profile. Courses are the
  * exception: the resume has only those the model chose, in its order. The publications and languages
  * come from the profile, publications word for word (#218), and languages with their levels in
  * the words of `labels`.
  */
-export function resumeUnits(profile: ProfileData, answer: z.infer<typeof answerSchema>, labels: DocumentLabels = ENGLISH_LABELS): Unit[] {
+export function resumeUnits(
+  profile: ProfileData,
+  answer: Omit<z.infer<typeof answerSchema>, "headline"> & { headline?: string },
+  labels: DocumentLabels = ENGLISH_LABELS): Unit[] {
   const roles = new Map(answer.roles.map((role) => [role.id, role.bullets]));
   const projects = new Map(answer.projects.map((project) => [project.id, project.bullets]));
   const notes = new Map(answer.education.map((entry) => [entry.id, entry.notes]));
@@ -120,6 +127,7 @@ export function resumeUnits(profile: ProfileData, answer: z.infer<typeof answerS
     ...new Set(answer.skills.flatMap((name) => profile.skills.find((skill) => sameName(skill.name, name))?.name ?? [])),
   ];
   const units: Unit[] = [
+    { id: HEADLINE_UNIT, label: "Headline", text: answer.headline?.trim() || profile.basics.headline.trim() },
     { id: "summary", label: "Summary", text: answer.summary.trim() },
     ...profile.experience.map((entry) => {
       const bullets = (roles.get(entry.id) ?? entry.bullets.split("\n")).map((line) => line.trim()).filter(Boolean);

@@ -143,7 +143,7 @@ beforeEach(() => {
   router.push.mockClear();
 });
 
-const summary = demoResumeUnits()[0];
+const summary = demoResumeUnits().find((unit) => unit.id === "summary")!;
 
 describe("the document tabs (E8-2)", () => {
   it("has Resume, Cover letter, Email and the posting with its match", () => {
@@ -176,9 +176,18 @@ describe("the document tabs (E8-2)", () => {
     render(<ApplicationView {...props} />);
     expect(screen.getByText(/^Tailored resume ·/)).toHaveTextContent("Tailored resume · Editorial theme");
     const resume = screen.getByRole("article", { name: "Resume" });
-    expect(resume.querySelector('[data-unit="summary"]')).toHaveTextContent(demoResumeUnits()[0].text);
+    expect(resume.querySelector('[data-unit="summary"]')).toHaveTextContent(summary.text);
     // Editorial is a single-column theme: nothing to switch.
     expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+  });
+
+  it("lets the headline be edited like any other part (.scratch/tailored-headline)", () => {
+    render(<ApplicationView {...props} />);
+    const headline = demoResumeUnits().find((unit) => unit.id === "headline")!;
+    const group = screen.getByRole("group", { name: "Headline" });
+    expect(group).toHaveTextContent(headline.text);
+    expect(within(group).getByRole("button", { name: "Edit" })).toBeInTheDocument();
+    expect(within(group).getByRole("button", { name: "Regenerate" })).toBeInTheDocument();
   });
 
   it("lets a sidebar theme use its own layout, saved on the application", async () => {

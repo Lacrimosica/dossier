@@ -23,7 +23,7 @@ vi.mock("./runner", () => ({ defineJob: <T,>(definition: T) => definition }));
 
 const prisma = () => db.client!;
 const units = demoResumeUnits();
-const summary = units[0];
+const summary = units.find((unit) => unit.id === "summary")!;
 const where = { applicationId_kind: { applicationId: "app-1", kind: "RESUME" as const } };
 const context = { id: "test-job", step: async () => {}, signal: new AbortController().signal };
 const input = { applicationId: "app-1", document: "RESUME" as const, unitId: "summary", from: summary.text };
@@ -45,7 +45,7 @@ afterAll(() => prisma().$disconnect());
 
 const savedSummary = async () => {
   const document = await prisma().document.findUniqueOrThrow({ where });
-  return (document.units as typeof units)[0];
+  return (document.units as typeof units).find((unit) => unit.id === "summary")!;
 };
 
 describe("regenerateUnitJob (E8-4)", () => {

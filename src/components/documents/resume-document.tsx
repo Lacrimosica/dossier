@@ -2,6 +2,7 @@ import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import { CitationText } from "@/components/citation";
 import { PhotoPosition, PhotoShape, type PaperSize, type ThemeLayout } from "@/generated/prisma/enums";
+import { HEADLINE_UNIT } from "@/lib/application-data";
 import { cn } from "@/lib/cn";
 import { documentLabels } from "@/lib/document-labels";
 import { documentLanguage } from "@/lib/document-language";
@@ -261,7 +262,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
   const title = (
     <>
       <h1 className={styles.name}>{content.name}</h1>
-      {content.headline && <p className={styles.headline}>{content.headline}</p>}
+      {content.headline && renderUnit({ id: HEADLINE_UNIT, children: <p className={styles.headline}>{content.headline}</p> })}
       {!resolved.split && content.contacts.length > 0 && <ContactLine items={content.contacts} />}
     </>
   );

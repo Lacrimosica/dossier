@@ -176,6 +176,7 @@ describe("matchRequirements", () => {
 
 describe("tailorResume", () => {
   const answer = {
+    headline: "Product Designer · Payments and operations tools",
     summary: "Product designer who makes complex tools calm.",
     roles: [
       { id: "e1", bullets: ["Led the carrier portal redesign", " Owned the design system "] },
@@ -218,8 +219,9 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@7");
+    expect(promptVersion).toBe("tailor-resume@8");
     expect(data.map((unit) => unit.id)).toEqual([
+      "headline",
       "summary",
       "experience:e1",
       "experience:e2",
@@ -241,6 +243,18 @@ describe("tailorResume", () => {
     expect(data.find((unit) => unit.id === "experience:e2")?.text).toBe(profile.experience[1].bullets);
     expect(data.find((unit) => unit.id === "skills")?.text).toBe("Design systems · Figma · User research");
     expect(data.find((unit) => unit.id === "languages")?.text).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
+  });
+
+  it("writes a headline for the job, or keeps the profile's when the answer has none (.scratch/tailored-headline)", async () => {
+    const provider = model(answer);
+    const { data } = await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, options);
+    expect(data[0]).toEqual({ id: "headline", label: "Headline", text: "Product Designer · Payments and operations tools" });
+    expect(sent(provider).system).toMatch(/- headline: the one short line under the candidate's name/);
+    const { data: empty } = await tailorResume(model({ ...answer, headline: "  " }), { profile, extracted, match: null, facts: [], posting }, options);
+    expect(empty[0].text).toBe(profile.basics.headline);
+    // Strict mode checks it like any other part.
+    const { data: guarded } = await tailorResume(model({ ...answer, headline: "Design Director at Google" }), { profile, extracted, match: null, facts: [], posting }, options);
+    expect(guarded[0].unverified).toContain("Google");
   });
 
   it("copies the publications word for word, and sends their text but never their links (#218)", async () => {
@@ -285,7 +299,7 @@ describe("tailorResume", () => {
 
   it("asks for a resume that fits the page limit, when there is one (E10-10)", async () => {
     const system = async (maxPages: number | null) => {
-      const provider = model({ summary: "Designer.", roles: [], projects: [], skills: [], education: [], courses: [] });
+      const provider = model({ headline: "", summary: "Designer.", roles: [], projects: [], skills: [], education: [], courses: [] });
       await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, { ...options, maxPages });
       return sent(provider).system;
     };
@@ -424,7 +438,7 @@ describe("regenerateUnit", () => {
     const unit = resume.find((entry) => entry.id === "experience:e1")!;
     const provider = model({ text: "- Rebuilt the carrier portal\n• Grew the design system\n" });
     const { data, promptVersion } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, tone: "WARM", facts: [], posting }, options);
-    expect(promptVersion).toBe("regenerate-unit@6");
+    expect(promptVersion).toBe("regenerate-unit@7");
     expect(data).toMatchObject({ id: "experience:e1", text: "Rebuilt the carrier portal\nGrew the design system" });
     expect(prompt(provider)).toContain(`Write a new version of "${unit.label}" (experience:e1)`);
     expect(sent(provider).system).not.toContain(COVER_LETTER_APPROACH);
@@ -449,6 +463,15 @@ describe("regenerateUnit", () => {
     expect(sent(provider).system).not.toContain(COVER_LETTER_APPROACH);
   });
 
+  it("tells the model what the resume's headline is (.scratch/tailored-headline)", async () => {
+    const resume = demoResumeUnits();
+    const unit = resume.find((entry) => entry.id === "headline")!;
+    const provider = model({ text: " Product Designer · Payments " });
+    const { data } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, tone: "WARM", facts: [], posting }, options);
+    expect(data).toMatchObject({ id: "headline", text: "Product Designer · Payments" });
+    expect(sent(provider).system).toMatch(/It's the one short line under the candidate's name/);
+  });
+
   it("tells the model what a letter's greeting is, without the letter's brief (E8-11)", async () => {
     const unit = { id: "greeting", label: "Greeting", text: "Dear Ledgerly team," };
     const provider = model({ text: "Dear hiring team," });
@@ -460,6 +483,7 @@ describe("regenerateUnit", () => {
 
 describe("refineChat", () => {
   const resume = demoResumeUnits();
+  const summary = resume.find((unit) => unit.id === "summary")!;
   const letter = [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text: "Warm regards," }];
   const input = { request: "Make it more formal", history: [], target: null, resume, letter, profile, extracted, tone: "WARM" as const, facts: [], posting };
 
@@ -469,7 +493,7 @@ describe("refineChat", () => {
       edits: [
         { document: "COVER_LETTER", unitId: "paragraph:1", text: "Please accept my application." },
         { document: "COVER_LETTER", unitId: "paragraph:99", text: "Invented unit" },
-        { document: "RESUME", unitId: "summary", text: resume[0].text },
+        { document: "RESUME", unitId: "summary", text: summary.text },
       ],
       tone: "FORMAL",
       declined: false,
@@ -552,12 +576,13 @@ describe("refineChat", () => {
     const flagged = resume.map((unit) => (unit.id === "summary" ? { ...unit, unverified: ["2019"] } : unit));
     const answer = { reply: "Shorter now.", edits: [{ document: "RESUME", unitId: "summary", text: "Product designer." }], tone: null, declined: false };
     const { data } = await refineChat(model(answer), { ...input, resume: flagged }, options);
-    expect(data.edits[0]).toMatchObject({ previousText: resume[0].text, previousUnverified: ["2019"] });
+    expect(data.edits[0]).toMatchObject({ previousText: summary.text, previousUnverified: ["2019"] });
   });
 });
 
 describe("the fact guard in the writing tasks (E6-6)", () => {
   const answer = {
+    headline: "",
     summary: "Led a team of 12 at Google; nine years of design at Northwind Logistics.",
     roles: [{ id: "e1", bullets: ["Led the redesign of the carrier portal used daily by 4,000+ dispatchers"] }],
     projects: [],

@@ -122,6 +122,7 @@ export function demoResumeUnits(
     "skill" in requirement && requirement.skill && skills.includes(requirement.skill) ? [requirement.skill] : [],
   );
   return [
+    { id: "headline", label: "Headline", text: sample.profile.headline },
     { id: "summary", label: "Summary", text: resume.summary },
     ...experience.map((entry) => ({
       id: `experience:${experienceId(entry.id)}`,

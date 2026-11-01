@@ -107,6 +107,16 @@ describe("resumeContent", () => {
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
   });
 
+  it("takes the headline from a tailored resume's own, the profile's without one, and none when it was left out", () => {
+    const units = demoResumeUnits();
+    const withHeadline = (text: string | null) =>
+      resumeContent(profile, { units: text === null ? units.filter((unit) => unit.id !== "headline") : units.map((unit) => (unit.id === "headline" ? { ...unit, text } : unit)) }).headline;
+    expect(withHeadline(" Product Designer · Payments ")).toBe("Product Designer · Payments");
+    // A version saved before resumes had their own headline.
+    expect(withHeadline(null)).toBe(profile.basics.headline);
+    expect(withHeadline("")).toBe("");
+  });
+
   it("lays out projects like roles, with their link as a resume shows it (PRO-13)", () => {
     expect(resumeContent(profile).projects).toEqual([
       {

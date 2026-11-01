@@ -26,6 +26,11 @@ import { TONES } from "@/lib/tones";
 export const WRITTEN_IN_CLAUDE = "claude-chat";
 
 export const writtenResumeSchema = z.object({
+  headline: z
+    .string()
+    .max(200)
+    .default("")
+    .describe("The one short line under the name, for this job, from titles the candidate has held; empty keeps the profile's headline"),
   summary: z.string().max(2000).describe("2–3 sentences about the candidate as this job would see them"),
   roles: z
     .array(z.object({ id: z.string(), bullets: z.array(z.string().max(400)).max(8) }))

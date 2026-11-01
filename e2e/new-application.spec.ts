@@ -31,6 +31,8 @@ test("reads a posting, shows the match and writes tailored documents", async ({ 
 
   await expect(page.getByRole("heading", { level: 1, name: "Senior Product Designer, Payments · Ledgerly" })).toBeVisible();
   await expect(page.getByRole("article", { name: "Resume" })).toContainText("Jane Doe");
+  // A headline written for this job (.scratch/tailored-headline), editable like the summary.
+  await expect(page.getByRole("group", { name: "Headline" })).toContainText("Senior Product Designer · Payments");
   await page.getByRole("tab", { name: "Cover letter" }).click();
   await expect(page.getByText("Payments are where trust is won or lost")).toBeVisible();
   // What you told the AI is the application's first fact (APP-15).

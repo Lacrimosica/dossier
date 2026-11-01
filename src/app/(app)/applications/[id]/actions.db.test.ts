@@ -499,6 +499,19 @@ describe("leaveOutUnit (#217)", () => {
     expect(saved.trimmed).toBeNull();
   });
 
+  it("keeps a headline left out as an empty part, so the profile's doesn't show instead, and puts it back", async () => {
+    const headline = { id: "headline", label: "Headline", text: "Product Designer · Payments" };
+    await prisma().document.updateMany({ where: { applicationId: "app-1", kind: "RESUME" }, data: { units: [headline, ...resume] } });
+    await leaveOutUnit({ id: "app-1", unitId: "headline" });
+    let saved = await document();
+    expect(saved.units).toEqual([{ ...headline, text: "" }, ...resume]);
+    expect(saved.trimmed).toEqual([{ kind: "unit", unit: headline, index: 0, byHand: true }]);
+
+    await putBackTrimmed({ id: "app-1", index: 0 });
+    saved = await document();
+    expect(saved.units).toEqual([headline, ...resume]);
+  });
+
   it("says so when the part is gone", async () => {
     await leaveOutUnit({ id: "app-1", unitId: "summary" });
     expect(await leaveOutUnit({ id: "app-1", unitId: "summary" })).toMatchObject({ ok: false, error: expect.stringMatching(/^That part of the document no longer exists/) });
