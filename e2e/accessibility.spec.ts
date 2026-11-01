@@ -37,6 +37,7 @@ const SCREENS = [
   "/profile?section=references",
   "/profile?section=facts",
   "/profile/import",
+  "/profile/review",
   "/resume",
   "/jobs",
   "/jobs?view=history",

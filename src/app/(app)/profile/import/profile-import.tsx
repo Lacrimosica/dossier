@@ -108,8 +108,15 @@ export function ProfileImport({
   async function apply(mode: ImportMode) {
     if (!jobId) return;
     setApplying(true);
-    const result = toastResult(await applyProfileImport({ jobId, mode }));
+    const result = await applyProfileImport({ jobId, mode });
     setApplying(false);
+    // A merge is where duplicates come from, so its toast offers a review
+    // straight away (.scratch/profile-review, user story 24).
+    if (result.ok && mode === "merge" && result.toast) {
+      toast(result.toast, { action: { label: "Review my profile", onClick: () => router.push("/profile/review") } });
+    } else {
+      toastResult(result);
+    }
     if (result.ok) router.push("/profile");
   }
 

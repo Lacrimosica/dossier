@@ -1,6 +1,6 @@
 # Profile review
 
-Status: ready-for-agent
+Status: done
 
 Tickets: `issues/01`–`04`, in order.
 

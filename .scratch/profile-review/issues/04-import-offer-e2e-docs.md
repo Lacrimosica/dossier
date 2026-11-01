@@ -1,6 +1,6 @@
 # 04 — Offer after import, e2e and docs
 
-Status: ready-for-agent
+Status: done
 Blocked by: 03
 
 Spec: `../spec.md` ("Profile screen", "Fakes", "Docs").

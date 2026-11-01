@@ -115,6 +115,19 @@ describe("ProfileImport (E4-10)", () => {
     expect(router.push).toHaveBeenCalledWith("/profile");
   });
 
+  it("offers a review of the profile after a merge", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useJob).mockReturnValue(done as never);
+    vi.mocked(applyProfileImport).mockResolvedValueOnce({ ok: true, data: null, toast: "Added to your profile: 1 role." } as never);
+    render(<ProfileImport keptFor="24 hours" aiReady provider="LOCAL" initialJobId="job-1" />);
+    await user.click(screen.getByRole("button", { name: "Merge into my profile" }));
+    const [message, options] = vi.mocked(toast).mock.calls.at(-1)!;
+    expect(message).toBe("Added to your profile: 1 role.");
+    expect(options?.action?.label).toBe("Review my profile");
+    options!.action!.onClick();
+    expect(router.push).toHaveBeenLastCalledWith("/profile/review");
+  });
+
   it("deletes the reading when another file is chosen", async () => {
     const user = userEvent.setup();
     vi.mocked(useJob).mockReturnValue(done as never);

@@ -160,6 +160,17 @@ docker compose exec -e AI_LIVE=ollama app yarn vitest run src/lib/ai/providers.l
 
 `AI_LIVE=lmstudio` checks LM Studio, with the model saved in Settings while LM Studio is chosen there, or with `-e DOSSIER_AI_MODEL=…` (and `DOSSIER_AI_URL`, by default `http://host.docker.internal:1234`). A model that isn't loaded gets loaded and stays loaded until you eject it.
 
+## Profile review
+
+**Review my profile** (`/profile/review`) asks the AI for duplicates and contradictions in the profile: the same role, project, degree or course entered twice, the same skill under two names, impossible dates, repeated bullets, empty entries. The model only names ids; it never writes profile text.
+
+- **Task** (`src/lib/ai/tasks/review-profile.ts`): sends every experience, project, degree, course (hidden ones too) and skill with its id, plus the fixes the user skipped before. Contact details, references and facts stay out. The answer is four flat lists: `merges`, `edits`, `deletions`, `skillMerges`.
+- **Fixes** (`src/lib/profile-review.ts`, pure): `buildFixes()` turns the answer into fixes built from the entries themselves. A merge keeps the chosen entry's text, fills its gaps from the others, keeps every bullet and skill without repeats, and spans the earliest start to the latest end. An edit may only reuse the entry's own dates and a subset of its bullets. Anything else (an unknown id, a new year or bullet, an id in two fixes) is dropped. Nothing new can get in, so the fact guard isn't needed. This is the file to keep strict.
+- **Job** (`src/lib/jobs/review-profile.ts`): stores the answer and each entry's `updatedAt`, never the fixes. The page and `applyProfileReview` both rebuild the fixes from the profile as it is then.
+- **Applying** (`src/lib/profile-review-apply.ts`): one transaction. A fix whose entries changed since the review is left out and counted in the toast; the others apply, entries before skills. Unticked fixes go to the `reviewSkipped` setting as fingerprints (`kind:section:sorted ids`, at most 200, pruned of ids that are gone) and aren't proposed again. The job is deleted.
+
+A merge import's toast offers a review. The fake AI (`profile_review` in `e2e/fake-ai.mts`) merges roles at the same company and skills with the same name, and `e2e/profile-review.spec.ts` adds such duplicates to the demo data.
+
 ## Job search
 
 Find jobs (`/jobs`) searches the job source chosen in Settings → Job search: JSearch, Adzuna or the Bundesagentur für Arbeit. Until a choice is saved, `DOSSIER_JOBS_SOURCE` and the key variables decide (see `.env.example`). In the code, "job" already means a background task (`Job`, `src/lib/jobs`), so a job ad is a "posting", and job search lives in `src/lib/job-search`:
