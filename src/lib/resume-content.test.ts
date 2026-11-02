@@ -264,6 +264,13 @@ describe("resumeContent", () => {
       expect(split.location).toBe("");
       expect(split.roles.map((role) => role.location)).toEqual(["Remote", northwind.location.trim()]);
     });
+
+    it("leaves a role without a location out of its company's places (.scratch/optional-role-fields)", () => {
+      const remote = { ...promoted, experience: promoted.experience.map((role) => (role.id === "senior" ? { ...role, location: "  " } : role)) };
+      const [company] = companies(resumeContent(remote, { showLocations: true }));
+      expect(company.location).toBe(northwind.location.trim());
+      expect(company.roles.map((role) => role.location)).toEqual(["", ""]);
+    });
   });
 
   describe("experience groups (.scratch/experience-groups)", () => {

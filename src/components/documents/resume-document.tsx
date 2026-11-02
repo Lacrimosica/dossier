@@ -351,6 +351,11 @@ const breakAfterDash = (dates: string) =>
  * line, and the title (or `at`) and the place a second one in italics. A role
  * under its company after a promotion is that second line alone, its dates
  * after its title.
+ *
+ * A role may have no title or place, e.g. remote work or only a company
+ * (.scratch/optional-role-fields), so each line is built from the parts
+ * there are: the organisation stands in for a missing title, and nothing
+ * empty is drawn, no stray separator, blank line or half-empty second line.
  */
 function EntryHead({
   title,
@@ -373,42 +378,56 @@ function EntryHead({
 }) {
   if (stacked) {
     const placeSpan = place && <span className={styles.place}>{place}</span>;
+    // The grid puts every even cell at the end of the line, so a place or
+    // dates without a cell before them get an empty one to stay there.
+    const gap = <span />;
     if (nested) {
+      const line = title && dates ? `${title} | ${dates}` : title || dates;
+      if (!line && !placeSpan) return null;
       return (
         <div className={styles.entryHead}>
-          <p className={styles.entrySubtitle}>
-            {title}
-            {dates && ` | ${dates}`}
-          </p>
+          {line ? <p className={styles.entrySubtitle}>{line}</p> : gap}
           {placeSpan}
         </div>
       );
     }
-    const second = organisation ? title : at;
+    const [lead, second] = (organisation ? [organisation, title] : [title, at]).filter(Boolean);
+    if (!lead) {
+      // Nothing to name it by: the place and the dates make one line.
+      if (!placeSpan && !dates) return null;
+      return (
+        <div className={styles.entryHead}>
+          {placeSpan || gap}
+          <span className={styles.dates}>{dates}</span>
+        </div>
+      );
+    }
     return (
       <div className={styles.entryHead}>
-        <p className={styles.entryTitle}>{organisation || title}</p>
+        <p className={styles.entryTitle}>{lead}</p>
         {/* Always there, empty or not, so the second line starts in the first column. */}
         <span className={styles.dates}>{dates}</span>
-        {(second || placeSpan) && <p className={styles.entrySubtitle}>{second}</p>}
+        {second ? <p className={styles.entrySubtitle}>{second}</p> : placeSpan && gap}
         {placeSpan}
       </div>
     );
   }
+  // Without a title, the organisation is the name and `at` (which is the organisation unless given) isn't repeated.
+  const name = title || organisation;
+  const rest = !title && at === organisation ? undefined : at;
+  const where = rest && place ? <>{rest}{" · "}{place}</> : rest || place;
   const datesSpan = dates && <span className={styles.dates}>{timeline ? breakAfterDash(dates) : dates}</span>;
-  const where = at && place ? <>{at}{" · "}{place}</> : at || place;
+  if (!name && !where && !datesSpan) return null;
   return (
     <div className={styles.entryHead}>
       {timeline && datesSpan}
-      <p>
-        <span className={styles.entryTitle}>{title}</span>
-        {where && (
-          <>
-            {title && ", "}
-            {where}
-          </>
-        )}
-      </p>
+      {(name || where) && (
+        <p>
+          {name && <span className={styles.entryTitle}>{name}</span>}
+          {name && where && ", "}
+          {where}
+        </p>
+      )}
       {!timeline && datesSpan}
     </div>
   );

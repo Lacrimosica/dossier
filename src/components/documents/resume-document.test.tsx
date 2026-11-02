@@ -92,6 +92,60 @@ describe("ResumeDocument", () => {
     expect(screen.getByText(/^Lead Product Designer/)).toHaveTextContent("Lead Product Designer | Apr 2023 – Present");
   });
 
+  describe("a role without a title or place (.scratch/optional-role-fields)", () => {
+    const [northwind, ...rest] = profile.experience;
+    const withRole = (change: Partial<typeof northwind>) => ({ ...profile, experience: [{ ...northwind, ...change }, ...rest] });
+    const head = (container: HTMLElement) => container.querySelector(`[data-unit="experience:${northwind.id}"] [class*=entryHead]`)!;
+    const emptyElements = (element: Element) => [...element.querySelectorAll("*")].filter((child) => !child.textContent?.trim());
+
+    it.each(["editorial", "chronicle"])("names it by its company, in bold, in %s", (id) => {
+      const { container } = render(<ResumeDocument theme={theme(id)} profile={withRole({ role: "", location: "" })} paper="A4" today={today} showLocations />);
+      const name = screen.getByText(northwind.company);
+      expect(name.className).toMatch(/entryTitle/);
+      expect(name.parentElement).toHaveTextContent(new RegExp(`^${northwind.company}$`));
+      expect(emptyElements(head(container))).toEqual([]);
+    });
+
+    it("puts the place after the company when there's no title", () => {
+      render(<ResumeDocument theme={theme("editorial")} profile={withRole({ role: "" })} paper="A4" today={today} showLocations />);
+      expect(screen.getByText(northwind.company).parentElement).toHaveTextContent(new RegExp(`^${northwind.company}, ${northwind.location}$`));
+    });
+
+    it.each(["editorial", "chronicle"])("draws only the dates when there's nothing else, in %s", (id) => {
+      const { container } = render(<ResumeDocument theme={theme(id)} profile={withRole({ role: "", company: "", location: "" })} paper="A4" today={today} />);
+      expect(head(container).querySelector("p")).toBeNull();
+      expect(head(container)).toHaveTextContent(/^Mar 2021 –\s?Present$/);
+      expect(emptyElements(head(container))).toEqual([]);
+    });
+
+    it("keeps a stacked head to one line when there's only a place", () => {
+      const { container } = render(<ResumeDocument theme={theme("brief")} profile={withRole({ role: "", company: "", location: "Remote" })} paper="A4" today={today} showLocations />);
+      expect([...head(container).children].map((cell) => cell.textContent)).toEqual(["Remote", "Mar 2021 – Present"]);
+    });
+
+    it("leaves the second stacked line out without a title or place", () => {
+      const { container } = render(<ResumeDocument theme={theme("brief")} profile={withRole({ role: "", location: "" })} paper="A4" today={today} showLocations />);
+      expect([...head(container).children].map((cell) => cell.textContent)).toEqual([northwind.company, "Mar 2021 – Present"]);
+    });
+
+    it("keeps the place at the end of the second stacked line without a title", () => {
+      const { container } = render(<ResumeDocument theme={theme("brief")} profile={withRole({ role: "" })} paper="A4" today={today} showLocations />);
+      const cells = [...head(container).children];
+      expect(cells.map((cell) => cell.textContent)).toEqual([northwind.company, "Mar 2021 – Present", "", northwind.location]);
+      expect(cells[2].tagName).toBe("SPAN");
+    });
+
+    it("prints a promoted role without a title as its dates alone, with no stray bar", () => {
+      const promoted = {
+        ...profile,
+        experience: [{ ...northwind, id: "lead", role: "Lead Product Designer", startYear: 2023, startMonth: 4 }, { ...northwind, role: "", current: false, endYear: 2023, endMonth: 3 }, ...rest],
+      };
+      render(<ResumeDocument theme={theme("brief")} profile={promoted} paper="A4" today={today} />);
+      // The whole line, so a leading "|" would fail it.
+      expect(screen.getByText("Mar 2021 – Mar 2023", { normalizer: (text) => text }).className).toMatch(/entrySubtitle/);
+    });
+  });
+
   it("marks the page with the theme's structure, and gives a banner its text colour", () => {
     render(<ResumeDocument theme={theme("atlas")} profile={profile} paper="A4" today={today} />);
     const page = screen.getByRole("article", { name: "Resume" });

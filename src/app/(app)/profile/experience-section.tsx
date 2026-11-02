@@ -105,6 +105,7 @@ function ExperienceForm({
           <Input
             label="Location"
             placeholder="Berlin, Germany"
+            hint="Optional. Leave it empty for remote work, or type “Remote” to show it on your resume."
             value={entry.location}
             onChange={(event) => set({ location: event.target.value })}
           />

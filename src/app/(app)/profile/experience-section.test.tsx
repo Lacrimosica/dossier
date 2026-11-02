@@ -128,6 +128,16 @@ describe("ExperienceSection", () => {
     expect(screen.getByLabelText("Role")).toHaveValue("Product Designer");
   });
 
+  it("lets the location be left empty, e.g. for remote work (.scratch/optional-role-fields)", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(header(/Senior Product Designer/));
+    const location = screen.getByLabelText("Location");
+    expect(location).toHaveAccessibleDescription(/Optional\. Leave it empty for remote work/);
+    await user.clear(location);
+    await waitFor(() => expect(saveExperience).toHaveBeenLastCalledWith(expect.objectContaining({ location: "" })), { timeout: 2000 });
+  });
+
   it("autosaves edits and keeps a half-typed year out of the saved date", async () => {
     const user = userEvent.setup();
     render(<Harness />);
