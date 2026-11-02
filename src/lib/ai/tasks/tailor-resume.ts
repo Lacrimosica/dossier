@@ -5,15 +5,19 @@ import { publicationLabel } from "@/lib/citation";
 import { documentLabels, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { resumeCourses, resumePublications, sameName, type ProfileData } from "@/lib/profile";
 
-import { guardSources, guardUnits } from "../fact-guard";
+import { claimSources, guardUnits } from "../fact-guard";
 
 import {
   applicationFacts,
+  BULLET_RULES,
   candidateFacts,
   CREATIVITY,
   jobForPrompt,
   languageRule,
+  localDate,
   NO_EM_DASHES,
+  PLAIN_WORDING,
+  postingAsPublished,
   profileForPrompt,
   system,
   truthfulness,
@@ -21,7 +25,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@8";
+export const TAILOR_RESUME_VERSION = "tailor-resume@9";
 
 const answerSchema = z.object({
   /** The line under the name, for this job (.scratch/tailored-headline). */
@@ -40,9 +44,10 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 
 - headline: the one short line under the candidate's name, for this job: a title, optionally with a focus after " · " (e.g. "Data Engineer · Streaming and analytics"). Use titles the candidate has held and skills they have, not the job's title unless they've held it. Start from their own headline.
 - summary: 2–3 sentences in the first person without "I" at the start of every sentence, about the candidate as this job would see them.
-- roles: every role from the profile, by id, with 2–5 bullets each. Lead with what this job cares about, keep each bullet to one line, and start with a verb.
+- roles: every role from the profile, by id. Recent roles and those closest to this job get the most bullets (up to 5); older roles that don't bear on it get 1–2. Lead with what this job cares about, keep each bullet to about a line, and start with a verb.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
 - skills: the candidate's own skills, most relevant to this job first. Copy their names exactly; you may leave out ones that don't help.
+- Read the posting for what the job does day to day and what it values, and let that decide what leads. Requirements marked "gap" are what the candidate doesn't have: never write them into the resume, not even in other words. When the posting names a skill the candidate has under another spelling ("PostgreSQL" for "Postgres"), use the posting's in bullets and the summary.
 - education: every entry by id, with its notes shortened or left empty.
 - courses: only the courses and certificates from the profile that help with this job, by id, most relevant first, with their notes shortened or left empty. Leave out the rest; an empty list is fine.
 - The profile's publications go on the resume word for word, so don't answer with them; the summary may mention them.`;
@@ -64,21 +69,26 @@ export type TailorInput = {
   match: Match | null;
   /** What the candidate tells the AI for this application (APP-15). */
   facts: string[];
-  /** The posting as pasted, for the fact guard. */
+  /** The posting as pasted: read by the model for what the job is, never backing a claim. */
   posting: string;
+  /** For which roles are recent. */
+  today?: Date;
 };
 
 /** APP-4: the tailored resume as units (headline, summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
-export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profile, extracted, match, facts, posting }, options) => {
+export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profile, extracted, match, facts, posting, today = new Date() }, options) => {
   const answer = await provider.complete({
     system: system(
       INSTRUCTIONS,
+      `Today is ${localDate(today)}.`,
       pageFit(options.maxPages),
+      BULLET_RULES,
       truthfulness(options.strict),
       candidateFacts(profile, facts),
       CREATIVITY[options.creativity],
       languageRule(options.language),
       UNTRUSTED_POSTING,
+      PLAIN_WORDING,
       NO_EM_DASHES,
     ),
     messages: [
@@ -87,6 +97,7 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
         content: [
           `The candidate's profile:\n${profileForPrompt(profile)}`,
           `The job:\n${jobForPrompt(extracted, match)}`,
+          postingAsPublished(posting),
           applicationFacts(facts),
         ]
           .filter(Boolean)
@@ -100,9 +111,9 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
   });
   // The languages line in the resume's language: the chosen one, or the posting's.
   const units = resumeUnits(profile, answer, documentLabels(options.language ?? extracted.language));
-  // E6-6: in strict mode, note what the profile and posting don't back.
+  // E6-6: in strict mode, note what the profile doesn't back; the posting's wishes don't count.
   return {
-    data: options.strict ? guardUnits(units, guardSources(profile, extracted, posting, facts)) : units,
+    data: options.strict ? guardUnits(units, claimSources(profile, extracted, match, facts, today)) : units,
     promptVersion: TAILOR_RESUME_VERSION,
   };
 };

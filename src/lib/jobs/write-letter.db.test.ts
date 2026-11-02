@@ -63,7 +63,7 @@ describe("writeLetterJob", () => {
     // The sender, date and signature come from the profile, as at creation (E8-11).
     expect(units.map((unit) => unit.id)).toEqual(["sender", "date", "recipient", "greeting", "paragraph:1", "sign-off", "signature"]);
     const letter = await prisma().document.findUniqueOrThrow({ where, include: { versions: true } });
-    expect(letter).toMatchObject({ units, themeId: "modern", writtenWith: "write-cover-letter@6" });
+    expect(letter).toMatchObject({ units, themeId: "modern", writtenWith: "write-cover-letter@7" });
     expect(letter.versions.map((version) => version.cause)).toEqual(["WRITTEN"]);
   });
 

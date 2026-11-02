@@ -16,6 +16,7 @@ import {
   jobForPrompt,
   languageRule,
   NO_EM_DASHES,
+  postingAsPublished,
   profileForPrompt,
   system,
   truthfulness,
@@ -23,7 +24,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const WRITE_COVER_LETTER_VERSION = "write-cover-letter@6";
+export const WRITE_COVER_LETTER_VERSION = "write-cover-letter@7";
 
 const answerSchema = z.object({
   recipient: z.string(),
@@ -49,7 +50,7 @@ export type CoverLetterInput = {
   tone: Tone;
   /** What the candidate tells the AI for this application (APP-15). */
   facts: string[];
-  /** The posting as pasted, for the fact guard. */
+  /** The posting as pasted: who to address, what the job is for, and backing for the fact guard. */
   posting: string;
   /**
    * The tailored resume it goes with: just tailored, or as it is now when
@@ -84,6 +85,7 @@ export const writeCoverLetter: Task<CoverLetterInput, Unit[]> = async (provider,
         content: [
           `The candidate's profile:\n${profileForPrompt(profile)}`,
           `The job:\n${jobForPrompt(extracted, match)}`,
+          postingAsPublished(posting),
           resume?.length && `The tailored resume the letter goes with:\n${resume.map((unit) => `${unit.label}: ${unit.text}`).join("\n\n")}`,
           applicationFacts(facts),
         ]

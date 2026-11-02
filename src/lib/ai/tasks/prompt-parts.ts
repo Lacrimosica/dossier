@@ -102,6 +102,21 @@ export function postingForPrompt(posting: string): string {
   return `<posting>\n${posting.trim().slice(0, MAX_POSTING_CHARACTERS)}\n</posting>`;
 }
 
+/**
+ * The posting as published, for the writing tasks; null without one. The
+ * requirement list alone loses what the job does day to day, its product and
+ * its wording, which tailoring and the letter need (.scratch/resume-tailoring).
+ */
+export function postingAsPublished(posting: string): string | null {
+  return posting.trim() ? `The posting as published:\n${postingForPrompt(posting)}` : null;
+}
+
+/** The calendar day on the server, YYYY-MM-DD. */
+export function localDate(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 /** What the model knows about the job for writing tasks. */
 export function jobForPrompt(extracted: Extracted, match: Match | null): string {
   return JSON.stringify(
@@ -144,6 +159,22 @@ export function truthfulness(strict: boolean): string {
 
 /** House style for everything the model writes. */
 export const NO_EM_DASHES = "Never use em-dashes (\u2014). Use a comma, colon, full stop or parentheses instead.";
+
+/**
+ * How a role's or project's bullets are rewritten, for every task that writes
+ * them. Lost specifics, upgraded scope and a skill moved to another role are
+ * what survive guardrails and review most often (arXiv 2608.26171), and the
+ * fact guard can't see them: the words are all in the profile.
+ */
+export const BULLET_RULES = `When you write a role's or project's bullets from the profile's:
+- Keep every number, tool and named thing a bullet has; don't trade specifics for polish.
+- Keep who did what: "helped", "contributed to", "with the team" and "co-" stay, and a task never becomes something the candidate led or owned.
+- Name a tool or skill in a role or project only when it's in that entry's own bullets or skillsUsed.
+- Lead each entry with the result that matters most to this job.`;
+
+/** House style: wording that reads as the candidate's rather than a model's (Simplify's 2023\u20132026 resume data). */
+export const PLAIN_WORDING =
+  "Prefer plain verbs (built, ran, cut, shipped, fixed) to stock ones such as spearheaded, leveraged, orchestrated, honed or streamlined, and skip adjectives like dynamic or results-driven. Vary how bullets start and how long they are.";
 
 /** SET-3, as wording, for every provider. */
 export const CREATIVITY: Record<Creativity, string> = {

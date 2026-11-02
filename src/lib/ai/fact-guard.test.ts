@@ -4,7 +4,7 @@ import { demoProfile } from "@/lib/demo-profile";
 
 import sample from "../../../prisma/seed/prototype-sample.json";
 
-import { factSources, guardSources, guardUnits, sourcesFor, unverifiedFacts } from "./fact-guard";
+import { claimSources, factSources, guardSources, guardUnits, sourcesFor, unverifiedFacts } from "./fact-guard";
 
 const profile = demoProfile();
 const extracted = {
@@ -31,6 +31,7 @@ describe("the fact guard (E6-6)", () => {
     expect(check("Product designer with nine years of experience")).toEqual([]);
     expect(check("Product designer with 9 years of experience")).toEqual([]);
     expect(check("Mentored three junior designers at Northwind Logistics since Mar 2021.")).toEqual([]);
+    expect(check("Took Deque's course on WCAG 2.2 audits over 6 weekend sessions, and a UX Writing Workshop in London.")).toEqual([]);
   });
 
   it("flags numbers the profile doesn't back", () => {
@@ -46,6 +47,9 @@ describe("the fact guard (E6-6)", () => {
 
   it("ignores capitals that start a sentence or a bullet, and months, and 'I'", () => {
     expect(check("Excited to apply. Happily, I'm based in Rotterdam.\n- Shipped the carrier portal in March")).toEqual([]);
+    // A headline's focus after " · " starts afresh; a name there is still a name.
+    expect(check("Senior Product Designer · Complex tools and design systems")).toEqual([]);
+    expect(check("Senior Product Designer · Ex-Google")).toEqual(["Ex-Google"]);
   });
 
   it("knows the posting's own names and the years of experience the profile adds up to", () => {
@@ -71,6 +75,37 @@ describe("the fact guard (E6-6)", () => {
     expect(unverifiedFacts(claim, sourcesFor(profile, extracted, sample.ledgerly.posting, 11))).toEqual(["Klarna", "Config"]);
     expect(unverifiedFacts(claim, sourcesFor(told, extracted, sample.ledgerly.posting, 11))).toEqual(["Config"]);
     expect(unverifiedFacts(claim, guardSources(told, extracted, sample.ledgerly.posting, ["I gave a talk at Config last year."]))).toEqual([]);
+  });
+});
+
+describe("claimSources (.scratch/resume-tailoring)", () => {
+  const asked = {
+    ...extracted,
+    requirements: [
+      { text: "Prototyping in FigJam", kind: "skill" as const, skill: "FigJam", years: null, language: null },
+      { text: "Runs services on Kubernetes", kind: "skill" as const, skill: "Kubernetes", years: null, language: null },
+      { text: "Knows Terraform", kind: "skill" as const, skill: "Terraform", years: null, language: null },
+    ],
+  };
+  const match = {
+    items: [
+      { requirement: "Prototyping in FigJam", result: "covered" as const, skill: "Figma", experienceIds: ["e1"], note: null },
+      { requirement: "Runs services on Kubernetes", result: "gap" as const, skill: null, experienceIds: [], note: null },
+      { requirement: "Knows Terraform", result: "partial" as const, skill: "Terraform", experienceIds: [], note: null },
+    ],
+  };
+  const today = new Date(2026, 8, 28);
+
+  it("backs the job's details and the skills the match found, by the posting's names, but not the posting's other words", () => {
+    const sources = claimSources(profile, asked, match, [], today);
+    expect(unverifiedFacts("Senior Product Designer for Ledgerly in Amsterdam", sources)).toEqual([]);
+    expect(unverifiedFacts("Prototyped in FigJam, provisioned with Terraform, deployed on Kubernetes", sources)).toEqual(["Kubernetes"]);
+    expect(unverifiedFacts("Paid small businesses across Europe", sources)).toEqual(["Europe"]);
+    expect(unverifiedFacts("Eleven years of design", sources)).toEqual([]);
+  });
+
+  it("backs no skill without a match, and takes the facts", () => {
+    expect(unverifiedFacts("Prototyped in FigJam at Klarna", claimSources(profile, asked, null, ["A year at Klarna."], today))).toEqual(["FigJam"]);
   });
 });
 

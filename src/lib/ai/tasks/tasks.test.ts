@@ -10,7 +10,7 @@ import { MockProvider } from "../providers/mock";
 
 import { isoDate } from "./extract-posting";
 import { sameSkill } from "./match-requirements";
-import { COVER_LETTER_APPROACH } from "./prompt-parts";
+import { BULLET_RULES, COVER_LETTER_APPROACH, PLAIN_WORDING } from "./prompt-parts";
 import { withoutFrame } from "./write-cover-letter";
 import { recipient } from "./write-email";
 import {
@@ -183,7 +183,7 @@ describe("matchRequirements", () => {
 
 describe("tailorResume", () => {
   const answer = {
-    headline: "Product Designer · Payments and operations tools",
+    headline: "Product Designer · Design systems and complex tools",
     summary: "Product designer who makes complex tools calm.",
     roles: [
       { id: "e1", bullets: ["Led the carrier portal redesign", " Owned the design system "] },
@@ -226,7 +226,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@8");
+    expect(promptVersion).toBe("tailor-resume@9");
     expect(data.map((unit) => unit.id)).toEqual([
       "headline",
       "summary",
@@ -255,7 +255,7 @@ describe("tailorResume", () => {
   it("writes a headline for the job, or keeps the profile's when the answer has none (.scratch/tailored-headline)", async () => {
     const provider = model(answer);
     const { data } = await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, options);
-    expect(data[0]).toEqual({ id: "headline", label: "Headline", text: "Product Designer · Payments and operations tools" });
+    expect(data[0]).toEqual({ id: "headline", label: "Headline", text: "Product Designer · Design systems and complex tools" });
     expect(sent(provider).system).toMatch(/- headline: the one short line under the candidate's name/);
     const { data: empty } = await tailorResume(model({ ...answer, headline: "  " }), { profile, extracted, match: null, facts: [], posting }, options);
     expect(empty[0].text).toBe(profile.basics.headline);
@@ -323,6 +323,16 @@ describe("tailorResume", () => {
     expect(sent(provider).system).toMatch(/reasonable conclusions/);
     expect(sent(provider).system).toMatch(/Write everything in Dutch\./);
   });
+
+  it("reads the posting itself, today's date and the bullet rules (.scratch/resume-tailoring)", async () => {
+    const provider = model(answer);
+    await tailorResume(provider, { profile, extracted, match: null, facts: [], posting, today }, options);
+    expect(prompt(provider)).toContain(`The posting as published:\n<posting>\n${posting.trim()}\n</posting>`);
+    expect(sent(provider).system).toContain("Today is 2026-09-28.");
+    expect(sent(provider).system).toContain(BULLET_RULES);
+    expect(sent(provider).system).toContain(PLAIN_WORDING);
+    expect(sent(provider).system).toMatch(/Requirements marked "gap" are what the candidate doesn't have/);
+  });
 });
 
 describe("writeCoverLetter", () => {
@@ -343,7 +353,7 @@ describe("writeCoverLetter", () => {
   it("returns the recipient, greeting, paragraphs and the tone's sign-off for an English letter (APP-10, E8-11)", async () => {
     const provider = model(answer);
     const { data, promptVersion } = await writeCoverLetter(provider, { profile, extracted, match, tone: "FORMAL", facts: [], posting }, options);
-    expect(promptVersion).toBe("write-cover-letter@6");
+    expect(promptVersion).toBe("write-cover-letter@7");
     expect(data).toEqual([
       { id: "recipient", label: "Recipient", text: "Ledgerly · Hiring team\nAmsterdam" },
       { id: "greeting", label: "Greeting", text: "Dear Ledgerly team," },
@@ -357,6 +367,8 @@ describe("writeCoverLetter", () => {
     expect(sent(provider).system).toContain(COVER_LETTER_APPROACH);
     // Gaps go along, so the letter can acknowledge them honestly.
     expect(prompt(provider)).toMatch(/"inProfile": "gap"/);
+    // The posting too, for who to address and what the job is for (.scratch/resume-tailoring).
+    expect(prompt(provider)).toContain(`The posting as published:\n<posting>\n${posting.trim()}\n</posting>`);
   });
 
   it("builds on the tailored resume when it's written afterwards", async () => {
@@ -452,12 +464,32 @@ describe("writeEmail", () => {
 });
 
 describe("regenerateUnit", () => {
+  it("knows the gaps, reads the posting and keeps to the bullet rules and page limit (.scratch/resume-tailoring)", async () => {
+    const resume = demoResumeUnits();
+    const unit = resume.find((entry) => entry.id === "experience:e1")!;
+    const match: Match = { items: [{ requirement: "Experience with payments or fintech", result: "gap", skill: null, experienceIds: [], note: null }] };
+    const provider = model({ text: "Rebuilt the carrier portal" });
+    await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, match, tone: "WARM", facts: [], posting }, { ...options, maxPages: 1 });
+    expect(prompt(provider)).toContain('"inProfile": "gap"');
+    expect(prompt(provider)).toContain(`<posting>\n${posting.trim()}\n</posting>`);
+    expect(sent(provider).system).toContain("answer 2–4 bullets");
+    expect(sent(provider).system).toContain(BULLET_RULES);
+    expect(sent(provider).system).toContain(PLAIN_WORDING);
+
+    // A letter paragraph has neither.
+    const paragraph = { id: "paragraph:1", label: "Opening", text: "Hello." };
+    const letter = model({ text: "Hi." });
+    await regenerateUnit(letter, { kind: "COVER_LETTER", unit: paragraph, document: [paragraph], profile, extracted, match, tone: "WARM", facts: [], posting }, options);
+    expect(sent(letter).system).not.toContain(BULLET_RULES);
+    expect(sent(letter).system).not.toContain(PLAIN_WORDING);
+  });
+
   it("writes one part again, cleaning up bullets (APP-5)", async () => {
     const resume = demoResumeUnits();
     const unit = resume.find((entry) => entry.id === "experience:e1")!;
     const provider = model({ text: "- Rebuilt the carrier portal\n• Grew the design system\n" });
-    const { data, promptVersion } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, tone: "WARM", facts: [], posting }, options);
-    expect(promptVersion).toBe("regenerate-unit@7");
+    const { data, promptVersion } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, match: null, tone: "WARM", facts: [], posting }, options);
+    expect(promptVersion).toBe("regenerate-unit@8");
     expect(data).toMatchObject({ id: "experience:e1", text: "Rebuilt the carrier portal\nGrew the design system" });
     expect(prompt(provider)).toContain(`Write a new version of "${unit.label}" (experience:e1)`);
     expect(sent(provider).system).not.toContain(COVER_LETTER_APPROACH);
@@ -466,7 +498,7 @@ describe("regenerateUnit", () => {
   it("keeps an English letter's sign-off the tone's", async () => {
     const unit = { id: "sign-off", label: "Sign-off", text: "Warm regards," };
     const provider = model({ text: "Yours truly," });
-    const { data } = await regenerateUnit(provider, { kind: "COVER_LETTER", unit, document: [unit], profile, extracted, tone: "DIRECT", facts: [], posting }, options);
+    const { data } = await regenerateUnit(provider, { kind: "COVER_LETTER", unit, document: [unit], profile, extracted, match: null, tone: "DIRECT", facts: [], posting }, options);
     expect(data.text).toBe("Best,");
     expect(sent(provider).system).toContain(COVER_LETTER_APPROACH);
   });
@@ -474,7 +506,7 @@ describe("regenerateUnit", () => {
   it("tells the model what the email's message is, with the tone", async () => {
     const unit = { id: "body", label: "Message", text: "Dear John,\n\nHello.\n\nWarm regards,\nLena" };
     const provider = model({ text: "Dear John,\n\nHi again." });
-    const { data } = await regenerateUnit(provider, { kind: "EMAIL", unit, document: [unit], profile, extracted, tone: "DIRECT", facts: [], posting }, options);
+    const { data } = await regenerateUnit(provider, { kind: "EMAIL", unit, document: [unit], profile, extracted, match: null, tone: "DIRECT", facts: [], posting }, options);
     expect(data.text).toBe("Dear John,\n\nHi again.");
     expect(sent(provider).system).toMatch(/one part of a candidate's application email/);
     expect(sent(provider).system).toMatch(/It's the email's whole message/);
@@ -486,7 +518,7 @@ describe("regenerateUnit", () => {
     const resume = demoResumeUnits();
     const unit = resume.find((entry) => entry.id === "headline")!;
     const provider = model({ text: " Product Designer · Payments " });
-    const { data } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, tone: "WARM", facts: [], posting }, options);
+    const { data } = await regenerateUnit(provider, { kind: "RESUME", unit, document: resume, profile, extracted, match: null, tone: "WARM", facts: [], posting }, options);
     expect(data).toMatchObject({ id: "headline", text: "Product Designer · Payments" });
     expect(sent(provider).system).toMatch(/It's the one short line under the candidate's name/);
   });
@@ -494,7 +526,7 @@ describe("regenerateUnit", () => {
   it("tells the model what a letter's greeting is, without the letter's brief (E8-11)", async () => {
     const unit = { id: "greeting", label: "Greeting", text: "Dear Ledgerly team," };
     const provider = model({ text: "Dear hiring team," });
-    await regenerateUnit(provider, { kind: "COVER_LETTER", unit, document: [unit], profile, extracted, tone: "WARM", facts: [], posting }, options);
+    await regenerateUnit(provider, { kind: "COVER_LETTER", unit, document: [unit], profile, extracted, match: null, tone: "WARM", facts: [], posting }, options);
     expect(sent(provider).system).toMatch(/It's the letter's greeting/);
     expect(sent(provider).system).not.toContain(COVER_LETTER_APPROACH);
   });
@@ -504,7 +536,7 @@ describe("refineChat", () => {
   const resume = demoResumeUnits();
   const summary = resume.find((unit) => unit.id === "summary")!;
   const letter = [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text: "Warm regards," }];
-  const input = { request: "Make it more formal", history: [], target: null, resume, letter, profile, extracted, tone: "WARM" as const, facts: [], posting };
+  const input = { request: "Make it more formal", history: [], target: null, resume, letter, profile, extracted, match: null, tone: "WARM" as const, facts: [], posting };
 
   it("returns a reply and edits with what they replace, for Undo (APP-7, APP-8)", async () => {
     const answer = {
@@ -518,7 +550,7 @@ describe("refineChat", () => {
       declined: false,
     };
     const { data, promptVersion } = await refineChat(model(answer), input, options);
-    expect(promptVersion).toBe("refine-chat@7");
+    expect(promptVersion).toBe("refine-chat@8");
     expect(data).toEqual({
       reply: "I made the letter more formal.",
       tone: "FORMAL",
@@ -597,6 +629,15 @@ describe("refineChat", () => {
     const { data } = await refineChat(model(answer), { ...input, resume: flagged }, options);
     expect(data.edits[0]).toMatchObject({ previousText: summary.text, previousUnverified: ["2019"] });
   });
+
+  it("knows the gaps, reads the posting and keeps to the bullet rules (.scratch/resume-tailoring)", async () => {
+    const match: Match = { items: [{ requirement: "Experience with payments or fintech", result: "gap", skill: null, experienceIds: [], note: null }] };
+    const provider = model({ reply: "Done.", edits: [], tone: null, declined: false });
+    await refineChat(provider, { ...input, match }, options);
+    expect(prompt(provider)).toContain('"inProfile": "gap"');
+    expect(prompt(provider)).toContain(`<posting>\n${posting.trim()}\n</posting>`);
+    expect(sent(provider).system).toContain(BULLET_RULES);
+  });
 });
 
 describe("the fact guard in the writing tasks (E6-6)", () => {
@@ -626,15 +667,59 @@ describe("the fact guard in the writing tasks (E6-6)", () => {
     expect(letter.data[0].unverified).toEqual(["Stripe", "40%"]);
 
     const unit = { id: "summary", label: "Summary", text: "Product designer." };
-    const regenerated = await regenerateUnit(model({ text: "PhD-trained designer." }), { kind: "RESUME", unit, document: [unit], profile, extracted, tone: "WARM", facts: [], posting }, options);
+    const regenerated = await regenerateUnit(model({ text: "PhD-trained designer." }), { kind: "RESUME", unit, document: [unit], profile, extracted, match: null, tone: "WARM", facts: [], posting }, options);
     expect(regenerated.data.unverified).toEqual(["PhD-trained"]);
 
     const refined = await refineChat(
       model({ reply: "Done.", edits: [{ document: "RESUME", unitId: "summary", text: "Designer with 25 years at IBM." }], tone: null, declined: false }),
-      { request: "Punchier", history: [], target: null, resume: [unit], letter: [], profile, extracted, tone: "WARM", facts: [], posting },
+      { request: "Punchier", history: [], target: null, resume: [unit], letter: [], profile, extracted, match: null, tone: "WARM", facts: [], posting },
       options,
     );
     expect(refined.data.edits[0].unverified).toEqual(["IBM", "25"]);
+  });
+
+  describe("on the resume, the posting backs only the skills the candidate has (.scratch/resume-tailoring)", () => {
+    // FigJam is the posting's name for a skill the match found; Kubernetes is a gap; Europe is only in the posting.
+    const asked: Extracted = {
+      ...extracted,
+      requirements: [
+        { text: "Prototyping in FigJam", kind: "skill", skill: "FigJam", years: null, language: null },
+        { text: "Runs services on Kubernetes", kind: "skill", skill: "Kubernetes", years: null, language: null },
+      ],
+    };
+    const match: Match = {
+      items: [
+        { requirement: "Prototyping in FigJam", result: "covered", skill: "Figma", experienceIds: ["e1"], note: null },
+        { requirement: "Runs services on Kubernetes", result: "gap", skill: null, experienceIds: [], note: null },
+      ],
+    };
+    const wanting = `${posting}\n- Prototyping in FigJam\n- Runs services on Kubernetes`;
+    const bullet = "Prototyped payout flows in FigJam and ran them on Kubernetes across Europe";
+    const unit = { id: "experience:e1", label: "Northwind role", text: "Redesigned the carrier portal" };
+
+    it("flags a gap the posting asks for, in tailoring, regenerating and the chat", async () => {
+      const tailored = await tailorResume(model({ ...answer, summary: "Designer.", roles: [{ id: "e1", bullets: [bullet] }] }), { profile, extracted: asked, match, facts: [], posting: wanting }, options);
+      expect(tailored.data.find((entry) => entry.id === "experience:e1")?.unverified).toEqual(["Kubernetes", "Europe"]);
+
+      const regenerated = await regenerateUnit(model({ text: bullet }), { kind: "RESUME", unit, document: [unit], profile, extracted: asked, match, tone: "WARM", facts: [], posting: wanting }, options);
+      expect(regenerated.data.unverified).toEqual(["Kubernetes", "Europe"]);
+
+      const refined = await refineChat(
+        model({ reply: "Done.", edits: [{ document: "RESUME", unitId: unit.id, text: bullet }], tone: null, declined: false }),
+        { request: "Punchier", history: [], target: null, resume: [unit], letter: [], profile, extracted: asked, match, tone: "WARM", facts: [], posting: wanting },
+        options,
+      );
+      expect(refined.data.edits[0].unverified).toEqual(["Kubernetes", "Europe"]);
+    });
+
+    it("lets the letter talk about what the posting says", async () => {
+      const letter = await writeCoverLetter(
+        model({ recipient: "", greeting: "", paragraphs: [{ label: "Opening", text: "Getting small businesses across Europe paid on time is work I want to do." }], signOff: "" }),
+        { profile, extracted: asked, match, tone: "WARM", facts: [], posting: wanting },
+        options,
+      );
+      expect(letter.data[0]).not.toHaveProperty("unverified");
+    });
   });
 });
 

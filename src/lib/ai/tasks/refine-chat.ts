@@ -1,22 +1,25 @@
 import { z } from "zod";
 
 import { DocumentKind, Tone } from "@/generated/prisma/enums";
-import { SIGN_OFF_UNIT, type Extracted, type Unit, type UnitEdit } from "@/lib/application-data";
+import { SIGN_OFF_UNIT, type Extracted, type Match, type Unit, type UnitEdit } from "@/lib/application-data";
 import { emailParts } from "@/lib/application-email";
 import { isFrameUnit } from "@/lib/letter-frame";
 import type { ProfileData } from "@/lib/profile";
 import { TONES } from "@/lib/tones";
 import { isPublicationUnit } from "@/lib/unit-text";
 
-import { guardSources, unverifiedFacts } from "../fact-guard";
+import { claimSources, guardSources, unverifiedFacts } from "../fact-guard";
 
 import {
   applicationFacts,
+  BULLET_RULES,
   candidateFacts,
   CREATIVITY,
   jobForPrompt,
   languageRule,
   NO_EM_DASHES,
+  PLAIN_WORDING,
+  postingAsPublished,
   profileForPrompt,
   system,
   truthfulness,
@@ -24,7 +27,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const REFINE_CHAT_VERSION = "refine-chat@7";
+export const REFINE_CHAT_VERSION = "refine-chat@8";
 
 const answerSchema = z.object({
   reply: z.string(),
@@ -59,10 +62,12 @@ export type RefineInput = {
   email?: Unit[];
   profile: ProfileData;
   extracted: Extracted;
+  /** What's covered and what's a gap, so an edit doesn't write a gap in (.scratch/resume-tailoring). */
+  match: Match | null;
   tone: Tone;
   /** What the candidate tells the AI for this application (APP-15). */
   facts: string[];
-  /** The posting as pasted, for the fact guard. */
+  /** The posting as pasted: read by the model, and backing for the letter's and email's fact guard. */
   posting: string;
 };
 
@@ -80,16 +85,28 @@ const HISTORY = 10;
 
 /** APP-7, APP-9: a reply plus unit edits (with what they replace, for Undo), or a decline with guidance. */
 export const refineChat: Task<RefineInput, Refinement> = async (provider, input, options) => {
-  const { request, history, target, viewing, resume, letter, email = [], profile, extracted, tone, facts, posting } = input;
+  const { request, history, target, viewing, resume, letter, email = [], profile, extracted, match, tone, facts, posting } = input;
   const looking = viewing ? LOOKING_AT[viewing] : null;
   const answer = await provider.complete({
-    system: system(INSTRUCTIONS, `Current letter tone: ${TONES[tone].label}.`, truthfulness(options.strict), candidateFacts(profile, facts), CREATIVITY[options.creativity], languageRule(options.language), UNTRUSTED_POSTING, NO_EM_DASHES),
+    system: system(
+      INSTRUCTIONS,
+      `Current letter tone: ${TONES[tone].label}.`,
+      BULLET_RULES,
+      truthfulness(options.strict),
+      candidateFacts(profile, facts),
+      CREATIVITY[options.creativity],
+      languageRule(options.language),
+      UNTRUSTED_POSTING,
+      PLAIN_WORDING,
+      NO_EM_DASHES,
+    ),
     messages: [
       {
         role: "user",
         content: [
           `The candidate's profile:\n${profileForPrompt(profile)}`,
-          `The job:\n${jobForPrompt(extracted, null)}`,
+          `The job:\n${jobForPrompt(extracted, match)}`,
+          postingAsPublished(posting),
           `The resume's units:\n${JSON.stringify(resume, null, 2)}`,
           `The cover letter's units:\n${JSON.stringify(letter, null, 2)}`,
           email.length > 0 && `The email's units:\n${JSON.stringify(email, null, 2)}`,
@@ -109,8 +126,14 @@ export const refineChat: Task<RefineInput, Refinement> = async (provider, input,
   });
 
   const newTone = answer.tone && answer.tone !== tone ? answer.tone : null;
-  // The email's recipient counts too: its greeting names them, from the posting or typed in by the user.
-  const sources = options.strict ? guardSources(profile, extracted, [posting, emailParts(email).to].join("\n"), facts) : null;
+  // The resume's claims are backed by the profile only. For the letter and email the posting counts, and
+  // so does the email's recipient: its greeting names them, from the posting or typed in by the user.
+  const sources = options.strict
+    ? {
+        resume: claimSources(profile, extracted, match, facts),
+        other: guardSources(profile, extracted, [posting, emailParts(email).to].join("\n"), facts),
+      }
+    : null;
   const documents = { [DocumentKind.RESUME]: resume, [DocumentKind.COVER_LETTER]: letter, [DocumentKind.EMAIL]: email };
   // Only units that exist, each once; the text they replace is kept for Undo (APP-8).
   const edits = new Map<string, UnitEdit>();
@@ -122,7 +145,7 @@ export const refineChat: Task<RefineInput, Refinement> = async (provider, input,
       if (unit && text && text !== unit.text && !isPublicationUnit(unit.id)) {
         // E6-6: in strict mode, note what the profile and posting don't back.
         const checked = edit.document === DocumentKind.EMAIL ? unit.id !== "to" : unit.id !== SIGN_OFF_UNIT && !isFrameUnit(unit.id);
-        const unverified = sources && checked ? unverifiedFacts(text, sources) : [];
+        const unverified = sources && checked ? unverifiedFacts(text, edit.document === DocumentKind.RESUME ? sources.resume : sources.other) : [];
         edits.set(`${edit.document} ${unit.id}`, {
           document: edit.document,
           unitId: unit.id,

@@ -6,7 +6,7 @@ import { DocumentKind, VersionCause } from "@/generated/prisma/enums";
 import { getAiProvider } from "@/lib/ai";
 import { loadTaskOptions } from "@/lib/ai/task-options";
 import { regenerateUnit } from "@/lib/ai/tasks";
-import { extractedOf, unitSchema, unitsSchema } from "@/lib/application-data";
+import { extractedOf, matchSchema, unitSchema, unitsSchema } from "@/lib/application-data";
 import { updateDocuments } from "@/lib/document-units";
 import { withoutPrivateParts } from "@/lib/letter-frame";
 import { prisma } from "@/lib/prisma";
@@ -47,6 +47,7 @@ export const regenerateUnitJob = defineJob({
     const unit = units?.find((entry) => entry.id === unitId);
     if (!application || !units || !unit || unit.text !== from) return { outcome: "changed" as const };
 
+    const match = matchSchema.safeParse(application.match);
     const [provider, options, profile, facts] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile(), loadFactTexts(applicationId)]);
     const { data } = await regenerateUnit(
       provider,
@@ -57,6 +58,7 @@ export const regenerateUnitJob = defineJob({
         document: withoutPrivateParts(units),
         profile,
         extracted: extractedOf(application),
+        match: match.success ? match.data : null,
         tone: application.tone,
         facts,
         posting: application.postingText,

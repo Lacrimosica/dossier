@@ -1,23 +1,26 @@
 import { z } from "zod";
 
 import { DocumentKind, type Tone } from "@/generated/prisma/enums";
-import { HEADLINE_UNIT, SIGN_OFF_UNIT, type Extracted, type Unit } from "@/lib/application-data";
+import { HEADLINE_UNIT, SIGN_OFF_UNIT, type Extracted, type Match, type Unit } from "@/lib/application-data";
 import { emailParts } from "@/lib/application-email";
 import { isFrameUnit } from "@/lib/letter-frame";
 import type { ProfileData } from "@/lib/profile";
 import { TONES } from "@/lib/tones";
 import { bulletLines, isBulletUnit } from "@/lib/unit-text";
 
-import { guardSources, guardUnits } from "../fact-guard";
+import { claimSources, guardSources, guardUnits } from "../fact-guard";
 
 import {
   applicationFacts,
+  BULLET_RULES,
   candidateFacts,
   COVER_LETTER_APPROACH,
   CREATIVITY,
   jobForPrompt,
   languageRule,
   NO_EM_DASHES,
+  PLAIN_WORDING,
+  postingAsPublished,
   profileForPrompt,
   system,
   truthfulness,
@@ -25,7 +28,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const REGENERATE_UNIT_VERSION = "regenerate-unit@7";
+export const REGENERATE_UNIT_VERSION = "regenerate-unit@8";
 
 /** What the letter's frame parts are, for the model (E8-11). */
 const FRAME_PARTS: Record<string, string> = {
@@ -62,19 +65,23 @@ export type RegenerateInput = {
   document: Unit[];
   profile: ProfileData;
   extracted: Extracted;
+  /** What's covered and what's a gap, so a new part doesn't write a gap in (.scratch/resume-tailoring). */
+  match: Match | null;
   tone: Tone;
   /** What the candidate tells the AI for this application (APP-15). */
   facts: string[];
-  /** The posting as pasted, for the fact guard. */
+  /** The posting as pasted: read by the model, and backing for the letter's and email's fact guard. */
   posting: string;
 };
 
 /** APP-5: a fresh version of one part, the rest left alone; the unit comes back with its new text. */
 export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, input, options) => {
-  const { kind, unit, document, profile, extracted, tone, facts, posting } = input;
+  const { kind, unit, document, profile, extracted, match, tone, facts, posting } = input;
   const bullets = isBulletUnit(unit.id);
   const isProject = unit.id.startsWith("project:");
   const what = DOCUMENT_NAMES[kind];
+  // A one-page resume gives its most relevant roles 4 bullets at most, as tailoring does (SET-9).
+  const most = options.maxPages === 1 ? 4 : 5;
   const answer = await provider.complete({
     system: system(
       `You write a new version of one part of a candidate's ${what} for one job, as JSON with the new text.`,
@@ -82,7 +89,7 @@ export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, inpu
         bullets
           ? isProject
             ? " It's a project: answer 1–3 bullets, one per line, each starting with a verb, without bullet characters."
-            : " It's a role: answer 2–5 bullets, one per line, each starting with a verb, without bullet characters."
+            : ` It's a role: answer 2–${most} bullets, one per line, each starting with a verb, without bullet characters.`
           : ""
       }`,
       // The letter's greeting and address block aren't where its argument goes.
@@ -91,11 +98,13 @@ export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, inpu
       kind === DocumentKind.COVER_LETTER && FRAME_PARTS[unit.id],
       kind === DocumentKind.EMAIL && EMAIL_PARTS[unit.id],
       kind === DocumentKind.RESUME && unit.id === HEADLINE_UNIT && HEADLINE_PART,
+      bullets && BULLET_RULES,
       truthfulness(options.strict),
       candidateFacts(profile, facts),
       CREATIVITY[options.creativity],
       languageRule(options.language),
       UNTRUSTED_POSTING,
+      kind === DocumentKind.RESUME && PLAIN_WORDING,
       NO_EM_DASHES,
     ),
     messages: [
@@ -103,7 +112,8 @@ export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, inpu
         role: "user",
         content: [
           `The candidate's profile:\n${profileForPrompt(profile)}`,
-          `The job:\n${jobForPrompt(extracted, null)}`,
+          `The job:\n${jobForPrompt(extracted, match)}`,
+          postingAsPublished(posting),
           `The whole ${what} now:\n${JSON.stringify(document, null, 2)}`,
           applicationFacts(facts),
           `Write a new version of "${unit.label}" (${unit.id}). Its current text:\n${unit.text}`,
@@ -121,13 +131,15 @@ export const regenerateUnit: Task<RegenerateInput, Unit> = async (provider, inpu
   // An English sign-off stays the tone's.
   const english = /^english$/i.test(options.language ?? extracted.language ?? "English");
   const updated = { ...unit, text: unit.id === SIGN_OFF_UNIT && english ? TONES[tone].signOff : text || unit.text };
+  // A resume's claims are backed by the profile only; the email's greeting names its recipient,
+  // from the posting or typed in by the user.
+  const sources = () =>
+    kind === DocumentKind.RESUME
+      ? claimSources(profile, extracted, match, facts)
+      : guardSources(profile, extracted, kind === DocumentKind.EMAIL ? [posting, emailParts(document).to].join("\n") : posting, facts);
   return {
     // The letter's recipient and greeting aren't claims about the candidate.
-    data:
-      options.strict && !isFrameUnit(unit.id)
-        ? // The email's greeting names its recipient, from the posting or typed in by the user.
-          guardUnits([updated], guardSources(profile, extracted, kind === DocumentKind.EMAIL ? [posting, emailParts(document).to].join("\n") : posting, facts))[0]
-        : { ...updated, unverified: undefined },
+    data: options.strict && !isFrameUnit(unit.id) ? guardUnits([updated], sources())[0] : { ...updated, unverified: undefined },
     promptVersion: REGENERATE_UNIT_VERSION,
   };
 };

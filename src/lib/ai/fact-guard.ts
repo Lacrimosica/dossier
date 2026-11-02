@@ -1,4 +1,4 @@
-import type { Extracted, Unit } from "@/lib/application-data";
+import type { Extracted, Match, Unit } from "@/lib/application-data";
 import { citationText } from "@/lib/citation";
 import { languageNames } from "@/lib/languages";
 import { experienceMonths, formatDateRange, languageLevelLabel, type ProfileData } from "@/lib/profile";
@@ -73,6 +73,8 @@ export function sourcesFor(profile: ProfileData, extracted: Extracted | null, po
     ...profile.experience.flatMap((entry) => [entry.role, entry.company, entry.location, formatDateRange(entry), entry.bullets]),
     ...profile.projects.flatMap((entry) => [entry.name, entry.link, formatDateRange(entry), entry.bullets]),
     ...profile.education.flatMap((entry) => [entry.degree, entry.school, formatDateRange(entry), entry.notes]),
+    // Every course backs what's said about it, including those kept off resumes: the profile says they happened.
+    ...profile.courses.flatMap((entry) => [entry.name, entry.provider, entry.duration, formatDateRange({ ...entry, current: false }), entry.notes]),
     // The candidate's own citations back what's said about their work (#218).
     ...profile.publications.map((entry) => citationText(entry.citation)),
     ...profile.references.flatMap((reference) => [reference.name, reference.relation, reference.company]),
@@ -85,10 +87,13 @@ export function sourcesFor(profile: ProfileData, extracted: Extracted | null, po
   return factSources(parts);
 }
 
-/** Where sentences start: capitals there are grammar, not names. */
+/**
+ * Where sentences start: capitals there are grammar, not names. So does a
+ * headline's focus after " · " ("Data Engineer · Streaming and analytics").
+ */
 function sentenceStarts(text: string): Set<number> {
   const starts = new Set<number>([0]);
-  for (const match of text.matchAll(/(?:[.!?:;]["”’)]?\s+|\n)\s*(?:[-*•·]\s+)?(?=\S)/g)) starts.add(match.index + match[0].length);
+  for (const match of text.matchAll(/(?:[.!?:;]["”’)]?\s+|\n|\s·)\s*(?:[-*•·]\s+)?(?=\S)/g)) starts.add(match.index + match[0].length);
   return starts;
 }
 
@@ -153,4 +158,24 @@ export function guardSources(
   today = new Date(),
 ): FactSources {
   return sourcesFor(profile, extracted, [posting, ...facts].join("\n"), Math.floor(experienceMonths(profile, today) / 12));
+}
+
+/**
+ * What backs a claim on the resume (.scratch/resume-tailoring): as above, but
+ * of the posting only the job's details and the skills the match found in the
+ * profile, by the posting's name for them ("PostgreSQL" for "Postgres"). A tool
+ * the posting asks for and the profile lacks is the claim most worth catching,
+ * so the posting's text never backs one. Letters and emails keep guardSources:
+ * talking about the company is their job.
+ */
+export function claimSources(
+  profile: ProfileData,
+  extracted: Extracted | null,
+  match: Match | null,
+  facts: string[] = [],
+  today = new Date(),
+): FactSources {
+  const found = new Set(match?.items.filter((item) => item.result !== "gap").map((item) => item.requirement));
+  const skills = extracted?.requirements.flatMap((requirement) => (found.has(requirement.text) && requirement.skill ? [requirement.skill] : [])) ?? [];
+  return sourcesFor(profile, extracted, [...skills, ...facts].join("\n"), Math.floor(experienceMonths(profile, today) / 12));
 }

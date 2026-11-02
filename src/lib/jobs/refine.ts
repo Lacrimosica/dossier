@@ -6,7 +6,7 @@ import { ChatRole, DocumentKind, VersionCause } from "@/generated/prisma/enums";
 import { getAiProvider } from "@/lib/ai";
 import { loadTaskOptions } from "@/lib/ai/task-options";
 import { refineChat, type ChatTurn } from "@/lib/ai/tasks";
-import { extractedOf, unitsSchema, type Unit, type UnitEdit } from "@/lib/application-data";
+import { extractedOf, matchSchema, unitsSchema, type Unit, type UnitEdit } from "@/lib/application-data";
 import { updateDocuments } from "@/lib/document-units";
 import { withoutPrivateParts } from "@/lib/letter-frame";
 import { prisma } from "@/lib/prisma";
@@ -70,6 +70,7 @@ export const refineJob = defineJob({
     );
     const targetUnit = target && unitsOf(target.document).find((unit) => unit.id === target.unitId);
 
+    const match = matchSchema.safeParse(application.match);
     const [provider, options, profile, facts] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile(), loadFactTexts(applicationId)]);
     const { data, promptVersion } = await refineChat(
       provider,
@@ -83,6 +84,7 @@ export const refineJob = defineJob({
         email: unitsOf(DocumentKind.EMAIL),
         profile,
         extracted: extractedOf(application),
+        match: match.success ? match.data : null,
         tone: application.tone,
         facts,
         posting: application.postingText,

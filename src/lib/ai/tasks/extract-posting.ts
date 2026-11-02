@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { extractedSchema, requirementSchema, type Extracted } from "@/lib/application-data";
 
-import { postingForPrompt, system, UNTRUSTED_POSTING, type Task } from "./prompt-parts";
+import { localDate, postingForPrompt, system, UNTRUSTED_POSTING, type Task } from "./prompt-parts";
 
 export const EXTRACT_POSTING_VERSION = "extract-posting@2";
 
@@ -91,10 +91,4 @@ export function isoDate(value: string | null): string | null {
   if (!/\b\d{4}\b/.test(value)) return null;
   const parsed = Date.parse(`${value} UTC`);
   return Number.isNaN(parsed) ? null : new Date(parsed).toISOString().slice(0, 10);
-}
-
-/** The calendar day on the server, YYYY-MM-DD. */
-function localDate(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
