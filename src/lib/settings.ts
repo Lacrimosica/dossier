@@ -62,15 +62,18 @@ export type RoleLocations = z.infer<typeof roleLocations>;
 /**
  * "Work locations on resumes": whether a role's location prints next to its
  * company. "posting" leaves it to tailoring, which shows them when the
- * posting cares where you've worked; the base resume, with no posting, leaves them out.
+ * posting cares where you've worked. The base resume has no posting to ask,
+ * so it shows them unless the setting is "never": it's the whole resume.
  */
 export const ROLE_LOCATIONS: readonly { value: RoleLocations; label: string }[] = [
   { value: "never", label: "Never" },
   { value: "posting", label: "When the posting asks" },
   { value: "always", label: "Always" },
 ];
-/** Whether a resume shows role locations: an application's own choice, or else the setting. */
+/** Whether a tailored resume shows role locations: the application's own choice, or else the setting. */
 export const showsRoleLocations = (setting: RoleLocations, choice: boolean | null = null) => choice ?? setting === "always";
+/** Whether the base resume shows role locations: unless they're never shown. */
+export const baseShowsRoleLocations = (setting: RoleLocations) => setting !== "never";
 
 const privacyConsent = z.enum(["never", "italian", "always"]);
 export type PrivacyConsent = z.infer<typeof privacyConsent>;

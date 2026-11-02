@@ -30,7 +30,7 @@ export type ResumeWorkspaceProps = {
   baseThemeId: string;
   paper: PaperSize;
   includeReferences: boolean;
-  /** Settings → "Work locations on resumes" is Always; the base resume has no posting to ask. */
+  /** Settings → "Work locations on resumes" is anything but Never (baseShowsRoleLocations). */
   showLocations: boolean;
   /** Settings → "Resume length" (SET-9): the most pages a tailored resume may have, or null for no limit. */
   maxPages: number | null;

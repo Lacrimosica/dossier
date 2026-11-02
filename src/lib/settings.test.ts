@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import { DateFormat } from "@/generated/prisma/enums";
 
 import {
+  baseShowsRoleLocations,
   DATE_FORMATS,
   DEFAULT_PRIVACY_CONSENT_TEXT,
   formatDocumentDate,
   maxPages,
   pagesInWords,
+  showsRoleLocations,
   privacyConsentLine,
   settingsFromRows,
   settingValue,
@@ -206,5 +208,18 @@ describe("the privacy consent line", () => {
   it("goes on every resume, when asked, unless its wording is empty", () => {
     expect(privacyConsentLine({ privacyConsent: "always", privacyConsentText: text }, null)).toBe(text);
     expect(privacyConsentLine({ privacyConsent: "always", privacyConsentText: "  " }, "Italian")).toBeNull();
+  });
+});
+
+describe("work locations on resumes", () => {
+  it("follows each application's choice on a tailored resume, else shows them only when always", () => {
+    expect(showsRoleLocations("posting", true)).toBe(true);
+    expect(showsRoleLocations("always", false)).toBe(false);
+    expect(showsRoleLocations("posting")).toBe(false);
+    expect(showsRoleLocations("always")).toBe(true);
+  });
+
+  it("shows them on the base resume unless they're never shown", () => {
+    expect([baseShowsRoleLocations("never"), baseShowsRoleLocations("posting"), baseShowsRoleLocations("always")]).toEqual([false, true, true]);
   });
 });
