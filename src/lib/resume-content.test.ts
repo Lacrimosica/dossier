@@ -40,13 +40,13 @@ describe("resumeContent", () => {
   it("builds the base resume from the profile", () => {
     const content = resumeContent(profile, { today });
     expect(content.name).toBe("Jane Doe");
-    expect(content.experience.map((role) => [role.company, role.dates])).toEqual([
+    expect(content.experience.map((company) => [company.company, company.dates])).toEqual([
       ["Northwind Logistics", "Mar 2021 – Present"],
       ["Fieldnote", "Jun 2018 – Feb 2021"],
       ["Studio Brik", "Sep 2015 – May 2018"],
     ]);
-    expect(content.experience[0].bullets).toHaveLength(3);
-    expect(content.experience[2].skills).toEqual(["HTML & CSS", "Interaction design"]);
+    expect(content.experience[0].roles[0].bullets).toHaveLength(3);
+    expect(content.experience[2].roles[0].skills).toEqual(["HTML & CSS", "Interaction design"]);
     expect(content.education[0]).toMatchObject({ dates: "2013 – 2015", notes: "Thesis on trust in automated scheduling tools" });
     expect(content.skills).toBe(
       "Interaction design · Design systems · Prototyping · User research · Figma · HTML & CSS · Workshop facilitation",
@@ -98,11 +98,11 @@ describe("resumeContent", () => {
   it("takes a tailored resume's text from its units", () => {
     const content = resumeContent(profile, { units: demoResumeUnits() });
     expect(content.summary).toMatch(/^Senior product designer with nine years of making complex/);
-    expect(content.experience[0].bullets[0]).toBe(
+    expect(content.experience[0].roles[0].bullets[0]).toBe(
       "Led the redesign of the carrier portal used daily by 4,000+ dispatchers: a dense, high-stakes workflow",
     );
     // Role skills still come from the profile (RES-6).
-    expect(content.experience[0].skills).toContain("Design systems");
+    expect(content.experience[0].roles[0].skills).toContain("Design systems");
     expect(content.skills).toMatch(/^Design systems · User research · Figma · /);
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
   });
@@ -195,12 +195,60 @@ describe("resumeContent", () => {
     ];
     const content = resumeContent(profile, { units });
     expect(content.summary).toBe("");
-    expect(content.experience.map((role) => [role.company, role.bullets])).toEqual([
+    expect(content.experience.map((company) => [company.company, company.roles[0].bullets])).toEqual([
       ["Fieldnote", ["Ran research"]],
       ["Northwind Logistics", ["Led the portal redesign"]],
     ]);
     expect(content.education.map((entry) => entry.school)).toEqual(["TU Delft"]);
     expect(content.skills).toBe("");
     expect(content.languages).toBe("");
+  });
+  describe("roles at one company", () => {
+    // Jane was promoted at Northwind: the demo's first role, split in two.
+    const [northwind, ...rest] = profile.experience;
+    const promoted: ProfileData = {
+      ...profile,
+      experience: [
+        { ...northwind, id: "senior", role: "Lead Product Designer", startYear: 2023, startMonth: 4 },
+        ...rest,
+        { ...northwind, id: "junior", company: "  northwind logistics", current: false, endYear: 2023, endMonth: 3 },
+      ],
+    };
+
+    it("prints a company's roles together under it, with the span they cover", () => {
+      const content = resumeContent(promoted, { today });
+      expect(content.experience.map((company) => [company.company, company.dates, company.roles.map((role) => role.id)])).toEqual([
+        ["Northwind Logistics", "Mar 2021 – Present", ["senior", "junior"]],
+        ["Fieldnote", "Jun 2018 – Feb 2021", [rest[0].id]],
+        ["Studio Brik", "Sep 2015 – May 2018", [rest[1].id]],
+      ]);
+      expect(content.experience[0].roles.map((role) => role.dates)).toEqual(["Apr 2023 – Present", "Mar 2021 – Mar 2023"]);
+    });
+
+    it("groups a tailored resume's roles the same way, whatever the order of its units", () => {
+      const units = [
+        { id: "experience:junior", label: "Northwind", text: "Ran research" },
+        { id: `experience:${rest[0].id}`, label: "Fieldnote", text: "Shipped" },
+        { id: "experience:senior", label: "Northwind", text: "Led the team" },
+      ];
+      const content = resumeContent(promoted, { units });
+      expect(content.experience.map((company) => company.roles.map((role) => role.bullets[0]))).toEqual([
+        ["Ran research", "Led the team"],
+        ["Shipped"],
+      ]);
+    });
+
+    it("shows locations only when asked: once for a company in one place, on each role after a move", () => {
+      expect(resumeContent(promoted).experience.every((company) => !company.location && company.roles.every((role) => !role.location))).toBe(true);
+
+      const shown = resumeContent(promoted, { showLocations: true }).experience[0];
+      expect(shown.location).toBe(northwind.location.trim());
+      expect(shown.roles.map((role) => role.location)).toEqual(["", ""]);
+
+      const moved = { ...promoted, experience: promoted.experience.map((role) => (role.id === "senior" ? { ...role, location: "Remote" } : role)) };
+      const split = resumeContent(moved, { showLocations: true }).experience[0];
+      expect(split.location).toBe("");
+      expect(split.roles.map((role) => role.location)).toEqual(["Remote", northwind.location.trim()]);
+    });
   });
 });

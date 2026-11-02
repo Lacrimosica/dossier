@@ -121,6 +121,9 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             fileNamePattern: settings.fileNamePattern,
             includeRefs: settings.includeRefs,
             pageLimit: settings.pageLimit,
+            roleLocations: settings.roleLocations,
+            privacyConsent: settings.privacyConsent,
+            privacyConsentText: settings.privacyConsentText,
           }}
           preview={await filePreview()}
         />

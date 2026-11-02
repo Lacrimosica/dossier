@@ -268,11 +268,11 @@ describe("importExport (E10-6)", () => {
     expect(await prisma().course.count()).toBe(0);
   });
 
-  it("restores the photo, the themes' photo options and each application's Photo switch, and reads older files with the defaults (#224)", async () => {
+  it("restores the photo, the themes' photo options and each application's Photo and Locations switches, and reads older files with the defaults (#224)", async () => {
     const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     await prisma().profileField.createMany({ data: [{ key: "photo", value: png }, { key: "photoOnResumes", value: "false" }] });
     await prisma().theme.update({ where: { id: "mine" }, data: { photoShape: "PORTRAIT", photoPosition: "SIDEBAR" } });
-    await prisma().application.updateMany({ where: { company: "Ledgerly" }, data: { showPhoto: true } });
+    await prisma().application.updateMany({ where: { company: "Ledgerly" }, data: { showPhoto: true, showLocations: true } });
     const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
 
     await prisma().profileField.deleteMany({ where: { key: { startsWith: "photo" } } });
@@ -280,16 +280,16 @@ describe("importExport (E10-6)", () => {
     const fields = await prisma().profileField.findMany({ where: { key: { startsWith: "photo" } }, orderBy: { key: "asc" } });
     expect(fields.map(({ key, value }) => [key, value])).toEqual([["photo", png], ["photoOnResumes", "false"]]);
     expect(await prisma().theme.findUniqueOrThrow({ where: { id: "mine" } })).toMatchObject({ photoShape: "PORTRAIT", photoPosition: "SIDEBAR" });
-    expect(await prisma().application.findFirstOrThrow({ where: { company: "Ledgerly" } })).toMatchObject({ showPhoto: true });
+    expect(await prisma().application.findFirstOrThrow({ where: { company: "Ledgerly" } })).toMatchObject({ showPhoto: true, showLocations: true });
 
     const older = {
       ...file,
       themes: file.themes.map((theme: object) => ({ ...theme, photoShape: undefined, photoPosition: undefined })),
-      applications: file.applications.map((application: object) => ({ ...application, showPhoto: undefined })),
+      applications: file.applications.map((application: object) => ({ ...application, showPhoto: undefined, showLocations: undefined })),
     };
     await importExport(prisma(), exportSchema.parse(older));
     expect(await prisma().theme.findUniqueOrThrow({ where: { id: "mine" } })).toMatchObject({ photoShape: "CIRCLE", photoPosition: "HEADER_END" });
-    expect(await prisma().application.findFirstOrThrow({ where: { company: "Ledgerly" } })).toMatchObject({ showPhoto: null });
+    expect(await prisma().application.findFirstOrThrow({ where: { company: "Ledgerly" } })).toMatchObject({ showPhoto: null, showLocations: null });
   });
 
   it("reads files from before facts, with an application's note as its first fact (PRO-14, APP-15)", async () => {

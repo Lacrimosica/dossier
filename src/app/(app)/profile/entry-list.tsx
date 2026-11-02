@@ -25,10 +25,23 @@ export type Ordering = {
 };
 
 /**
+ * Entries that belong together, shown and moved as one: roles at one company
+ * (companyGroups). Each group stays where its first entry is.
+ */
+export type Grouping<T> = {
+  groups: (items: readonly T[]) => T[][];
+  /** Moves an entry within its group, or its whole group past another. */
+  move: (items: readonly T[], from: number, to: number) => T[];
+  /** "2 roles at Acme", above a group of more than one. */
+  label: (group: T[]) => string;
+};
+
+/**
  * A list of entries (experience, education, publications, references): one card open at a
  * time, "+ Add…" creates a blank entry and opens it, and Remove takes effect
  * at once with Undo in the toast (#36). With `ordering`, entries can be
- * dragged or moved up and down (E4-9).
+ * dragged or moved up and down (E4-9). With `grouping`, entries that belong
+ * together sit in a box of their own and move together.
  */
 export function EntryList<T extends { id: string }>({
   items,
@@ -39,6 +52,7 @@ export function EntryList<T extends { id: string }>({
   remove,
   restore,
   ordering,
+  grouping,
   renderForm,
 }: {
   items: T[];
@@ -50,6 +64,7 @@ export function EntryList<T extends { id: string }>({
   remove: (item: T) => Promise<ActionResult<null>>;
   restore: (item: T) => Promise<ActionResult<T>>;
   ordering?: Ordering;
+  grouping?: Grouping<T>;
   /** The open card's fields; `autoFocus` is set on an entry that was just added. */
   renderForm: (item: T, options: { onChange: (item: T) => void; autoFocus: boolean }) => ReactNode;
 }) {
@@ -66,6 +81,10 @@ export function EntryList<T extends { id: string }>({
   useEffect(() => {
     latest.current = { items, mode };
   });
+
+  // The list as shown: each group together. Positions below are positions in it.
+  const groups = grouping ? grouping.groups(items) : items.map((item) => [item]);
+  const shown = groups.flat();
 
   const replace = (next: T) => setItems((current) => current.map((item) => (item.id === next.id ? next : item)));
 
@@ -112,12 +131,14 @@ export function EntryList<T extends { id: string }>({
   }
 
   async function move(from: number, to: number) {
-    if (!ordering || from === to || to < 0 || to >= items.length) return;
+    if (!ordering || from === to || to < 0 || to >= shown.length) return;
     const before = { items, mode };
-    const next = arrayMove(items, from, to);
+    const next = grouping ? grouping.move(shown, from, to) : arrayMove(shown, from, to);
+    if (next.every((item, index) => item.id === shown[index].id)) return;
     setItems(() => next);
     setMode("manual");
-    setAnnouncement(`“${summary(items[from]).title}” moved to position ${to + 1} of ${items.length}.`);
+    const position = next.findIndex((item) => item.id === shown[from].id);
+    setAnnouncement(`“${summary(shown[from]).title}” moved to position ${position + 1} of ${shown.length}.`);
     const result = await track(ordering.save(next.map((item) => item.id)));
     if (!result.ok) {
       setItems(() => before.items);
@@ -140,12 +161,12 @@ export function EntryList<T extends { id: string }>({
     useSensor(MouseSensor, { activationConstraint: { distance: 4 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
   );
-  const indexOf = (id: unknown) => items.findIndex((item) => item.id === id);
+  const indexOf = (id: unknown) => shown.findIndex((item) => item.id === id);
   const onDragEnd = ({ active, over }: DragEndEvent) => {
     if (over) void move(indexOf(active.id), indexOf(over.id));
   };
 
-  const cards = items.map((item, index) => {
+  const cardFor = (item: T, index: number) => {
     const card = (reorder?: Reorder) => (
       <EntryCard
         {...summary(item)}
@@ -157,19 +178,32 @@ export function EntryList<T extends { id: string }>({
         {renderForm(item, { onChange: replace, autoFocus: createdId === item.id })}
       </EntryCard>
     );
-    if (!ordering || items.length < 2) return <div key={item.id}>{card()}</div>;
+    if (!ordering || shown.length < 2) return <div key={item.id}>{card()}</div>;
     return (
       <SortableEntry key={item.id} id={item.id}>
         {(handle) =>
           card({
             handle,
             first: index === 0,
-            last: index === items.length - 1,
+            last: index === shown.length - 1,
             moveUp: () => void move(index, index - 1),
             moveDown: () => void move(index, index + 1),
           })
         }
       </SortableEntry>
+    );
+  };
+  const cards = groups.map((group) => {
+    const start = shown.indexOf(group[0]);
+    if (group.length === 1) return cardFor(group[0], start);
+    const label = grouping!.label(group);
+    return (
+      <div key={group[0].id} role="group" aria-label={label} className="flex flex-col gap-2 rounded-card border border-line bg-paper p-2">
+        <p aria-hidden className="px-2 pt-1 text-meta text-muted">
+          {label}
+        </p>
+        {group.map((item, offset) => cardFor(item, start + offset))}
+      </div>
     );
   });
 
@@ -200,14 +234,14 @@ export function EntryList<T extends { id: string }>({
           onDragEnd={onDragEnd}
           accessibility={{
             announcements: {
-              onDragStart: ({ active }) => `Picked up “${summary(items[indexOf(active.id)]).title}”.`,
-              onDragOver: ({ over }) => (over ? `Over position ${indexOf(over.id) + 1} of ${items.length}.` : "Not over the list."),
-              onDragEnd: ({ over }) => (over ? `Dropped at position ${indexOf(over.id) + 1} of ${items.length}.` : "Dropped back where it was."),
+              onDragStart: ({ active }) => `Picked up “${summary(shown[indexOf(active.id)]).title}”.`,
+              onDragOver: ({ over }) => (over ? `Over position ${indexOf(over.id) + 1} of ${shown.length}.` : "Not over the list."),
+              onDragEnd: ({ over }) => (over ? `Dropped at position ${indexOf(over.id) + 1} of ${shown.length}.` : "Dropped back where it was."),
               onDragCancel: () => "Moving cancelled.",
             },
           }}
         >
-          <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={shown.map((item) => item.id)} strategy={verticalListSortingStrategy}>
             {cards}
           </SortableContext>
         </DndContext>

@@ -23,6 +23,8 @@ type ResumeDocumentProps = ResumeOptions & {
   language?: string | null;
   /** Draws each tailored part; the preview's adds editing (E8-3). */
   renderUnit?: UnitRenderer;
+  /** Settings → "Privacy consent line", printed at the very end (privacyConsentLine); null leaves it off. */
+  privacyConsent?: string | null;
 };
 
 /** Enough of a resume's own words to tell its script and direction. */
@@ -31,7 +33,7 @@ const sampleText = (content: ResumeContent) =>
     content.name,
     content.headline,
     content.summary,
-    ...content.experience.flatMap((role) => [role.role, ...role.bullets]),
+    ...content.experience.flatMap((company) => company.roles.flatMap((role) => [role.role, ...role.bullets])),
     ...content.projects.flatMap((project) => [project.name, ...project.bullets]),
   ].join(" ");
 
@@ -43,7 +45,7 @@ const sampleText = (content: ResumeContent) =>
  * Sections without content are left out. Each tailored part is drawn by
  * `renderUnit` with its unit id, for editing it in place (E8-3).
  */
-export function ResumeDocument({ theme, profile, paper, layout, language, renderUnit = plainUnit, ...options }: ResumeDocumentProps) {
+export function ResumeDocument({ theme, profile, paper, layout, language, renderUnit = plainUnit, privacyConsent, ...options }: ResumeDocumentProps) {
   const resolved = resolveTheme(theme, layout);
   const labels = documentLabels(language);
   const content = resumeContent(profile, options, labels);
@@ -85,32 +87,45 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
     ),
     content.experience.length > 0 && (
       <DocumentSection key="experience" title={labels.experience}>
-        {content.experience.map((role) => (
-          <Fragment key={role.id}>
-            {renderUnit({
-              id: `experience:${role.id}`,
-              className: styles.entry,
-              head: <EntryHead title={role.role} at={role.company} dates={role.dates} timeline={resolved.timeline} />,
+        {content.experience.map((company) => {
+          const role = (entry: (typeof company.roles)[number], className: string, at: string) =>
+            renderUnit({
+              id: `experience:${entry.id}`,
+              className,
+              head: <EntryHead title={entry.role} at={at} dates={entry.dates} timeline={resolved.timeline} />,
               children: (
                 <>
-                  {role.bullets.length > 0 && (
+                  {entry.bullets.length > 0 && (
                     <ul className={styles.bullets}>
-                      {role.bullets.map((bullet, index) => (
+                      {entry.bullets.map((bullet, index) => (
                         <li key={index}>{bullet}</li>
                       ))}
                     </ul>
                   )}
-                  {role.skills.length > 0 && (
+                  {entry.skills.length > 0 && (
                     <p className={styles.entrySkills}>
                       <span className={styles.accent}>{`${labels.skills} · `}</span>
-                      {role.skills.join(", ")}
+                      {entry.skills.join(", ")}
                     </p>
                   )}
                 </>
               ),
-            })}
-          </Fragment>
-        ))}
+            });
+          const place = (...parts: string[]) => parts.filter(Boolean).join(" · ");
+          if (company.roles.length === 1) {
+            const [only] = company.roles;
+            return <Fragment key={only.id}>{role(only, styles.entry, place(company.company, company.location))}</Fragment>;
+          }
+          // A promotion: the company once, with its whole span, then each role (companyGroups).
+          return (
+            <div key={company.roles[0].id} className={styles.entry}>
+              <EntryHead title={company.company} at={company.location} dates={company.dates} timeline={resolved.timeline} />
+              {company.roles.map((entry) => (
+                <Fragment key={entry.id}>{role(entry, styles.companyRole, entry.location)}</Fragment>
+              ))}
+            </div>
+          );
+        })}
       </DocumentSection>
     ),
     content.projects.length > 0 && (
@@ -284,6 +299,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
           </div>
         ))}
       </div>
+      {privacyConsent && <p className={styles.privacyConsent}>{privacyConsent}</p>}
     </DocumentPage>
   );
 }

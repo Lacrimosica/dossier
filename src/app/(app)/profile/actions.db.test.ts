@@ -50,6 +50,8 @@ import {
   setLanguageLevel,
   sortEntriesByDate,
   startProfileReview,
+  keepCompaniesApart,
+  unifyCompanyName,
 } from "./actions";
 
 // The actions run against the test database, signed in.
@@ -170,6 +172,24 @@ describe("profile actions", () => {
     const restored = await restoreExperience({ ...entry, skillIds: [figma.id, research.id] });
     expect(restored).toMatchObject({ ok: true, data: { id: entry.id, role: "Product Designer", skillIds: [figma.id] } });
     expect(await prisma().experience.findUniqueOrThrow({ where: { id: entry.id } })).toMatchObject({ company: "Fieldnote", startYear: 2018, endMonth: 2 });
+  });
+
+  it("gives every spelling of a company the name chosen, and remembers spellings kept apart", async () => {
+    await prisma().experience.createMany({
+      data: [
+        { id: "a", company: "ACME" },
+        { id: "b", company: " acme  " },
+        { id: "c", company: "Acme Inc." },
+        { id: "d", company: "Brightwave" },
+      ],
+    });
+    await expect(unifyCompanyName({ names: ["ACME", "Acme Inc."], to: "Acme Inc." })).resolves.toEqual({ ok: true, data: ["a", "b", "c"] });
+    const roles = await prisma().experience.findMany({ orderBy: { id: "asc" } });
+    expect(roles.map((role) => role.company)).toEqual(["Acme Inc.", "Acme Inc.", "Acme Inc.", "Brightwave"]);
+
+    await keepCompaniesApart({ fingerprint: "apple inc\napple ltd" });
+    await keepCompaniesApart({ fingerprint: "apple inc\napple ltd" });
+    expect(await prisma().setting.findUnique({ where: { key: "companiesKeptApart" } })).toMatchObject({ value: '["apple inc\\napple ltd"]' });
   });
 
   it("rejects impossible dates", async () => {

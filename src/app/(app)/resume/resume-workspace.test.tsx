@@ -32,6 +32,8 @@ const props: ResumeWorkspaceProps = {
   baseThemeId: "modern",
   paper: "A4",
   includeReferences: false,
+  privacyConsent: null,
+  showLocations: false,
   maxPages: 1,
   language: null,
 };

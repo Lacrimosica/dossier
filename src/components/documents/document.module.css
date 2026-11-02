@@ -181,6 +181,15 @@
   margin-top: calc(var(--u) * var(--item-gap));
 }
 
+/* A company's roles after a promotion, under its name: close together, the role a step quieter than the company. */
+.companyRole {
+  margin-top: calc(var(--u) * 5);
+}
+
+.companyRole .entryTitle {
+  font-weight: 500;
+}
+
 /* A role's or degree's title line stays with what follows it. */
 .entryHead {
   display: flex;
@@ -229,6 +238,15 @@
 
 .muted {
   color: var(--doc-muted);
+}
+
+/* The privacy consent line Italian CVs end with: small print, under everything, across both columns. */
+.privacyConsent {
+  margin-top: calc(var(--u) * var(--gap));
+  font-size: 0.8em;
+  color: var(--doc-muted);
+  break-inside: avoid;
+  text-wrap: pretty;
 }
 
 /* Courses and certificates: short, so closer together than roles. */

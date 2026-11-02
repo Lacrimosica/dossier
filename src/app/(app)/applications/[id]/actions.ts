@@ -48,6 +48,14 @@ export const setShowPhoto = action(z.object({ id: z.string().min(1), show: z.boo
   return null;
 });
 
+/** The Resume tab's Locations switch: show where each role was on this resume, whatever the setting or tailoring said. */
+export const setShowLocations = action(z.object({ id: z.string().min(1), show: z.boolean() }), async ({ id, show }) => {
+  const { count } = await prisma.application.updateMany({ where: { id }, data: { showLocations: show } });
+  if (count === 0) throw new ActionError(GONE);
+  refresh(id);
+  return null;
+});
+
 /**
  * The Theme menu on the Resume and Cover letter tabs (#226, public issue 10):
  * gives the application's resume and cover letter another theme, together.

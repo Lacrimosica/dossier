@@ -16,7 +16,7 @@ export default async function PrintTailoredDocumentPage({ params }: PageProps<"/
   const { doc, id } = await params;
   if (doc !== "resume" && doc !== "letter") notFound();
   await verifyPrintAccess(`/print/${doc}/${id}`);
-  const { application, profile, settings, resume, letter, includeReferences, letterDate } = await loadDocuments(id);
+  const { application, profile, settings, resume, letter, includeReferences, showLocations, privacyConsent, letterDate } = await loadDocuments(id);
   const document = doc === "resume" ? resume : letter;
   if (!document) notFound();
 
@@ -30,6 +30,8 @@ export default async function PrintTailoredDocumentPage({ params }: PageProps<"/
           paper={settings.paper}
           followThemeLayout={application.followThemeLayout}
           showPhoto={application.showPhoto}
+          showLocations={showLocations}
+          privacyConsent={privacyConsent}
           language={application.language}
           includeReferences={includeReferences}
         />

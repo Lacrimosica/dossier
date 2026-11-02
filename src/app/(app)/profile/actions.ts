@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { Prisma } from "@/generated/prisma/client";
 import { JobStatus, LanguageLevel } from "@/generated/prisma/enums";
 import { action, ActionError } from "@/lib/action";
+import { companyKey } from "@/lib/companies";
 import { findSpokenLanguage } from "@/lib/language-data";
 import { LANGUAGE_CODES, languageName, spokenLanguage } from "@/lib/languages";
 import { prisma } from "@/lib/prisma";
@@ -241,6 +242,29 @@ export const attachNewSkill = action(
     return result;
   },
 );
+
+/**
+ * "Use one name": gives every role at any of these spellings of a company the
+ * name chosen, so they group as one company on resumes. Answers with the
+ * roles renamed.
+ */
+export const unifyCompanyName = action(
+  z.object({ names: z.array(text(200)).min(2), to: z.string().trim().min(1).max(200) }),
+  async ({ names, to }) => {
+    const keys = new Set(names.map(companyKey));
+    const roles = await prisma.experience.findMany({ select: { id: true, company: true } });
+    const ids = roles.filter((role) => keys.has(companyKey(role.company))).map((role) => role.id);
+    await prisma.experience.updateMany({ where: { id: { in: ids } }, data: { company: to } });
+    return ids;
+  },
+);
+
+/** "They're different": these spellings aren't offered as one company again (companiesKeptApart). */
+export const keepCompaniesApart = action(z.object({ fingerprint: z.string().min(1).max(2000) }), async ({ fingerprint }) => {
+  const { companiesKeptApart } = await loadSettings();
+  if (!companiesKeptApart.includes(fingerprint)) await saveSettings({ companiesKeptApart: [...companiesKeptApart, fingerprint] });
+  return null;
+});
 
 // ─── Projects (PRO-13) ───────────────────────────────────────────────────────
 

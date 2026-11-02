@@ -29,7 +29,18 @@ import { SECTIONS, sectionHref, type SectionId } from "./sections";
 /** How experience, projects, education and courses are ordered (E4-9), from Settings. */
 export type ProfileOrder = { experience: EntryOrder; projects: EntryOrder; education: EntryOrder; courses: EntryOrder };
 
-export function ProfileEditor({ initial, section, order }: { initial: ProfileData; section: SectionId; order: ProfileOrder }) {
+export function ProfileEditor({
+  initial,
+  section,
+  order,
+  companiesKeptApart,
+}: {
+  initial: ProfileData;
+  section: SectionId;
+  order: ProfileOrder;
+  /** Company spellings the user said are different companies (Settings → companiesKeptApart). */
+  companiesKeptApart: string[];
+}) {
   const [profile, setProfile] = useState(initial);
   const saves = useSaveTracker();
 
@@ -60,7 +71,7 @@ export function ProfileEditor({ initial, section, order }: { initial: ProfileDat
       />
     ),
     skills: <SkillsSection profile={profile} update={setProfile} />,
-    experience: <ExperienceSection profile={profile} update={setProfile} order={order.experience} />,
+    experience: <ExperienceSection profile={profile} update={setProfile} order={order.experience} keptApart={companiesKeptApart} />,
     projects: <ProjectsSection profile={profile} update={setProfile} order={order.projects} />,
     education: <EducationSection profile={profile} update={setProfile} order={order.education} />,
     courses: <CoursesSection profile={profile} update={setProfile} order={order.courses} />,

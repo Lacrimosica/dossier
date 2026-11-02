@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { AiProvider, Creativity, DateFormat, PaperSize, Tone } from "@/generated/prisma/enums";
+import { knownLanguage } from "@/lib/document-language";
 import { EMPTY_QUERY, JOB_SOURCES, JSEARCH_HOSTS, searchQuerySchema } from "@/lib/job-search/search";
 import { startupsRefreshSchema } from "@/lib/startups/types";
 
@@ -55,6 +56,51 @@ export const PAGE_LIMITS: readonly { value: PageLimit; label: string; pages: num
   { value: "2", label: "Up to two pages", pages: 2 },
   { value: "none", label: "No limit", pages: null },
 ];
+const roleLocations = z.enum(["never", "posting", "always"]);
+export type RoleLocations = z.infer<typeof roleLocations>;
+
+/**
+ * "Work locations on resumes": whether a role's location prints next to its
+ * company. "posting" leaves it to tailoring, which shows them when the
+ * posting cares where you've worked; the base resume, with no posting, leaves them out.
+ */
+export const ROLE_LOCATIONS: readonly { value: RoleLocations; label: string }[] = [
+  { value: "never", label: "Never" },
+  { value: "posting", label: "When the posting asks" },
+  { value: "always", label: "Always" },
+];
+/** Whether a resume shows role locations: an application's own choice, or else the setting. */
+export const showsRoleLocations = (setting: RoleLocations, choice: boolean | null = null) => choice ?? setting === "always";
+
+const privacyConsent = z.enum(["never", "italian", "always"]);
+export type PrivacyConsent = z.infer<typeof privacyConsent>;
+
+/**
+ * "Privacy consent line": the sentence Italian recruiters still often expect
+ * at the foot of a CV. Since 2018 the law doesn't require it (art. 111-bis of
+ * the Codice Privacy: no consent is needed for a CV sent to apply), so it's
+ * off unless chosen. The old wording cited art. 13 of D.Lgs. 196/2003, which
+ * D.Lgs. 101/2018 repealed, and art. 13 GDPR, which is the employer's duty to
+ * inform, not consent; this one cites the laws as they stand.
+ */
+export const PRIVACY_CONSENTS: readonly { value: PrivacyConsent; label: string }[] = [
+  { value: "never", label: "Never" },
+  { value: "italian", label: "On resumes in Italian" },
+  { value: "always", label: "On every resume" },
+];
+export const DEFAULT_PRIVACY_CONSENT_TEXT =
+  "Autorizzo il trattamento dei dati personali contenuti nel mio curriculum vitae ai sensi del D.Lgs. 196/2003, come modificato dal D.Lgs. 101/2018, e del Regolamento UE 2016/679 (GDPR).";
+/** The consent line for a resume in `language` (a name; null is English), or null when it's left off. */
+export function privacyConsentLine(
+  settings: { privacyConsent: PrivacyConsent; privacyConsentText: string },
+  language: string | null,
+): string | null {
+  const text = settings.privacyConsentText.trim();
+  if (!text || settings.privacyConsent === "never") return null;
+  if (settings.privacyConsent === "italian" && knownLanguage(language)?.tag !== "it") return null;
+  return text;
+}
+
 /** The most pages a resume may have, or null for no limit. */
 export const maxPages = (limit: PageLimit): number | null => PAGE_LIMITS.find((option) => option.value === limit)?.pages ?? null;
 /** "one page", "two pages" */
@@ -123,6 +169,11 @@ export const settingsSchema = z.object({
   customLanguages: stringList.catch([]),
   fileNamePattern: z.string().catch("{name} – {company} – {doc}"),
   includeRefs: flag(false),
+  /** Off unless chosen: a location is one more line to read, and rarely what a posting asks about. */
+  roleLocations: roleLocations.catch("never"),
+  /** Off unless chosen (PRIVACY_CONSENTS), and its wording, which can be changed to what a posting asks for. */
+  privacyConsent: privacyConsent.catch("never"),
+  privacyConsentText: z.string().catch(DEFAULT_PRIVACY_CONSENT_TEXT),
   /** Up to two pages unless chosen (decided 22 October 2026: resumes aren't forced to one page). */
   pageLimit: pageLimit.catch("2"),
   nightlyBackup: flag(true),
@@ -143,6 +194,8 @@ export const settingsSchema = z.object({
   projectOrder: z.enum(["date", "manual"]).catch("date"),
   educationOrder: z.enum(["date", "manual"]).catch("date"),
   courseOrder: z.enum(["date", "manual"]).catch("date"),
+  /** Company spellings the user said are different companies (companyFingerprint), so they aren't offered as one again. */
+  companiesKeptApart: stringList.catch([]),
   /** Profile review fixes the user turned down (fixFingerprint), so they aren't proposed again. */
   reviewSkipped: stringList.catch([]),
   /** Why the last nightly backup failed; null once one works again (E10-7). */

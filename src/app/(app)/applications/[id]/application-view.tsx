@@ -46,6 +46,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setShowLocations,
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
@@ -111,6 +112,8 @@ export type ApplicationViewProps = {
     followThemeLayout: boolean;
     /** The Photo switch (#224); null follows the profile's "Show on resumes". */
     showPhoto: boolean | null;
+    /** Whether the resume shows each role's location: the Locations switch, what tailoring decided, or the setting. */
+    showLocations: boolean;
     archived: boolean;
     /** A job agent draft not approved yet (#195): it isn't in Applications. */
     awaitingReview?: boolean;
@@ -149,6 +152,8 @@ export type ApplicationViewProps = {
   dateFormat: DateFormat;
   /** Settings → "Include references", when the posting asks for them (SET-9). */
   includeReferences: boolean;
+  /** Settings → "Privacy consent line", for the application's language; null leaves it off. */
+  privacyConsent: string | null;
   /** The date on the letter, at UTC midnight. */
   letterDate: Date;
   /** "5/7 match" on the Job posting tab, when the requirements were matched. */
@@ -192,6 +197,7 @@ export function ApplicationView({
   paper,
   dateFormat,
   includeReferences,
+  privacyConsent,
   letterDate,
   score,
   initialTab,
@@ -208,6 +214,7 @@ export function ApplicationView({
   const [followLayout, showFollowLayout] = useOptimistic(application.followThemeLayout);
   const [photoChoice, showPhotoChoice] = useOptimistic(application.showPhoto);
   const showPhoto = photoChoice ?? profile.photo?.onResumes ?? false;
+  const [showLocations, showLocationsChoice] = useOptimistic(application.showLocations);
   // A theme just picked from the Theme menu, until the page has it (#226).
   const [themeChoice, showThemeChoice] = useOptimistic<ThemeData | null>(null);
   const resumeTheme = themeChoice ?? resume?.theme;
@@ -270,6 +277,12 @@ export function ApplicationView({
     startTransition(async () => {
       showPhotoChoice(show);
       toastResult(await setShowPhoto({ id: application.id, show }));
+    });
+
+  const changeLocations = (show: boolean) =>
+    startTransition(async () => {
+      showLocationsChoice(show);
+      toastResult(await setShowLocations({ id: application.id, show }));
     });
 
   const save = (kind: DocumentKind, unit: Unit, text: string) => {
@@ -719,6 +732,9 @@ export function ApplicationView({
                     <PreviewSwitch label="Sidebar layout" checked={followLayout} onCheckedChange={changeLayout} />
                   )}
                   {profile.photo && <PreviewSwitch label="Photo" checked={showPhoto} onCheckedChange={changePhoto} />}
+                  {profile.experience.some((role) => role.location.trim()) && (
+                    <PreviewSwitch label="Locations" checked={showLocations} onCheckedChange={changeLocations} />
+                  )}
                   {historyButton(DocumentKind.RESUME)}
                 </span>
               }
@@ -729,8 +745,10 @@ export function ApplicationView({
                 paper={paper}
                 followThemeLayout={followLayout}
                 showPhoto={photoChoice}
+                showLocations={showLocations}
                 language={application.language}
                 includeReferences={includeReferences}
+                privacyConsent={privacyConsent}
                 renderUnit={viewed(DocumentKind.RESUME) ? plainUnit : unitsOf(DocumentKind.RESUME, resumeUnits)}
               />
             </DocumentPreview>

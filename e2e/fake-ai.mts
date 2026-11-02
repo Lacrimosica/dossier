@@ -83,6 +83,8 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
       education: profile.education.map((entry) => ({ id: entry.id, notes: entry.notes })),
       // Only the first course, as if the rest didn't help with this job.
       courses: (profile.courses ?? []).slice(0, 1).map((entry) => ({ id: entry.id, notes: entry.notes })),
+      // Asked only when Settings → "Work locations on resumes" leaves it to the posting.
+      showLocations: false,
     };
   },
 

@@ -458,6 +458,10 @@ model Application {
   /// Whether the tailored resume shows the profile photo; null follows the
   /// profile's "Show on resumes" (#224).
   showPhoto           Boolean?
+  /// Whether the tailored resume shows where each role was; null follows
+  /// Settings → "Work locations on resumes". Written when tailoring decided
+  /// it from the posting.
+  showLocations       Boolean?
   archivedAt          DateTime?
   /// The Gmail thread the application was sent in, when it went out through Gmail (E15-2).
   emailThreadId       String?

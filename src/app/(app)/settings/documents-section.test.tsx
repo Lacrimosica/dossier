@@ -23,6 +23,9 @@ const initial: DocumentSettings = {
   fileNamePattern: "{name} – {company} – {doc}",
   includeRefs: false,
   pageLimit: "1",
+  roleLocations: "never",
+  privacyConsent: "never",
+  privacyConsentText: "Autorizzo il trattamento dei dati personali.",
 };
 const preview = { name: "Jane Doe", company: "Ledgerly", role: "Senior Product Designer" };
 const open = () => render(<DocumentsSection initial={initial} preview={preview} />);
@@ -78,6 +81,32 @@ describe("Documents settings (E10-3)", () => {
     expect(updateSettings).toHaveBeenLastCalledWith({ pageLimit: "2" });
     await user.selectOptions(select, "No limit");
     expect(updateSettings).toHaveBeenLastCalledWith({ pageLimit: "none" });
+  });
+
+  it("leaves work locations off resumes until chosen", async () => {
+    const user = userEvent.setup();
+    open();
+    const select = screen.getByLabelText("Work locations on resumes") as HTMLSelectElement;
+    expect([...select.options].map((option) => option.text)).toEqual(["Never", "When the posting asks", "Always"]);
+    expect(select).toHaveValue("never");
+    await user.selectOptions(select, "When the posting asks");
+    expect(updateSettings).toHaveBeenLastCalledWith({ roleLocations: "posting" });
+  });
+
+  it("leaves the privacy consent line off until chosen, then shows its wording", async () => {
+    const user = userEvent.setup();
+    open();
+    const select = screen.getByLabelText("Privacy consent line") as HTMLSelectElement;
+    expect([...select.options].map((option) => option.text)).toEqual(["Never", "On resumes in Italian", "On every resume"]);
+    expect(screen.queryByLabelText("Wording")).not.toBeInTheDocument();
+    await user.selectOptions(select, "On resumes in Italian");
+    expect(updateSettings).toHaveBeenLastCalledWith({ privacyConsent: "italian" });
+    const wording = screen.getByLabelText("Wording");
+    expect(wording).toHaveValue("Autorizzo il trattamento dei dati personali.");
+    await user.clear(wording);
+    await user.type(wording, "Testo del bando");
+    await user.tab();
+    expect(updateSettings).toHaveBeenLastCalledWith({ privacyConsentText: "Testo del bando" });
   });
 
   it("picks the base resume's language from the built-in ones, English by default", async () => {

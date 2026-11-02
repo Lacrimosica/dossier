@@ -11,6 +11,7 @@ import { DocumentKind } from "@/generated/prisma/enums";
 import { extractedSchema, trimmedSchema, unitsSchema, type Trimmed, type Unit } from "@/lib/application-data";
 import { prisma } from "@/lib/prisma";
 import { loadProfile } from "@/lib/profile-data";
+import { privacyConsentLine, showsRoleLocations } from "@/lib/settings";
 import { loadSettings } from "@/lib/settings-data";
 import { loadTheme, THEME_FIELDS } from "@/lib/theme-data";
 import { BUILT_IN_THEMES, type ThemeData } from "@/lib/themes";
@@ -77,6 +78,10 @@ export async function loadDocuments(id: string) {
     email: documentData(DocumentKind.EMAIL)?.units ?? null,
     /** Settings → "Include references", when the posting asks for them (SET-9). */
     includeReferences: settings.includeRefs && extracted?.asksForReferences === true,
+    /** The Locations switch, or what tailoring decided, or Settings → "Work locations on resumes". */
+    showLocations: showsRoleLocations(settings.roleLocations, application.showLocations),
+    /** Settings → "Privacy consent line", when it applies to the application's language. */
+    privacyConsent: privacyConsentLine(settings, application.language),
     /** Dated the day it was sent; until then, today. */
     letterDate: calendarDay(application.sentAt ?? undefined),
   };

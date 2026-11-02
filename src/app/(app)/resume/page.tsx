@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { loadProfile } from "@/lib/profile-data";
-import { maxPages } from "@/lib/settings";
+import { maxPages, privacyConsentLine, showsRoleLocations } from "@/lib/settings";
 import { loadSettings } from "@/lib/settings-data";
 import { loadThemes, loadThemeUsage } from "@/lib/theme-data";
 
@@ -20,7 +20,9 @@ export default async function BaseResumePage() {
       baseThemeId={settings.baseThemeId}
       paper={settings.paper}
       includeReferences={settings.includeRefs}
+      showLocations={showsRoleLocations(settings.roleLocations)}
       language={settings.resumeLanguage}
+      privacyConsent={privacyConsentLine(settings, settings.resumeLanguage)}
       maxPages={maxPages(settings.pageLimit)}
     />
   );

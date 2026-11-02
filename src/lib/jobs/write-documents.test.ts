@@ -12,6 +12,7 @@ vi.mock("@/lib/profile-data", async () => {
   const { demoProfile } = await import("@/lib/demo-profile");
   return { loadProfile: async () => demoProfile() };
 });
+vi.mock("@/lib/settings-data", () => ({ loadSettings: async () => ({ roleLocations: "never" }) }));
 vi.mock("./runner", () => ({ defineJob: <T,>(definition: T) => definition }));
 
 describe("writeDocumentsJob (E7-6)", () => {

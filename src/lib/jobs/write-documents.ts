@@ -8,6 +8,7 @@ import { loadTaskOptions } from "@/lib/ai/task-options";
 import { tailorResume, writeCoverLetter } from "@/lib/ai/tasks";
 import { extractedSchema, matchSchema, unitsSchema } from "@/lib/application-data";
 import { loadProfile } from "@/lib/profile-data";
+import { loadSettings } from "@/lib/settings-data";
 
 import { WRITE_DOCUMENTS_STEPS } from "./application-steps";
 import { defineJob } from "./runner";
@@ -33,21 +34,29 @@ export const writeDocumentsJob = defineJob({
     /** Not every job asks for one; the agent and Claude chat always write it. */
     coverLetter: z.boolean().default(true),
   }),
-  result: z.object({ resume: unitsSchema, resumeWith: z.string(), letter: unitsSchema.nullable(), letterWith: z.string().nullable() }),
+  result: z.object({
+    resume: unitsSchema,
+    resumeWith: z.string(),
+    /** Whether the resume shows role locations, when tailoring decided it; null leaves it to the setting. */
+    showLocations: z.boolean().nullable().default(null),
+    letter: unitsSchema.nullable(),
+    letterWith: z.string().nullable(),
+  }),
   async run({ posting, extracted, match, tone, note, coverLetter }, { step, signal }) {
     await step(WRITE_DOCUMENTS_STEPS[0]);
-    const [provider, options, profile] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile()]);
+    const [provider, options, profile, { roleLocations }] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile(), loadSettings()]);
     // "Anything I should know?" is the application's first fact (APP-15).
     const facts = note.trim() ? [note.trim()] : [];
-    const resume = await tailorResume(provider, { profile, extracted, match, facts, posting }, { ...options, signal });
+    const resume = await tailorResume(provider, { profile, extracted, match, facts, posting, locations: roleLocations }, { ...options, signal });
+    const tailored = { resume: resume.data, resumeWith: resume.promptVersion, showLocations: resume.showLocations };
 
-    if (!coverLetter) return { resume: resume.data, resumeWith: resume.promptVersion, letter: null, letterWith: null };
+    if (!coverLetter) return { ...tailored, letter: null, letterWith: null };
 
     await step(WRITE_DOCUMENTS_STEPS[1]);
     // The letter builds on the resume just tailored, rather than repeating it.
     const letter = await writeCoverLetter(provider, { profile, extracted, match, tone, facts, posting, resume: resume.data }, { ...options, signal });
 
-    return { resume: resume.data, resumeWith: resume.promptVersion, letter: letter.data, letterWith: letter.promptVersion };
+    return { ...tailored, letter: letter.data, letterWith: letter.promptVersion };
   },
 });
 

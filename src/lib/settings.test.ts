@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 
 import { DateFormat } from "@/generated/prisma/enums";
 
-import { DATE_FORMATS, formatDocumentDate, maxPages, pagesInWords, settingsFromRows, settingValue, type SettingsData } from "./settings";
+import {
+  DATE_FORMATS,
+  DEFAULT_PRIVACY_CONSENT_TEXT,
+  formatDocumentDate,
+  maxPages,
+  pagesInWords,
+  privacyConsentLine,
+  settingsFromRows,
+  settingValue,
+  type SettingsData,
+} from "./settings";
 
 const date = new Date(Date.UTC(2026, 8, 7));
 
@@ -43,6 +53,9 @@ describe("stored settings", () => {
       customLanguages: [],
       fileNamePattern: "{name} – {company} – {doc}",
       includeRefs: false,
+      roleLocations: "never",
+      privacyConsent: "never",
+      privacyConsentText: DEFAULT_PRIVACY_CONSENT_TEXT,
       pageLimit: "2",
       nightlyBackup: true,
       jobRetentionHours: 24,
@@ -56,6 +69,7 @@ describe("stored settings", () => {
       projectOrder: "date",
       educationOrder: "date",
       courseOrder: "date",
+      companiesKeptApart: [],
       reviewSkipped: [],
       backupProblem: null,
       jobSource: null,
@@ -170,5 +184,27 @@ describe("page limits (SET-9)", () => {
   it("counts the pages a resume may have", () => {
     expect([maxPages("1"), maxPages("2"), maxPages("none")]).toEqual([1, 2, null]);
     expect([pagesInWords(1), pagesInWords(2)]).toEqual(["one page", "two pages"]);
+  });
+});
+
+describe("the privacy consent line", () => {
+  const text = DEFAULT_PRIVACY_CONSENT_TEXT;
+
+  it("is off unless chosen", () => {
+    expect(settingsFromRows([]).privacyConsent).toBe("never");
+    expect(privacyConsentLine(settingsFromRows([]), "Italian")).toBeNull();
+  });
+
+  it("goes on resumes in Italian only, when asked", () => {
+    const settings = { privacyConsent: "italian" as const, privacyConsentText: text };
+    expect(privacyConsentLine(settings, "Italian")).toBe(text);
+    expect(privacyConsentLine(settings, "italian ")).toBe(text);
+    expect(privacyConsentLine(settings, "English")).toBeNull();
+    expect(privacyConsentLine(settings, null)).toBeNull();
+  });
+
+  it("goes on every resume, when asked, unless its wording is empty", () => {
+    expect(privacyConsentLine({ privacyConsent: "always", privacyConsentText: text }, null)).toBe(text);
+    expect(privacyConsentLine({ privacyConsent: "always", privacyConsentText: "  " }, "Italian")).toBeNull();
   });
 });

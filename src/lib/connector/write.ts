@@ -140,7 +140,8 @@ export async function saveWrittenApplication(input: WrittenApplication): Promise
 
   const applicationId = await createApplicationFromDocuments({
     reading: { posting: input.posting, extracted, extractedWith: WRITTEN_IN_CLAUDE, matchedWith: WRITTEN_IN_CLAUDE },
-    documents: { resume, resumeWith: WRITTEN_IN_CLAUDE, letter, letterWith: WRITTEN_IN_CLAUDE },
+    // Claude's draft leaves role locations to the setting.
+    documents: { resume, resumeWith: WRITTEN_IN_CLAUDE, showLocations: null, letter, letterWith: WRITTEN_IN_CLAUDE },
     match,
     details: {
       title: details.title?.trim() || [details.role, details.company].filter((part) => part.trim()).join(" · "),

@@ -216,6 +216,20 @@ describe("tailorResume", () => {
     expect(sent(provider).effort).toBeUndefined();
   });
 
+  it("asks whether the posting cares where the candidate worked only when the setting leaves it to the posting", async () => {
+    const asked = model({ ...answer, showLocations: true });
+    const tailored = await tailorResume(asked, { profile, extracted, match: null, facts: [], posting, locations: "posting" }, options);
+    expect(prompt(asked)).toMatch(/showLocations: true when the posting cares where the candidate has worked/);
+    expect(tailored.showLocations).toBe(true);
+
+    for (const locations of ["never", "always"] as const) {
+      const provider = model(answer);
+      const { showLocations } = await tailorResume(provider, { profile, extracted, match: null, facts: [], posting, locations }, options);
+      expect(prompt(provider)).not.toContain("showLocations");
+      expect(showLocations).toBeNull();
+    }
+  });
+
   it("leaves facts out of the prompt when there are none", async () => {
     const provider = model(answer);
     await tailorResume(provider, { profile: { ...profile, facts: [{ id: "f1", text: "  " }] }, extracted, match: null, facts: [], posting }, options);

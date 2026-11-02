@@ -8,11 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { DocumentKind, type DateFormat, type PaperSize, type Tone } from "@/generated/prisma/enums";
 import { DOCUMENT_LANGUAGES } from "@/lib/document-language";
 import { FILE_NAME_TOKENS, resolveFileName } from "@/lib/file-name";
-import { DATE_FORMATS, PAGE_LIMITS, type PageLimit } from "@/lib/settings";
+import {
+  DATE_FORMATS,
+  PAGE_LIMITS,
+  PRIVACY_CONSENTS,
+  ROLE_LOCATIONS,
+  type PageLimit,
+  type PrivacyConsent,
+  type RoleLocations,
+} from "@/lib/settings";
 import { PAPER_SIZES } from "@/lib/themes";
 import { TONES } from "@/lib/tones";
 import { useAutosave } from "@/hooks/use-autosave";
@@ -31,6 +40,9 @@ export type DocumentSettings = {
   fileNamePattern: string;
   includeRefs: boolean;
   pageLimit: PageLimit;
+  roleLocations: RoleLocations;
+  privacyConsent: PrivacyConsent;
+  privacyConsentText: string;
 };
 
 const POSTING_LANGUAGE = "__posting";
@@ -64,6 +76,10 @@ export function DocumentsSection({
 
   const { flush } = useAutosave(settings.fileNamePattern, (fileNamePattern) =>
     track(updateSettings({ fileNamePattern })),
+  );
+
+  const { flush: flushConsent } = useAutosave(settings.privacyConsentText, (privacyConsentText) =>
+    track(updateSettings({ privacyConsentText })),
   );
 
   const insertToken = (token: string) => {
@@ -187,6 +203,18 @@ export function DocumentsSection({
             </option>
           ))}
         </Select>
+        <Select
+          label="Work locations on resumes"
+          hint="The city or country of each role, next to the company. “When the posting asks” shows them when a job cares where you've worked; you can still switch them on or off for each resume."
+          value={settings.roleLocations}
+          onChange={(event) => change({ roleLocations: event.target.value as RoleLocations })}
+        >
+          {ROLE_LOCATIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
 
         <div className="flex flex-col gap-2.5 sm:col-span-2">
           <Input
@@ -230,6 +258,31 @@ export function DocumentsSection({
           checked={settings.includeRefs}
           onCheckedChange={(includeRefs) => change({ includeRefs })}
         />
+      </Card>
+
+      <Card padding="none" className="flex flex-col gap-5 px-7 py-[26px]">
+        <Select
+          label="Privacy consent line"
+          hint="The sentence many Italian employers expect at the end of a CV, allowing them to process your data. The law no longer requires it, but some job ads still ask for it."
+          value={settings.privacyConsent}
+          onChange={(event) => change({ privacyConsent: event.target.value as PrivacyConsent })}
+        >
+          {PRIVACY_CONSENTS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+        {settings.privacyConsent !== "never" && (
+          <Textarea
+            label="Wording"
+            hint="If a job ad asks for a particular wording, paste it here."
+            rows={3}
+            value={settings.privacyConsentText}
+            onChange={(event) => setSettings({ ...settings, privacyConsentText: event.target.value })}
+            onBlur={flushConsent}
+          />
+        )}
       </Card>
     </>
   );

@@ -20,6 +20,14 @@ describe("ResumeDocument", () => {
     expect(container.firstChild).toMatchSnapshot();
   });
 
+  it("ends with the privacy consent line when there is one, after both columns", () => {
+    const line = "Autorizzo il trattamento dei dati personali contenuti nel mio curriculum vitae.";
+    const { container } = render(<ResumeDocument theme={theme("modern")} profile={profile} paper="A4" today={today} privacyConsent={line} />);
+    const paragraph = screen.getByText(line);
+    expect([...container.querySelectorAll("p")].at(-1)).toBe(paragraph);
+    expect(paragraph.closest("[class*=column]")).toBeNull();
+  });
+
   it("puts contact details in the header of single-column layouts", () => {
     render(<ResumeDocument theme={theme("editorial")} profile={profile} paper="A4" today={today} />);
     expect(screen.getByText("jane.doe@example.com").parentElement?.textContent).toBe(
@@ -73,6 +81,25 @@ describe("ResumeDocument", () => {
     render(<ResumeDocument theme={theme("folio")} profile={profile} paper="A4" today={today} />);
     expect(sectionTitles()).toEqual(["Profile", "Experience", "Projects", "Education", "Courses & certificates", "Publications", "Skills", "Languages"]);
     expect(screen.getByRole("article", { name: "Resume" }).className).toMatch(/sideHeadings/);
+  });
+
+  it("prints a promotion's roles under the company once, and locations when asked", () => {
+    const [northwind, ...rest] = profile.experience;
+    const promoted = {
+      ...profile,
+      experience: [
+        { ...northwind, id: "lead", role: "Lead Product Designer", startYear: 2023, startMonth: 4 },
+        { ...northwind, current: false, endYear: 2023, endMonth: 3 },
+        ...rest,
+      ],
+    };
+    const { container, rerender } = render(<ResumeDocument theme={theme("editorial")} profile={promoted} paper="A4" today={today} />);
+    const heads = () => [...container.querySelectorAll("section:nth-of-type(2) p")].map((line) => line.textContent).filter((text) => text?.includes("Northwind") || text?.includes("Designer"));
+    expect(heads().slice(0, 3)).toEqual(["Northwind Logistics", "Lead Product Designer", `${northwind.role}`]);
+
+    rerender(<ResumeDocument theme={theme("editorial")} profile={promoted} paper="A4" today={today} showLocations />);
+    expect(heads()[0]).toBe(`Northwind Logistics, ${northwind.location}`);
+    expect(screen.getByText(new RegExp(`^${rest[0].role}$`)).parentElement).toHaveTextContent(`${rest[0].company} · ${rest[0].location}`);
   });
 
   it("shows the skills used in each role and the education notes", () => {

@@ -16,6 +16,8 @@ export function TailoredResume({
   paper,
   followThemeLayout,
   showPhoto,
+  showLocations,
+  privacyConsent,
   language,
   includeReferences,
   renderUnit,
@@ -27,6 +29,10 @@ export function TailoredResume({
   followThemeLayout: boolean;
   /** The application's Photo switch (#224); null follows the profile. */
   showPhoto: boolean | null;
+  /** Each role's location (Settings → "Work locations on resumes", or the Locations switch). */
+  showLocations: boolean;
+  /** Settings → "Privacy consent line", for this resume's language; null leaves it off. */
+  privacyConsent: string | null;
   language: string;
   includeReferences: boolean;
   renderUnit?: UnitRenderer;
@@ -39,6 +45,8 @@ export function TailoredResume({
       units={resume.units}
       layout={followThemeLayout ? undefined : withoutSidebar(resume.theme.layout)}
       showPhoto={showPhoto}
+      showLocations={showLocations}
+      privacyConsent={privacyConsent}
       language={language}
       includeReferences={includeReferences}
       renderUnit={renderUnit}

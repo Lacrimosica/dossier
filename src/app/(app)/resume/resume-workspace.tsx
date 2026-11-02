@@ -30,10 +30,14 @@ export type ResumeWorkspaceProps = {
   baseThemeId: string;
   paper: PaperSize;
   includeReferences: boolean;
+  /** Settings → "Work locations on resumes" is Always; the base resume has no posting to ask. */
+  showLocations: boolean;
   /** Settings → "Resume length" (SET-9): the most pages a tailored resume may have, or null for no limit. */
   maxPages: number | null;
   /** Settings → "Base resume language", for its headings and dates; null for English. */
   language: string | null;
+  /** Settings → "Privacy consent line", for the base resume's language; null leaves it off. */
+  privacyConsent: string | null;
 };
 
 type Panel = "themes" | "customize";
@@ -44,7 +48,7 @@ type Panel = "themes" | "customize";
  * shows it right away and saves it in the background; while you customise
  * one, the preview shows the draft.
  */
-export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThemeId, paper, includeReferences, maxPages, language }: ResumeWorkspaceProps) {
+export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThemeId, paper, includeReferences, showLocations, maxPages, language, privacyConsent }: ResumeWorkspaceProps) {
   const [themes, setThemes] = useState(initialThemes);
   const [baseId, setBaseId] = useState(baseThemeId);
   const [panel, setPanel] = useState<Panel>("themes");
@@ -155,7 +159,12 @@ export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThe
   };
 
   return (
-    <>
+    // As on an application: wide enough for the panel beside the preview, the
+    // page keeps to the window and each scrolls on its own, so a setting stays
+    // in view next to the part of the resume it changes. Narrower, the panel
+    // moves below and the page scrolls as usual.
+    <div className="@container/page flex flex-1 flex-col">
+    <div className="flex flex-1 flex-col @min-[780px]/page:h-panel @min-[780px]/page:flex-none">
       <PageHeader
         title="Base resume"
         description="Built straight from your profile. Every new application starts from this one, then gets tailored to the job."
@@ -168,7 +177,7 @@ export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThe
           </>
         }
       />
-      <div className="@container flex flex-1 flex-wrap border-t border-line">
+      <div className="@container flex min-h-0 flex-1 flex-wrap border-t border-line @min-[780px]/page:flex-nowrap">
         <DocumentPreview
           label={theme.name}
           meta={(pages) => `${PAPER_SIZES[paper].label} · ${pages} ${pages === 1 ? "page" : "pages"}`}
@@ -194,12 +203,15 @@ export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThe
             )
           }
         >
-          <ResumeDocument theme={theme} profile={profile} paper={paper} includeReferences={includeReferences} language={language} />
+          <ResumeDocument theme={theme} profile={profile} paper={paper} includeReferences={includeReferences} showLocations={showLocations} language={language} privacyConsent={privacyConsent} />
         </DocumentPreview>
+        {/* relative: the radio groups' hidden form inputs are absolutely
+            positioned; without it they hang off main, below the panel's
+            scroll, and stretch the window. */}
         <aside
           ref={panelArea}
           aria-label="Theme"
-          className="flex flex-[1_0_300px] flex-col border-t border-line bg-paper px-7 pt-7 pb-12 @min-[780px]:border-t-0 @min-[780px]:border-l"
+          className="relative flex flex-[1_0_300px] flex-col border-t border-line bg-paper px-7 pt-7 pb-12 @min-[780px]:overflow-y-auto @min-[780px]:border-t-0 @min-[780px]:border-l"
         >
           <Tabs value={panel} onValueChange={(value) => openPanel(value as Panel)} className="flex flex-col gap-6">
             <TabsList variant="segmented">
@@ -235,6 +247,7 @@ export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThe
           </Tabs>
         </aside>
       </div>
+    </div>
       <ConfirmDialog
         open={deleting !== null}
         onOpenChange={(open) => !open && setDeleting(null)}
@@ -243,7 +256,7 @@ export function ResumeWorkspace({ profile, themes: initialThemes, usage, baseThe
         confirmLabel="Delete theme"
         onConfirm={() => deleting && void remove(deleting)}
       />
-    </>
+    </div>
   );
 }
 

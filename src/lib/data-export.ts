@@ -228,6 +228,8 @@ const application = z.object({
   followThemeLayout: z.boolean(),
   /** Absent before 1.9.0, which follows the profile (#224). */
   showPhoto: z.boolean().nullable().optional(),
+  /** Absent in older files, which follow the setting. */
+  showLocations: z.boolean().nullable().optional(),
   /** The job agent's (E16); absent in older files, which hold only the user's own. */
   origin: z.enum(ApplicationOrigin).optional(),
   agentScore: int.nullable().optional(),

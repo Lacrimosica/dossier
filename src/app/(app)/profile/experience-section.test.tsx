@@ -15,6 +15,8 @@ import {
   saveExperience,
   setExperienceSkill,
   sortEntriesByDate,
+  unifyCompanyName,
+  keepCompaniesApart,
 } from "./actions";
 import { ExperienceSection } from "./experience-section";
 import { parseYear } from "./month-year-field";
@@ -28,6 +30,8 @@ vi.mock("./actions", () => ({
   restoreExperience: vi.fn(),
   reorderEntries: vi.fn(async () => ({ ok: true, data: null })),
   sortEntriesByDate: vi.fn(),
+  unifyCompanyName: vi.fn(),
+  keepCompaniesApart: vi.fn(async () => ({ ok: true, data: null })),
 }));
 vi.mock("@/components/toast", () => ({ toast: vi.fn() }));
 
@@ -47,7 +51,7 @@ const northwind: ExperienceItem = {
 const fieldnote: ExperienceItem = { ...northwind, id: "e2", role: "Product Designer", company: "Fieldnote", current: false, startYear: 2018, startMonth: 6, endYear: 2021, endMonth: 2, skillIds: [] };
 
 let latest: ProfileData;
-function Harness({ order = "date" }: { order?: EntryOrder }) {
+function Harness({ order = "date", experience = [northwind, fieldnote] }: { order?: EntryOrder; experience?: ExperienceItem[] }) {
   const [state, setState] = useState<ProfileData>({
     basics: {} as ProfileData["basics"],
     skills: [
@@ -55,7 +59,7 @@ function Harness({ order = "date" }: { order?: EntryOrder }) {
       { id: "s2", name: "Figma" },
     ],
     languages: [],
-    experience: [northwind, fieldnote],
+    experience,
     projects: [],
     education: [],
     courses: [],
@@ -268,3 +272,56 @@ describe("reordering roles (E4-9)", () => {
   });
 });
 
+describe("roles at one company", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // Promoted at Northwind; the earlier role's dates put Fieldnote between the two.
+  const junior: ExperienceItem = { ...northwind, id: "e3", role: "Product Designer II", company: "northwind logistics", current: false, startYear: 2016, endYear: 2018, endMonth: 5 };
+
+  it("shows them together, with the company once, and moves them as one", async () => {
+    const user = userEvent.setup();
+    render(<Harness experience={[northwind, fieldnote, junior]} />);
+    const group = screen.getByRole("group", { name: "2 roles at Northwind Logistics" });
+    expect(group).toHaveTextContent(/Senior Product Designer.*Product Designer II/);
+    expect(screen.getAllByRole("button", { expanded: false }).map((button) => button.textContent)).toEqual([
+      expect.stringContaining("Senior Product Designer"),
+      expect.stringContaining("Product Designer II"),
+      expect.stringContaining("Fieldnote"),
+    ]);
+
+    // Down from the company's last role takes the whole company past Fieldnote.
+    await user.click(screen.getByRole("button", { name: "Move “Product Designer II” down" }));
+    expect(reorderEntries).toHaveBeenLastCalledWith({ section: "experience", ids: ["e2", "e1", "e3"] });
+  });
+
+  it("offers a company's names as you type another role's", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(header(/Product Designer.*Fieldnote/));
+    const company = screen.getByLabelText("Company");
+    const options = [...document.getElementById(company.getAttribute("list")!)!.querySelectorAll("option")].map((option) => option.value);
+    expect(options).toEqual(["Northwind Logistics"]);
+  });
+
+  it("offers to give spellings of one company one name", async () => {
+    const user = userEvent.setup();
+    const shouting = { ...junior, company: "NORTHWIND LOGISTICS B.V." };
+    vi.mocked(unifyCompanyName).mockResolvedValueOnce({ ok: true, data: ["e3"] });
+    render(<Harness experience={[northwind, fieldnote, shouting]} />);
+    expect(screen.getByRole("note")).toHaveTextContent("“Northwind Logistics” and “NORTHWIND LOGISTICS B.V.” look like the same company.");
+
+    await user.click(screen.getByRole("button", { name: "Use “Northwind Logistics”" }));
+    expect(unifyCompanyName).toHaveBeenCalledWith({ names: ["Northwind Logistics", "NORTHWIND LOGISTICS B.V."], to: "Northwind Logistics" });
+    expect(latest.experience.find((role) => role.id === "e3")?.company).toBe("Northwind Logistics");
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "2 roles at Northwind Logistics" })).toBeInTheDocument();
+  });
+
+  it("stops offering when they're different companies", async () => {
+    const user = userEvent.setup();
+    render(<Harness experience={[northwind, { ...fieldnote, company: "Northwind Logistics Ltd" }]} />);
+    await user.click(screen.getByRole("button", { name: "They’re different companies" }));
+    expect(keepCompaniesApart).toHaveBeenCalledWith({ fingerprint: "northwind logistics\nnorthwind logistics ltd" });
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});

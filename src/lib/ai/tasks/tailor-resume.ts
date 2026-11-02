@@ -4,8 +4,10 @@ import { HEADLINE_UNIT, unitsSchema, type Extracted, type Match, type Unit } fro
 import { publicationLabel } from "@/lib/citation";
 import { documentLabels, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { resumeCourses, resumePublications, sameName, type ProfileData } from "@/lib/profile";
+import type { RoleLocations } from "@/lib/settings";
 
 import { claimSources, guardUnits } from "../fact-guard";
+import type { AIProvider } from "../provider";
 
 import {
   applicationFacts,
@@ -22,7 +24,8 @@ import {
   system,
   truthfulness,
   UNTRUSTED_POSTING,
-  type Task,
+  type TaskOptions,
+  type TaskResult,
 } from "./prompt-parts";
 
 export const TAILOR_RESUME_VERSION = "tailor-resume@9";
@@ -52,6 +55,16 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - courses: only the courses and certificates from the profile that help with this job, by id, most relevant first, with their notes shortened or left empty. Leave out the rest; an empty list is fine.
 - The profile's publications go on the resume word for word, so don't answer with them; the summary may mention them.`;
 
+/**
+ * Settings → "Work locations on resumes" is "When the posting asks": the
+ * model says whether this posting cares where the candidate has worked. It
+ * only decides whether the locations typed in the profile are printed; it
+ * never writes one.
+ */
+const withLocations = answerSchema.extend({ showLocations: z.boolean() });
+const LOCATIONS_QUESTION =
+  "- showLocations: true when the posting cares where the candidate has worked: experience in a country, region or market, being local or able to relocate, or work authorisation somewhere. Otherwise false. The resume then shows the location each role has in the profile.";
+
 /** SET-9: asked for when "Resume length" has a limit; anything still over is trimmed afterwards (E10-10). */
 function pageFit(maxPages: number | null | undefined): string | null {
   if (maxPages === 1) {
@@ -73,13 +86,24 @@ export type TailorInput = {
   posting: string;
   /** For which roles are recent. */
   today?: Date;
+  /** Settings → "Work locations on resumes"; only "posting" asks the model. */
+  locations?: RoleLocations;
 };
 
+/** The units, and whether the resume shows each role's location when tailoring decided it (null: the setting decides). */
+export type TailoredResume = TaskResult<Unit[]> & { showLocations: boolean | null };
+
 /** APP-4: the tailored resume as units (headline, summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
-export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profile, extracted, match, facts, posting, today = new Date() }, options) => {
+export async function tailorResume(
+  provider: AIProvider,
+  { profile, extracted, match, facts, posting, today = new Date(), locations = "never" }: TailorInput,
+  options: TaskOptions,
+): Promise<TailoredResume> {
+  const askLocations = locations === "posting";
   const answer = await provider.complete({
     system: system(
       INSTRUCTIONS,
+      askLocations ? LOCATIONS_QUESTION : null,
       `Today is ${localDate(today)}.`,
       pageFit(options.maxPages),
       BULLET_RULES,
@@ -104,7 +128,7 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
           .join("\n\n"),
       },
     ],
-    schema: answerSchema,
+    schema: askLocations ? withLocations : answerSchema,
     schemaName: "tailored_resume",
     creativity: options.creativity,
     signal: options.signal,
@@ -115,8 +139,10 @@ export const tailorResume: Task<TailorInput, Unit[]> = async (provider, { profil
   return {
     data: options.strict ? guardUnits(units, claimSources(profile, extracted, match, facts, today)) : units,
     promptVersion: TAILOR_RESUME_VERSION,
+    // Asked for, the answer was checked against withLocations.
+    showLocations: askLocations ? (answer as z.infer<typeof withLocations>).showLocations : null,
   };
-};
+}
 
 /**
  * Turns the answer into units, trusting nothing: an empty headline is the

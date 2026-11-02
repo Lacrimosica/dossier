@@ -150,6 +150,8 @@ export async function createApplicationFromDocuments({ reading, documents, match
         // "Anything I should know?" becomes the application's first fact (APP-15).
         ...(note.trim() ? { facts: { create: { text: note.trim() } } } : {}),
         language,
+        // Tailoring's answer to "Does this posting care where you've worked?"; null follows the setting.
+        showLocations: documents.showLocations ?? null,
         documents: {
           create: [
             // Each starts its history with the first draft (E8-10).

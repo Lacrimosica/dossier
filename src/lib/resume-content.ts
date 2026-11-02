@@ -1,6 +1,7 @@
 import { HEADLINE_UNIT, type Unit } from "@/lib/application-data";
 import { ageLabel, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { publicationHref, publicationLink } from "@/lib/citation";
+import { companyGroups, companySpan } from "@/lib/companies";
 import { ageOn, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
 
 // What a resume shows, worked out from the profile (the base resume) or from
@@ -14,14 +15,26 @@ export type ResumeContent = {
   /** Email, phone, "City, Country", website, LinkedIn and "Age N", whichever are filled in. */
   contacts: string[];
   summary: string;
+  /**
+   * Roles by company: a promotion's roles together under the company once,
+   * where its latest role would be (companyGroups). Most companies have one.
+   */
   experience: {
-    id: string;
-    role: string;
     company: string;
+    /** Where its roles were, when the resume shows locations and they were all in one place; otherwise "". */
+    location: string;
+    /** From the first role's start to the last one's end. */
     dates: string;
-    bullets: string[];
-    /** The skills used in the role (RES-6). */
-    skills: string[];
+    roles: {
+      id: string;
+      role: string;
+      /** Where this role was, when the resume shows locations and the company's roles were in different places. */
+      location: string;
+      dates: string;
+      bullets: string[];
+      /** The skills used in the role (RES-6). */
+      skills: string[];
+    }[];
   }[];
   /** Projects (PRO-13), laid out like roles. */
   projects: {
@@ -70,6 +83,8 @@ export type ResumeOptions = {
   includeReferences?: boolean;
   /** An application's Photo switch (#224); null or left out follows the profile's "Show on resumes". */
   showPhoto?: boolean | null;
+  /** Each role's location next to its company: Settings → "Work locations on resumes", or the application's choice. */
+  showLocations?: boolean;
   /** For "Age N"; defaults to now. */
   today?: Date;
 };
@@ -109,21 +124,33 @@ const lines = (text: string) =>
 /** What the resume shows, with its dates and levels in the words of `labels`. */
 export function resumeContent(
   profile: ProfileData,
-  { units, includeReferences = false, showPhoto, today = new Date() }: ResumeOptions = {},
+  { units, includeReferences = false, showPhoto, showLocations = false, today = new Date() }: ResumeOptions = {},
   labels: DocumentLabels = ENGLISH_LABELS,
 ): ResumeContent {
   const { basics } = profile;
   const skillNames = new Map(profile.skills.map((skill) => [skill.id, skill.name]));
   const dates = { locale: labels.locale, present: labels.present };
 
-  const experience = (entry: ProfileData["experience"][number], bullets: string) => ({
-    id: entry.id,
-    role: entry.role.trim(),
-    company: entry.company.trim(),
-    dates: formatDateRange(entry, dates),
-    bullets: lines(bullets),
-    skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
-  });
+  type Role = ProfileData["experience"][number];
+  const experience = (roles: { entry: Role; text: string }[]): ResumeContent["experience"] =>
+    companyGroups(roles.map(({ entry, text }) => ({ ...entry, text }))).map((group) => {
+      // One place for the whole company goes on its line; a move between offices shows on each role.
+      const places = [...new Set(group.map((entry) => entry.location.trim()).filter(Boolean))];
+      const onePlace = !showLocations ? "" : places.length === 1 ? places[0] : "";
+      return {
+        company: group[0].company.trim(),
+        location: onePlace,
+        dates: formatDateRange(companySpan(group), dates),
+        roles: group.map((entry) => ({
+          id: entry.id,
+          role: entry.role.trim(),
+          location: showLocations && places.length > 1 ? entry.location.trim() : "",
+          dates: formatDateRange(entry, dates),
+          bullets: lines(entry.text),
+          skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
+        })),
+      };
+    });
   const project = (entry: ProfileData["projects"][number], bullets: string) => ({
     id: entry.id,
     name: entry.name.trim(),
@@ -161,7 +188,7 @@ export function resumeContent(
     photo: profile.photo && (showPhoto ?? profile.photo.onResumes) ? profile.photo.src : null,
     contacts: contactItems(basics, today, labels),
     summary: basics.summary.trim(),
-    experience: profile.experience.map((entry) => experience(entry, entry.bullets)),
+    experience: experience(profile.experience.map((entry) => ({ entry, text: entry.bullets }))),
     projects: profile.projects.map((entry) => project(entry, entry.bullets)),
     education: profile.education.map((entry) => education(entry, entry.notes)),
     courses: resumeCourses(profile.courses).map((entry) => course(entry, entry.notes)),
@@ -195,9 +222,7 @@ export function resumeContent(
     content.summary = text("summary").trim();
     content.skills = text("skills").trim();
     content.languages = text("languages").trim();
-    content.experience = withUnit("experience:", profile.experience).map(({ entry, text }) =>
-      experience(entry, text),
-    );
+    content.experience = experience(withUnit("experience:", profile.experience));
     content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),

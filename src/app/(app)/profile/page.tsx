@@ -21,6 +21,7 @@ export default async function ProfilePage({ searchParams }: PageProps<"/profile"
         education: settings.educationOrder,
         courses: settings.courseOrder,
       }}
+      companiesKeptApart={settings.companiesKeptApart}
     />
   );
 }
