@@ -53,9 +53,10 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
       ...(profile.interests.length > 0 ? { interests: profile.interests } : {}),
       experience: profile.experience.map((entry) => ({
         id: entry.id,
-        role: entry.role,
-        company: entry.company,
-        location: entry.location,
+        // A career break isn't a job: no company or place, and it says so.
+        ...(entry.careerBreak
+          ? { careerBreak: true, role: entry.role.trim() || "Career break" }
+          : { role: entry.role, company: entry.company, location: entry.location }),
         dates: formatDateRange(entry),
         ...(entry.groupId !== null && groupNames.has(entry.groupId) ? { group: entry.groupId } : {}),
         bullets: entry.bullets.split("\n").map((line) => line.trim()).filter(Boolean),

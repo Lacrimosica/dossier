@@ -64,25 +64,28 @@ model Language {
 
 /// A role. Dates are month and year; `current` means "Present" (no end date).
 model Experience {
-  id         String            @id @default(cuid())
-  role       String            @default("")
-  company    String            @default("")
-  location   String            @default("")
-  startYear  Int?
+  id          String            @id @default(cuid())
+  role        String            @default("")
+  company     String            @default("")
+  location    String            @default("")
+  startYear   Int?
   /// 1–12, or null when only the year is known.
-  startMonth Int?
-  endYear    Int?
-  endMonth   Int?
-  current    Boolean           @default(false)
+  startMonth  Int?
+  endYear     Int?
+  endMonth    Int?
+  current     Boolean           @default(false)
+  /// A career break rather than a job: no company, never counted as experience,
+  /// kept on every resume where it happened (.scratch/experience-groups).
+  careerBreak Boolean           @default(false)
   /// One point per line.
-  bullets    String            @default("")
-  sort       Int               @default(0)
+  bullets     String            @default("")
+  sort        Int               @default(0)
   /// The group whose heading it goes under (.scratch/experience-groups); null for the section's own heading.
-  groupId    String?
-  group      EntryGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  skills     ExperienceSkill[]
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
+  groupId     String?
+  group       EntryGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  skills      ExperienceSkill[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   @@index([groupId])
 }

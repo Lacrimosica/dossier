@@ -14,6 +14,10 @@ export type DocumentLabels = {
   locale: string;
   profile: string;
   experience: string;
+  /** Roles without a group, under the experience groups (.scratch/experience-groups). */
+  otherExperience: string;
+  /** The title of a career break left without one. */
+  careerBreak: string;
   projects: string;
   publications: string;
   education: string;
@@ -56,6 +60,8 @@ const WORDS: Record<string, Words> = {
   en: {
     profile: "Profile",
     experience: "Experience",
+    otherExperience: "Other experience",
+    careerBreak: "Career break",
     projects: "Projects",
     publications: "Publications",
     education: "Education",
@@ -76,6 +82,8 @@ const WORDS: Record<string, Words> = {
   nl: {
     profile: "Profiel",
     experience: "Werkervaring",
+    otherExperience: "Overige ervaring",
+    careerBreak: "Loopbaanonderbreking",
     projects: "Projecten",
     publications: "Publicaties",
     education: "Opleiding",
@@ -95,6 +103,8 @@ const WORDS: Record<string, Words> = {
   de: {
     profile: "Profil",
     experience: "Berufserfahrung",
+    otherExperience: "Weitere Erfahrung",
+    careerBreak: "Berufliche Auszeit",
     projects: "Projekte",
     publications: "Publikationen",
     education: "Ausbildung",
@@ -114,6 +124,8 @@ const WORDS: Record<string, Words> = {
   fr: {
     profile: "Profil",
     experience: "Expérience professionnelle",
+    otherExperience: "Autres expériences",
+    careerBreak: "Pause professionnelle",
     projects: "Projets",
     publications: "Publications",
     education: "Formation",
@@ -133,6 +145,8 @@ const WORDS: Record<string, Words> = {
   es: {
     profile: "Perfil",
     experience: "Experiencia profesional",
+    otherExperience: "Otras experiencias",
+    careerBreak: "Pausa profesional",
     projects: "Proyectos",
     publications: "Publicaciones",
     education: "Formación",
@@ -152,6 +166,8 @@ const WORDS: Record<string, Words> = {
   it: {
     profile: "Profilo",
     experience: "Esperienza professionale",
+    otherExperience: "Altre esperienze",
+    careerBreak: "Pausa di carriera",
     projects: "Progetti",
     publications: "Pubblicazioni",
     education: "Formazione",
@@ -171,6 +187,8 @@ const WORDS: Record<string, Words> = {
   pt: {
     profile: "Perfil",
     experience: "Experiência profissional",
+    otherExperience: "Outras experiências",
+    careerBreak: "Pausa na carreira",
     projects: "Projetos",
     publications: "Publicações",
     education: "Formação",
@@ -190,6 +208,8 @@ const WORDS: Record<string, Words> = {
   pl: {
     profile: "Profil",
     experience: "Doświadczenie zawodowe",
+    otherExperience: "Inne doświadczenie",
+    careerBreak: "Przerwa w karierze",
     projects: "Projekty",
     publications: "Publikacje",
     education: "Wykształcenie",
@@ -209,6 +229,8 @@ const WORDS: Record<string, Words> = {
   sv: {
     profile: "Profil",
     experience: "Arbetslivserfarenhet",
+    otherExperience: "Övrig erfarenhet",
+    careerBreak: "Karriäruppehåll",
     projects: "Projekt",
     publications: "Publikationer",
     education: "Utbildning",
@@ -228,6 +250,8 @@ const WORDS: Record<string, Words> = {
   da: {
     profile: "Profil",
     experience: "Erhvervserfaring",
+    otherExperience: "Anden erfaring",
+    careerBreak: "Karrierepause",
     projects: "Projekter",
     publications: "Publikationer",
     education: "Uddannelse",
@@ -247,6 +271,8 @@ const WORDS: Record<string, Words> = {
   no: {
     profile: "Profil",
     experience: "Arbeidserfaring",
+    otherExperience: "Annen erfaring",
+    careerBreak: "Karrierepause",
     projects: "Prosjekter",
     publications: "Publikasjoner",
     education: "Utdanning",
@@ -266,6 +292,8 @@ const WORDS: Record<string, Words> = {
   fi: {
     profile: "Profiili",
     experience: "Työkokemus",
+    otherExperience: "Muu kokemus",
+    careerBreak: "Uratauko",
     projects: "Projektit",
     publications: "Julkaisut",
     education: "Koulutus",
@@ -285,6 +313,8 @@ const WORDS: Record<string, Words> = {
   cs: {
     profile: "Profil",
     experience: "Pracovní zkušenosti",
+    otherExperience: "Další zkušenosti",
+    careerBreak: "Kariérní přestávka",
     projects: "Projekty",
     publications: "Publikace",
     education: "Vzdělání",
@@ -304,6 +334,8 @@ const WORDS: Record<string, Words> = {
   el: {
     profile: "Προφίλ",
     experience: "Επαγγελματική εμπειρία",
+    otherExperience: "Λοιπή εμπειρία",
+    careerBreak: "Διάλειμμα σταδιοδρομίας",
     projects: "Έργα",
     publications: "Δημοσιεύσεις",
     education: "Εκπαίδευση",
@@ -323,6 +355,8 @@ const WORDS: Record<string, Words> = {
   tr: {
     profile: "Profil",
     experience: "İş deneyimi",
+    otherExperience: "Diğer deneyimler",
+    careerBreak: "Kariyer arası",
     projects: "Projeler",
     publications: "Yayınlar",
     education: "Eğitim",
@@ -342,6 +376,8 @@ const WORDS: Record<string, Words> = {
   ar: {
     profile: "نبذة شخصية",
     experience: "الخبرة المهنية",
+    otherExperience: "خبرات أخرى",
+    careerBreak: "استراحة مهنية",
     projects: "المشاريع",
     publications: "المنشورات",
     education: "التعليم",
@@ -361,6 +397,8 @@ const WORDS: Record<string, Words> = {
   fa: {
     profile: "درباره من",
     experience: "سوابق کاری",
+    otherExperience: "سایر سوابق",
+    careerBreak: "وقفه شغلی",
     projects: "پروژه‌ها",
     publications: "انتشارات",
     education: "تحصیلات",
@@ -380,6 +418,8 @@ const WORDS: Record<string, Words> = {
   hi: {
     profile: "प्रोफ़ाइल",
     experience: "कार्य अनुभव",
+    otherExperience: "अन्य अनुभव",
+    careerBreak: "करियर ब्रेक",
     projects: "परियोजनाएँ",
     publications: "प्रकाशन",
     education: "शिक्षा",
@@ -399,6 +439,8 @@ const WORDS: Record<string, Words> = {
   "zh-Hans": {
     profile: "个人简介",
     experience: "工作经历",
+    otherExperience: "其他经历",
+    careerBreak: "职业间隔期",
     projects: "项目经历",
     publications: "发表论文",
     education: "教育背景",
@@ -418,6 +460,8 @@ const WORDS: Record<string, Words> = {
   ja: {
     profile: "プロフィール",
     experience: "職歴",
+    otherExperience: "その他の経歴",
+    careerBreak: "キャリアブレイク",
     projects: "プロジェクト",
     publications: "論文・著作",
     education: "学歴",
@@ -437,6 +481,8 @@ const WORDS: Record<string, Words> = {
   ko: {
     profile: "프로필",
     experience: "경력",
+    otherExperience: "기타 경력",
+    careerBreak: "경력 공백기",
     projects: "프로젝트",
     publications: "논문 및 저서",
     education: "학력",

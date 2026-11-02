@@ -16,9 +16,9 @@ export type ResumeContent = {
   contacts: string[];
   summary: string;
   /**
-   * Roles under their headings: one per experience group, then "Experience"
-   * for the roles without one (.scratch/experience-groups). A profile
-   * without groups has just that one.
+   * Roles under their headings: one per experience group, then "Other
+   * experience" for the roles without one (.scratch/experience-groups). A
+   * profile without groups has just one, "Experience".
    */
   experience: ExperienceSection[];
   /** Projects (PRO-13), laid out like roles. */
@@ -67,7 +67,7 @@ export type ResumeContent = {
 export type ExperienceSection = {
   /** The experience group's id, or null for the roles without one. */
   groupId: string | null;
-  /** The group's name as typed, or the document's "Experience" heading. */
+  /** The group's name as typed, or the document's "Experience" or, after groups, "Other experience" heading. */
   title: string;
   /**
    * Roles by company: a promotion's roles together under the company once,
@@ -151,7 +151,8 @@ export function resumeContent(
 
   type Role = ProfileData["experience"][number];
   const companies = (roles: { entry: Role; text: string }[]): ExperienceSection["companies"] =>
-    companyGroups(roles.map(({ entry, text }) => ({ ...entry, text }))).map((group) => {
+    // A career break has no company or place, whatever was typed before it was marked one.
+    companyGroups(roles.map(({ entry, text }) => ({ ...entry, ...(entry.careerBreak ? { company: "", location: "" } : {}), text }))).map((group) => {
       // One place for the whole company goes on its line; a move between offices shows on each role.
       const places = [...new Set(group.map((entry) => entry.location.trim()).filter(Boolean))];
       const onePlace = !showLocations ? "" : places.length === 1 ? places[0] : "";
@@ -161,7 +162,7 @@ export function resumeContent(
         dates: formatDateRange(companySpan(group), dates),
         roles: group.map((entry) => ({
           id: entry.id,
-          role: entry.role.trim(),
+          role: entry.role.trim() || (entry.careerBreak ? labels.careerBreak : ""),
           location: showLocations && places.length > 1 ? entry.location.trim() : "",
           dates: formatDateRange(entry, dates),
           bullets: lines(entry.text),
@@ -177,8 +178,11 @@ export function resumeContent(
     headings.flatMap((groupId) => {
       const under = roles.filter(({ entry }) => groupOf(entry) === groupId);
       if (under.length === 0) return [];
-      // An unnamed group still gets a heading: the section's own.
-      const title = (groupId !== null && groups.get(groupId)!.name.trim()) || labels.experience;
+      // An unnamed group gets the section's heading. Roles left out of the
+      // groups aren't more of the same, so they're "Other experience", not
+      // "Experience" next to a group of the user's called much the same.
+      const title =
+        groupId !== null ? groups.get(groupId)!.name.trim() || labels.experience : groups.size > 0 ? labels.otherExperience : labels.experience;
       return [{ groupId, title, companies: companies(under) }];
     });
   const project = (entry: ProfileData["projects"][number], bullets: string) => ({

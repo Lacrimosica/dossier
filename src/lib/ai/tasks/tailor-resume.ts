@@ -28,7 +28,7 @@ import {
   type TaskResult,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@11";
+export const TAILOR_RESUME_VERSION = "tailor-resume@12";
 
 const answerSchema = z.object({
   /** The line under the name, for this job (.scratch/tailored-headline). */
@@ -52,6 +52,7 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - headline: the one short line under the candidate's name, for this job: a title, optionally with a focus after " · " (e.g. "Data Engineer · Streaming and analytics"). Use titles the candidate has held and skills they have, not the job's title unless they've held it. Start from their own headline.
 - summary: 2–3 sentences in the first person without "I" at the start of every sentence, about the candidate as this job would see them.
 - roles: every role from the profile, by id. Recent roles and those closest to this job get the most bullets (up to 5); older roles that don't bear on it get 1–2. Lead with what this job cares about, keep each bullet to about a line, and start with a verb.
+- A role with careerBreak is a career break, not a job: keep it, with its own points shortened to one or two, and never present it as work, as more than it was, or as a gap to apologise for.
 - groupOrder: when the profile's experience has groups (each role's "group"), every group's id from experienceGroups, the group closest to this job first; each group is a heading of its own on the resume. Never move a role to another group. An empty list when there are none.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
 - skills: the candidate's own skills, most relevant to this job first. Copy their names exactly; you may leave out ones that don't help.

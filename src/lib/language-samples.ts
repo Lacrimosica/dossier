@@ -331,6 +331,7 @@ export function sampleProfile(sample: Sample): ProfileData {
         current: true,
         skillIds: sample.skills.map((_, index) => `skill-${index}`),
         groupId: null,
+        careerBreak: false,
       },
     ],
     experienceGroups: [],

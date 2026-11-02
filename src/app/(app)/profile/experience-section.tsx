@@ -59,50 +59,66 @@ function ExperienceForm({
   const companyList = useId();
   const track = useTrackSave();
   // Autosave the text and dates only; skill links save on their own when toggled.
-  const { id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current } = entry;
+  const { id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak } = entry;
   const fields = useMemo(
-    () => ({ id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current }),
-    [id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current],
+    () => ({ id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak }),
+    [id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak],
   );
   const { flush } = useAutosave(fields, (value) => track(saveExperience(value)));
   const set = (change: Partial<ExperienceItem>) => onChange({ ...entry, ...change });
 
   return (
     <div className="grid grid-cols-2 gap-[18px]" onBlur={flush}>
+      <Checkbox
+        className="col-span-2"
+        label="This is a career break"
+        checked={careerBreak}
+        onChange={(event) => set({ careerBreak: event.target.checked })}
+      />
       <Input
         className="col-span-2"
-        label="Role"
-        placeholder="Product Designer"
+        label={careerBreak ? "Title" : "Role"}
+        placeholder={careerBreak ? "Career break" : "Product Designer"}
+        hint={careerBreak ? "Left empty, resumes say “Career break” in their own language." : undefined}
         value={entry.role}
         onChange={(event) => set({ role: event.target.value })}
         autoFocus={autoFocus}
       />
-      <Input
-        label="Company"
-        placeholder="Acme Inc."
-        hint={companies.length > 0 ? "Roles with the same company name show together." : undefined}
-        list={companies.length > 0 ? companyList : undefined}
-        value={entry.company}
-        onChange={(event) => set({ company: event.target.value })}
-      />
-      {companies.length > 0 && (
-        <datalist id={companyList}>
-          {companies.map((name) => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
+      {/* A break has no company or place; what was typed before stays, unused, if it's switched back. */}
+      {!careerBreak && (
+        <>
+          <Input
+            label="Company"
+            placeholder="Acme Inc."
+            hint={companies.length > 0 ? "Roles with the same company name show together." : undefined}
+            list={companies.length > 0 ? companyList : undefined}
+            value={entry.company}
+            onChange={(event) => set({ company: event.target.value })}
+          />
+          {companies.length > 0 && (
+            <datalist id={companyList}>
+              {companies.map((name) => (
+                <option key={name} value={name} />
+              ))}
+            </datalist>
+          )}
+          <Input
+            label="Location"
+            placeholder="Berlin, Germany"
+            value={entry.location}
+            onChange={(event) => set({ location: event.target.value })}
+          />
+        </>
       )}
-      <Input
-        label="Location"
-        placeholder="Berlin, Germany"
-        value={entry.location}
-        onChange={(event) => set({ location: event.target.value })}
-      />
       {groups.length > 0 && (
         <Select
           className="col-span-2"
           label="Group"
-          hint="Each group has its own heading on your resumes."
+          hint={
+            careerBreak
+              ? "Put it in the group whose timeline it interrupts: it sits there by date, where the gap would be."
+              : "Each group has its own heading on your resumes."
+          }
           value={groups.some((group) => group.id === entry.groupId) ? entry.groupId! : ""}
           onChange={(event) => onGroupChange(event.target.value || null)}
         >
@@ -127,15 +143,15 @@ function ExperienceForm({
           disabled={entry.current}
         />
         <Checkbox
-          label="I still work here"
+          label={careerBreak ? "It’s still going on" : "I still work here"}
           checked={entry.current}
           onChange={(event) => set({ current: event.target.checked })}
         />
       </div>
       <Textarea
         className="col-span-2"
-        label="What you did"
-        placeholder="One point per line. Rough is fine."
+        label={careerBreak ? "What you did in this time" : "What you did"}
+        placeholder={careerBreak ? "The reason, if you want to give it, and what you learned. One point per line." : "One point per line. Rough is fine."}
         rows={4}
         value={entry.bullets}
         onChange={(event) => set({ bullets: event.target.value })}
@@ -144,7 +160,7 @@ function ExperienceForm({
   );
 }
 
-const roleTitle = (entry: ExperienceItem) => entry.role.trim() || "New role";
+const roleTitle = (entry: ExperienceItem) => entry.role.trim() || (entry.careerBreak ? "Career break" : "New role");
 const groupTitle = (group: GroupItem) => group.name.trim() || "Untitled group";
 
 /** A promotion's roles together, as the resume prints them (companyGroups). */
@@ -317,7 +333,7 @@ export function ExperienceSection({
       grouping={byCompany}
       summary={(entry) => ({
         title: roleTitle(entry),
-        subtitle: [entry.company, entry.location].filter((part) => part.trim()).join(" · "),
+        subtitle: entry.careerBreak ? "A break, not counted as experience" : [entry.company, entry.location].filter((part) => part.trim()).join(" · "),
         meta: formatDateRange(entry),
         footnote: skillNames(entry).join(" · ") || undefined,
       })}
@@ -393,7 +409,7 @@ export function ExperienceSection({
                 <h3 id={ungroupedHeading} className="text-sm font-medium">
                   Not in a group
                 </h3>
-                <p className="text-meta text-muted">These go under “Experience” on your resumes, after your groups.</p>
+                <p className="text-meta text-muted">These go under “Other experience” on your resumes, after your groups. A group of their own gives them a heading you choose.</p>
               </div>
               {list(null)}
             </section>

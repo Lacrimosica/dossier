@@ -78,12 +78,14 @@ function classify(
   const base = { requirement: requirement.text, skill: null, experienceIds: [] as string[], note: null };
 
   if (requirement.kind === "years") {
-    const dated = profile.experience.filter((entry) => entry.startYear !== null);
+    // A career break isn't experience (.scratch/experience-groups).
+    const jobs = profile.experience.filter((entry) => !entry.careerBreak);
+    const dated = jobs.filter((entry) => entry.startYear !== null);
     if (dated.length === 0) return { ...base, result: "gap", note: "Add your experience to check this" };
     const first = dated.reduce((earliest, entry) =>
       entry.startYear! * 12 + (entry.startMonth ?? 1) < earliest.startYear! * 12 + (earliest.startMonth ?? 1) ? entry : earliest,
     );
-    const count = profile.experience.length;
+    const count = jobs.length;
     const roles = `${count} ${count === 1 ? "role" : "roles"} in your profile, since ${formatMonthYear(first.startYear, first.startMonth)}`;
     const years = Math.floor(experienceMonths(profile, today) / 12);
     return years >= (requirement.years ?? 0)
@@ -120,7 +122,7 @@ function classify(
         result: "covered",
         skill: skill.name,
         experienceIds: roles.map((entry) => entry.id),
-        note: `Used at ${[...new Set(roles.map((entry) => entry.company || entry.role))].join(", ")}`,
+        note: `Used at ${[...new Set(roles.map((entry) => (entry.careerBreak ? entry.role.trim() || "your career break" : entry.company || entry.role)))].join(", ")}`,
       }
     : { ...base, result: "partial", skill: skill.name, note: "In your skills, but not linked to a role yet" };
 }

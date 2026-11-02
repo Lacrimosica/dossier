@@ -77,6 +77,7 @@ export function demoProfile(): ProfileData {
       ...dateSpan(entry.start, entry.end),
       skillIds: entry.skills.map(skillId),
       groupId: null,
+      careerBreak: false,
     })),
     experienceGroups: [],
     projects: projects.map((entry) => ({

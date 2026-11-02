@@ -156,6 +156,11 @@ export type ExperienceItem = DateSpan & {
   skillIds: string[];
   /** Its experience group, or null for the section's own heading. */
   groupId: string | null;
+  /**
+   * A career break rather than a job: `role` is its title ("Career break"
+   * when empty), with no company, and it never counts as experience.
+   */
+  careerBreak: boolean;
 };
 /**
  * A named block of roles with a heading of its own on resumes
@@ -315,12 +320,12 @@ export function sameName(a: string, b: string): boolean {
   return a.trim().localeCompare(b.trim(), undefined, { sensitivity: "accent" }) === 0;
 }
 
-/** Months of experience in the profile, counting overlapping roles once. */
+/** Months of experience in the profile, counting overlapping roles once; a career break isn't experience. */
 export function experienceMonths(profile: Pick<ProfileData, "experience">, today: Date): number {
   const now = today.getFullYear() * 12 + today.getMonth();
   const months = new Set<number>();
   for (const entry of profile.experience) {
-    if (entry.startYear === null) continue;
+    if (entry.startYear === null || entry.careerBreak) continue;
     const start = entry.startYear * 12 + (entry.startMonth ?? 1) - 1;
     const end = entry.current
       ? now

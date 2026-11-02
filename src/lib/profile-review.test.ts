@@ -18,6 +18,7 @@ const role = (id: string, fields: Partial<ExperienceItem> = {}): ExperienceItem 
   bullets: "",
   skillIds: [],
   groupId: null,
+  careerBreak: false,
   ...fields,
 });
 
@@ -76,6 +77,7 @@ describe("buildFixes: merges", () => {
       skillIds: ["s1", "s2"],
       // The kept role's group; applying a merge never changes it.
       groupId: null,
+  careerBreak: false,
     });
   });
 

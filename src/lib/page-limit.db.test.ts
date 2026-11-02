@@ -60,6 +60,14 @@ describe("nextCut (E10-10)", () => {
     expect(next.trimmed).toMatchObject({ kind: "unit", unit: { id: "experience:e1" } });
   });
 
+  it("never leaves out a career break, which would leave the gap it explains", () => {
+    const withBreak = { ...profile, experience: profile.experience.map((role) => (role.id === "e3" ? { ...role, careerBreak: true } : role)) };
+    const cut = nextCut(units, withBreak)!;
+    expect(cut.trimmed).toMatchObject({ kind: "unit", unit: { id: "experience:e2" } });
+    // With one job left, bullets go instead, and the break keeps its place.
+    expect(nextCut(cut.units, withBreak)!.trimmed).toMatchObject({ kind: "bullets" });
+  });
+
   it("then shortens the last role left, keeping its first bullet", () => {
     const one = units.filter((unit) => unit.id !== "experience:e2" && unit.id !== "experience:e3");
     const bullets = one.find((unit) => unit.id === "experience:e1")!.text.split("\n");

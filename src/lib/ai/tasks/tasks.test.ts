@@ -180,6 +180,14 @@ describe("matchRequirements", () => {
     expect(data.items[0]).toMatchObject({ result: "gap", note: "3 roles in your profile, since Sep 2015 (about 11 years)" });
     expect(experienceMonths(profile, today)).toBe(133);
   });
+
+  it("doesn't count a career break as experience (.scratch/experience-groups)", async () => {
+    const pause = { ...profile.experience[0], id: "pause", role: "", company: "", careerBreak: true, startYear: 2000, startMonth: 1, current: true };
+    const withBreak = { ...profile, experience: [...profile.experience, pause] };
+    const { data } = await matchRequirements(model({}), { requirements: [{ ...extracted.requirements[0], years: 15 }], profile: withBreak, today }, options);
+    expect(data.items[0]).toMatchObject({ result: "gap", note: "3 roles in your profile, since Sep 2015 (about 11 years)" });
+    expect(experienceMonths(withBreak, today)).toBe(133);
+  });
 });
 
 describe("tailorResume", () => {
@@ -243,7 +251,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@11");
+    expect(promptVersion).toBe("tailor-resume@12");
     expect(data.map((unit) => unit.id)).toEqual([
       "headline",
       "summary",
@@ -306,6 +314,16 @@ describe("tailorResume", () => {
       const plain = model(answer);
       await tailorResume(plain, { profile, extracted, match: null, facts: [], posting }, options);
       expect(prompt(plain)).not.toContain('"experienceGroups"');
+    });
+
+    it("tells the model a career break is one, without its company or place", async () => {
+      const provider = model(answer);
+      const pause = { ...e1, id: "pause", role: "", company: "Somewhere", location: "Torino", careerBreak: true };
+      await tailorResume(provider, { profile: { ...profile, experience: [...profile.experience, pause] }, extracted, match: null, facts: [], posting }, options);
+      const text = prompt(provider);
+      expect(text).toMatch(/"id": "pause",\n\s+"careerBreak": true,\n\s+"role": "Career break"/);
+      expect(text).not.toContain("Somewhere");
+      expect(text).toMatch(/A role with careerBreak is a career break, not a job/);
     });
 
     it("puts the roles group by group in the model's order, each group in the profile's order", async () => {

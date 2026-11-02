@@ -60,6 +60,7 @@ const northwind: ExperienceItem = {
   current: true,
   skillIds: ["s1"],
   groupId: null,
+  careerBreak: false,
 };
 const fieldnote: ExperienceItem = { ...northwind, id: "e2", role: "Product Designer", company: "Fieldnote", current: false, startYear: 2018, startMonth: 6, endYear: 2021, endMonth: 2, skillIds: [] };
 
@@ -401,6 +402,24 @@ describe("ExperienceSection with groups (.scratch/experience-groups)", () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith("Moved “Volunteer coordinator” to “Tech”."));
     expect(region("Group: Tech")).toHaveTextContent("Volunteer coordinator");
     expect(latest.experience.find((role) => role.id === "e3")?.groupId).toBe(tech.id);
+  });
+
+  it("turns a role into a career break: no company or place, and a hint about where it goes", async () => {
+    const user = userEvent.setup();
+    render(grouped());
+    await user.click(header(/Volunteer coordinator/));
+    expect(screen.getByLabelText("Company")).toBeInTheDocument();
+    await user.click(screen.getByLabelText("This is a career break"));
+
+    expect(screen.queryByLabelText("Company")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Location")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Volunteer coordinator");
+    expect(screen.getByText(/the group whose timeline it interrupts/)).toBeInTheDocument();
+    await waitFor(() => expect(saveExperience).toHaveBeenLastCalledWith(expect.objectContaining({ id: "e3", careerBreak: true })), { timeout: 2000 });
+
+    await user.clear(screen.getByLabelText("Title"));
+    await user.click(screen.getByRole("button", { name: "Done" }));
+    expect(screen.getByRole("button", { name: /^Career break/, expanded: false })).toHaveTextContent("A break, not counted as experience");
   });
 
   it("adds a group with its name field focused, and autosaves the name", async () => {

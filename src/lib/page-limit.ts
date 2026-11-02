@@ -18,7 +18,8 @@ import { citationExcerpt } from "@/lib/citation";
 // relevant (the last) first, since tailoring lists them by relevance; then the
 // oldest roles, those under the last heading first when the roles are in
 // groups (.scratch/experience-groups), since tailoring puts the group that
-// matters most first; then the last bullets of the oldest roles left, then the
+// matters most first, but never a career break, which would leave the gap it
+// explains; then the last bullets of the oldest roles left, then the
 // oldest projects, then publications from the bottom of the list (#218). What's cut is kept on the
 // document, so it can be put back.
 
@@ -61,8 +62,10 @@ export function nextCut(units: Unit[], profile: ProfileData): Cut | null {
 
   const roles = lastGroupFirst(oldestFirst(units, profile.experience, "experience:"), profile);
 
-  // The oldest role, while more than one is left.
-  if (roles.length > 1) return leaveOut(units, roles[0]);
+  // The oldest role, while more than one is left; a career break stays.
+  const breaks = new Set(profile.experience.filter((role) => role.careerBreak).map((role) => `experience:${role.id}`));
+  const jobs = roles.filter(({ unit }) => !breaks.has(unit.id));
+  if (jobs.length > 1) return leaveOut(units, jobs[0]);
   // Then the last bullet of the oldest role that has more than one.
   for (const { unit } of roles) {
     const lines = bulletLines(unit.text).split("\n");

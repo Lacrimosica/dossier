@@ -165,6 +165,7 @@ const experienceFields = z.object({
   company: text(200),
   location: text(200),
   bullets: text(10_000),
+  careerBreak: z.boolean(),
   ...dateSpan,
 });
 
@@ -179,6 +180,7 @@ const experienceItem = (entry: {
   endYear: number | null;
   endMonth: number | null;
   current: boolean;
+  careerBreak: boolean;
   groupId: string | null;
 }, skillIds: string[] = []) => ({
   id: entry.id,
@@ -193,6 +195,7 @@ const experienceItem = (entry: {
   current: entry.current,
   skillIds,
   groupId: entry.groupId,
+  careerBreak: entry.careerBreak,
 });
 
 /** An experience group's id, or null when it's gone (removed in another tab): the role goes under the section's own heading. */

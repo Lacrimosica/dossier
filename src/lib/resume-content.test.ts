@@ -289,11 +289,11 @@ describe("resumeContent", () => {
       expect(content.experience[0]).toMatchObject({ groupId: null, title: "Esperienza professionale" });
     });
 
-    it("puts each group under its own heading, as typed, in the groups' order, then the roles without one", () => {
+    it("puts each group under its own heading, as typed, in the groups' order, then the roles without one under Other experience", () => {
       expect(headings(resumeContent(grouped, {}, documentLabels("Italian")))).toEqual([
         ["Esperienze nel terzo settore", ["Fieldnote"]],
         ["Esperienze professionali", ["Northwind Logistics"]],
-        ["Esperienza professionale", ["Studio Brik"]],
+        ["Altre esperienze", ["Studio Brik"]],
       ]);
     });
 
@@ -304,7 +304,7 @@ describe("resumeContent", () => {
       });
       expect(headings(content)).toEqual([
         ["Experience", ["Fieldnote"]],
-        ["Experience", ["Northwind Logistics", "Studio Brik"]],
+        ["Other experience", ["Northwind Logistics", "Studio Brik"]],
       ]);
     });
 
@@ -316,8 +316,17 @@ describe("resumeContent", () => {
       expect(headings(resumeContent(split))).toEqual([
         ["Esperienze nel terzo settore", ["Fieldnote", "Northwind Logistics"]],
         ["Esperienze professionali", ["Northwind Logistics"]],
-        ["Experience", ["Studio Brik"]],
+        ["Other experience", ["Studio Brik"]],
       ]);
+    });
+
+    it("titles an untitled career break in the resume's language, without a company or place, by date in its group", () => {
+      const pause = { ...northwind, id: "pause", role: "", company: "Old employer", location: "Torino", careerBreak: true, groupId: "tech", startYear: 2026, startMonth: 1 };
+      const content = resumeContent({ ...grouped, experience: [pause, ...grouped.experience] }, { showLocations: true }, documentLabels("Italian"));
+      const [first] = content.experience.find((section) => section.groupId === "tech")!.companies;
+      expect(first).toMatchObject({ company: "", location: "", roles: [{ id: "pause", role: "Pausa di carriera", location: "" }] });
+      const titled = resumeContent({ ...grouped, experience: [{ ...pause, role: "Sabbatical" }] });
+      expect(titled.experience[0].companies[0].roles[0].role).toBe("Sabbatical");
     });
 
     it("orders a tailored resume's headings by where their first role's unit is", () => {
@@ -327,7 +336,7 @@ describe("resumeContent", () => {
         { id: `experience:${fieldnote.id}`, label: "Fieldnote", text: "Ran research" },
       ];
       expect(headings(resumeContent(grouped, { units }))).toEqual([
-        ["Experience", ["Studio Brik"]],
+        ["Other experience", ["Studio Brik"]],
         ["Esperienze professionali", ["Northwind Logistics"]],
         ["Esperienze nel terzo settore", ["Fieldnote"]],
       ]);

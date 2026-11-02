@@ -52,6 +52,7 @@ export async function loadProfile(): Promise<ProfileData> {
       current: entry.current,
       skillIds: entry.skills.map((link) => link.skillId),
       groupId: entry.groupId,
+      careerBreak: entry.careerBreak,
     })),
     experienceGroups: groups.map(({ id, name }) => ({ id, name })),
     projects: inEntryOrder(projects, settings.projectOrder).map((entry) => ({

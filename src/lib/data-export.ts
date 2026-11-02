@@ -41,7 +41,7 @@ import { appVersion } from "@/lib/version";
 // behind: they belong to the server or the mailbox, not the user's data.
 
 export const EXPORT_FORMAT = "dossier-export";
-/** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222), 6 courses & certificates, 7 language codes, 8 experience groups. */
+/** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222), 6 courses & certificates, 7 language codes, 8 experience groups and career breaks. */
 export const EXPORT_SCHEMA_VERSION = 8;
 /** The versions imports can read. */
 export const EXPORT_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -100,6 +100,8 @@ const experience = z.object({
   skillIds: z.array(text),
   /** Its experience group; absent in files before version 8. */
   groupId: text.nullable().default(null),
+  /** Absent in files before version 8. */
+  careerBreak: z.boolean().default(false),
   createdAt: date,
   updatedAt: date,
 });

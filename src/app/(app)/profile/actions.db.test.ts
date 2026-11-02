@@ -345,6 +345,14 @@ describe("experience groups (.scratch/experience-groups)", () => {
     expect(await prisma().experience.findUniqueOrThrow({ where: { id: elsewhere.id } })).toMatchObject({ groupId: last.id });
   });
 
+  it("saves a career break like a role", async () => {
+    const created = await createExperience({});
+    if (!created.ok) throw new Error(created.error);
+    expect(created.data.careerBreak).toBe(false);
+    await saveExperience({ ...created.data, role: "Pausa di carriera", careerBreak: true });
+    expect((await loadProfile()).experience[0]).toMatchObject({ role: "Pausa di carriera", careerBreak: true });
+  });
+
   it("puts a removed role back in its group", async () => {
     const tech = await group("Tech");
     const created = await createExperience({ groupId: tech.id });
