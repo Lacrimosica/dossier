@@ -190,6 +190,7 @@ describe("tailorResume", () => {
       { id: "e1", bullets: ["Led the carrier portal redesign", " Owned the design system "] },
       { id: "e9", bullets: ["Invented role"] },
     ],
+    groupOrder: [],
     projects: [
       { id: "p1", bullets: ["Built an open-source Figma plugin for design tokens"] },
       { id: "p9", bullets: ["Invented project"] },
@@ -242,7 +243,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@10");
+    expect(promptVersion).toBe("tailor-resume@11");
     expect(data.map((unit) => unit.id)).toEqual([
       "headline",
       "summary",
@@ -276,6 +277,49 @@ describe("tailorResume", () => {
     expect(interests).toHaveLength(3);
     expect(resumeUnits(profile, withoutInterests).find((unit) => unit.id === "interests")?.text).toBe(profile.interests.join(" · "));
     expect(resumeUnits(profile, { ...withoutInterests, interests: [] }).find((unit) => unit.id === "interests")?.text).toBe("");
+  });
+
+  describe("experience groups (.scratch/experience-groups)", () => {
+    const [e1, e2, e3] = profile.experience;
+    const grouped = {
+      ...profile,
+      experienceGroups: [
+        { id: "tech", name: "Esperienze professionali" },
+        { id: "nonprofit", name: "Esperienze nel terzo settore" },
+      ],
+      experience: [
+        { ...e1, groupId: "tech" },
+        { ...e2, groupId: "nonprofit" },
+        { ...e3, groupId: "tech" },
+      ],
+    };
+    const roleIds = (units: { id: string }[]) => units.filter((unit) => unit.id.startsWith("experience:")).map((unit) => unit.id);
+
+    it("tells the model each role's group and the groups' names, only when there are groups", async () => {
+      const provider = model(answer);
+      await tailorResume(provider, { profile: grouped, extracted, match: null, facts: [], posting }, options);
+      const text = prompt(provider);
+      expect(text).toContain('"group": "nonprofit"');
+      expect(text).toContain('"name": "Esperienze nel terzo settore"');
+      expect(text).toMatch(/groupOrder: when the profile's experience has groups/);
+
+      const plain = model(answer);
+      await tailorResume(plain, { profile, extracted, match: null, facts: [], posting }, options);
+      expect(prompt(plain)).not.toContain('"experienceGroups"');
+    });
+
+    it("puts the roles group by group in the model's order, each group in the profile's order", async () => {
+      const { data } = await tailorResume(model({ ...answer, groupOrder: ["nonprofit", "tech"] }), { profile: grouped, extracted, match: null, facts: [], posting }, options);
+      expect(roleIds(data)).toEqual(["experience:e2", "experience:e1", "experience:e3"]);
+    });
+
+    it("ignores unknown groups, adds those the model left out in the profile's order, and puts roles without a group last", () => {
+      const partly = { ...grouped, experience: [{ ...e1, groupId: null }, grouped.experience[1], grouped.experience[2]] };
+      expect(roleIds(resumeUnits(partly, { ...answer, groupOrder: ["made-up", "nonprofit"] }))).toEqual(["experience:e2", "experience:e3", "experience:e1"]);
+      expect(roleIds(resumeUnits(grouped, { ...answer, groupOrder: [] }))).toEqual(["experience:e1", "experience:e3", "experience:e2"]);
+      // Without groups, the profile's order.
+      expect(roleIds(resumeUnits(profile, { ...answer, groupOrder: ["tech"] }))).toEqual(["experience:e1", "experience:e2", "experience:e3"]);
+    });
   });
 
   it("writes a headline for the job, or keeps the profile's when the answer has none (.scratch/tailored-headline)", async () => {
@@ -333,7 +377,7 @@ describe("tailorResume", () => {
 
   it("asks for a resume that fits the page limit, when there is one (E10-10)", async () => {
     const system = async (maxPages: number | null) => {
-      const provider = model({ headline: "", summary: "Designer.", roles: [], projects: [], skills: [], interests: [], education: [], courses: [] });
+      const provider = model({ headline: "", summary: "Designer.", roles: [], groupOrder: [], projects: [], skills: [], interests: [], education: [], courses: [] });
       await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, { ...options, maxPages });
       return sent(provider).system;
     };
@@ -671,6 +715,7 @@ describe("the fact guard in the writing tasks (E6-6)", () => {
     headline: "",
     summary: "Led a team of 12 at Google; nine years of design at Northwind Logistics.",
     roles: [{ id: "e1", bullets: ["Led the redesign of the carrier portal used daily by 4,000+ dispatchers"] }],
+    groupOrder: [],
     projects: [],
     skills: ["Figma"],
     interests: [],

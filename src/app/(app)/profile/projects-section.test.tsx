@@ -46,6 +46,7 @@ function Harness() {
     languages: [],
     interests: [],
     experience: [],
+    experienceGroups: [],
     projects: [churn, thesis],
     education: [],
     courses: [],

@@ -40,6 +40,7 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
   const facts = factTexts(profile.facts);
   const publications = resumePublications(profile.publications).map((entry) => citationText(entry.citation));
   const courses = resumeCourses(profile.courses);
+  const groupNames = new Map(profile.experienceGroups.map((group) => [group.id, group.name]));
   return JSON.stringify(
     {
       name: basics.name,
@@ -56,9 +57,12 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
         company: entry.company,
         location: entry.location,
         dates: formatDateRange(entry),
+        ...(entry.groupId !== null && groupNames.has(entry.groupId) ? { group: entry.groupId } : {}),
         bullets: entry.bullets.split("\n").map((line) => line.trim()).filter(Boolean),
         skillsUsed: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
       })),
+      // The headings roles are grouped under on resumes (.scratch/experience-groups).
+      ...(groupNames.size > 0 ? { experienceGroups: [...groupNames].map(([id, name]) => ({ id, name: name.trim() })) } : {}),
       // A project's link is left out like the other links: the resume shows it as it is.
       projects: profile.projects.map((entry) => ({
         id: entry.id,

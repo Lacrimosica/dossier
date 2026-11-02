@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { Prisma } from "@/generated/prisma/client";
-import { JobStatus, LanguageLevel } from "@/generated/prisma/enums";
+import { GroupSection, JobStatus, LanguageLevel } from "@/generated/prisma/enums";
 import { action, ActionError } from "@/lib/action";
 import { companyKey } from "@/lib/companies";
 import { findSpokenLanguage } from "@/lib/language-data";
@@ -179,6 +179,7 @@ const experienceItem = (entry: {
   endYear: number | null;
   endMonth: number | null;
   current: boolean;
+  groupId: string | null;
 }, skillIds: string[] = []) => ({
   id: entry.id,
   role: entry.role,
@@ -191,13 +192,24 @@ const experienceItem = (entry: {
   endMonth: entry.endMonth,
   current: entry.current,
   skillIds,
+  groupId: entry.groupId,
 });
 
-/** "+ Add a role": a blank entry, last in date order (it has no dates yet), first in an order set by hand. */
-export const createExperience = action(z.object({}), async () => {
+/** An experience group's id, or null when it's gone (removed in another tab): the role goes under the section's own heading. */
+async function experienceGroupId(groupId: string | null | undefined): Promise<string | null> {
+  if (!groupId) return null;
+  const group = await prisma.entryGroup.findFirst({ where: { id: groupId, section: GroupSection.EXPERIENCE }, select: { id: true } });
+  return group?.id ?? null;
+}
+
+/**
+ * "+ Add a role": a blank entry, last in date order (it has no dates yet), first in an order set by hand.
+ * Added under a group's heading, it's in that group.
+ */
+export const createExperience = action(z.object({ groupId: id.nullish() }), async ({ groupId }) => {
   const manual = (await loadSettings()).experienceOrder === "manual";
   const sort = manual ? await firstSort(prisma.experience) : await nextSort(prisma.experience);
-  return experienceItem(await prisma.experience.create({ data: { sort } }));
+  return experienceItem(await prisma.experience.create({ data: { sort, groupId: await experienceGroupId(groupId) } }));
 });
 
 /** Autosaves a role. Saving one that was just removed does nothing. */
@@ -212,15 +224,16 @@ export const removeExperience = action(z.object({ id }), async ({ id }) => {
   return null;
 });
 
-/** Puts a removed role back, with the links to skills that still exist. */
+/** Puts a removed role back, with the links to skills that still exist, in its group if that still exists. */
 export const restoreExperience = action(
-  experienceFields.extend({ skillIds: z.array(id) }),
-  async ({ skillIds, ...entry }) => {
+  experienceFields.extend({ skillIds: z.array(id), groupId: id.nullable() }),
+  async ({ skillIds, groupId, ...entry }) => {
     const skills = await prisma.skill.findMany({ where: { id: { in: skillIds } }, select: { id: true } });
     const restored = await prisma.experience.upsert({
       where: { id: entry.id },
       create: {
         ...entry,
+        groupId: await experienceGroupId(groupId),
         sort: await nextSort(prisma.experience),
         skills: { create: skills.map((skill) => ({ skillId: skill.id })) },
       },
@@ -229,6 +242,90 @@ export const restoreExperience = action(
     return experienceItem(restored, skills.map((skill) => skill.id));
   },
 );
+
+/** Puts a role under a group's heading, or (null) under the section's own. */
+export const setExperienceGroup = action(z.object({ id, groupId: id.nullable() }), async ({ id, groupId }) => {
+  const group = await experienceGroupId(groupId);
+  if (groupId && !group) throw new ActionError("That group was removed in the meantime. Reload the page and try again.");
+  await prisma.experience.updateMany({ where: { id }, data: { groupId: group } });
+  return null;
+});
+
+// ─── Experience groups (.scratch/experience-groups) ─────────────────────────
+
+const groupName = text(200);
+const groupItem = ({ id, name }: { id: string; name: string }) => ({ id, name });
+
+/** The next `sort` among the experience groups, so a new or restored group goes last. */
+async function nextGroupSort(db: Prisma.TransactionClient) {
+  const { _max } = await db.entryGroup.aggregate({ where: { section: GroupSection.EXPERIENCE }, _max: { sort: true } });
+  return (_max.sort ?? -1) + 1;
+}
+
+/** "+ Add a group": last of the groups, with the name typed. */
+export const createExperienceGroup = action(z.object({ name: groupName }), async ({ name }) =>
+  groupItem(
+    await prisma.entryGroup.create({
+      data: { section: GroupSection.EXPERIENCE, name, sort: await nextGroupSort(prisma) },
+    }),
+  ),
+);
+
+/** Autosaves a group's name; every resume's heading follows it. */
+export const renameExperienceGroup = action(z.object({ id, name: groupName }), async ({ id, name }) => {
+  await prisma.entryGroup.updateMany({ where: { id, section: GroupSection.EXPERIENCE }, data: { name } });
+  return null;
+});
+
+/**
+ * Removes a group; its roles stay, under the section's own heading. Answers
+ * with those roles, so the toast's Undo can put them back in it.
+ */
+export const removeExperienceGroup = action(z.object({ id }), async ({ id }) =>
+  prisma.$transaction(async (tx) => {
+    const roles = await tx.experience.findMany({ where: { groupId: id }, select: { id: true } });
+    await tx.entryGroup.deleteMany({ where: { id, section: GroupSection.EXPERIENCE } });
+    return roles.map((role) => role.id);
+  }),
+);
+
+/**
+ * Undo for removeExperienceGroup: the group again, back at `index` among the
+ * groups, with the roles that were in it and are still without one.
+ */
+export const restoreExperienceGroup = action(
+  z.object({ id, name: groupName, roleIds: z.array(id), index: z.number().int().min(0) }),
+  async ({ id, name, roleIds, index }) =>
+    prisma.$transaction(async (tx) => {
+      const group = await tx.entryGroup.upsert({
+        where: { id },
+        create: { id, section: GroupSection.EXPERIENCE, name, sort: await nextGroupSort(tx) },
+        update: {},
+      });
+      const others = await tx.entryGroup.findMany({
+        where: { section: GroupSection.EXPERIENCE, id: { not: id } },
+        orderBy: [{ sort: "asc" }, { createdAt: "asc" }],
+        select: { id: true },
+      });
+      const order = others.map((other) => other.id).toSpliced(index, 0, id);
+      for (const [sort, groupId] of order.entries()) await tx.entryGroup.update({ where: { id: groupId }, data: { sort } });
+      const moved = await tx.experience.findMany({ where: { id: { in: roleIds }, groupId: null }, select: { id: true } });
+      await tx.experience.updateMany({ where: { id: { in: moved.map((role) => role.id) } }, data: { groupId: group.id } });
+      return { group: groupItem(group), roleIds: moved.map((role) => role.id) };
+    }),
+);
+
+/** Saves the groups' order: `ids` is every experience group, in the new order. Base resumes follow it. */
+export const reorderExperienceGroups = action(z.object({ ids: z.array(id) }), async ({ ids }) => {
+  await prisma.$transaction(async (tx) => {
+    const known = new Set((await tx.entryGroup.findMany({ where: { section: GroupSection.EXPERIENCE }, select: { id: true } })).map((group) => group.id));
+    if (ids.length !== known.size || new Set(ids).size !== ids.length || !ids.every((groupId) => known.has(groupId))) {
+      throw new ActionError("The list changed in the meantime. Reload the page and try again.");
+    }
+    for (const [sort, groupId] of ids.entries()) await tx.entryGroup.update({ where: { id: groupId }, data: { sort } });
+  });
+  return null;
+});
 
 /** Attaches a skill to a role, or detaches it (PRO-6). */
 export const setExperienceSkill = action(

@@ -8,6 +8,9 @@ import { contactItems, displayLink, resumeContent } from "./resume-content";
 
 const today = new Date(2026, 8, 28);
 
+/** Every company on the resume, whichever heading it's under. */
+const companies = (content: ReturnType<typeof resumeContent>) => content.experience.flatMap((section) => section.companies);
+
 describe("contactItems", () => {
   const { basics } = demoProfile();
 
@@ -44,13 +47,13 @@ describe("resumeContent", () => {
   it("builds the base resume from the profile", () => {
     const content = resumeContent(profile, { today });
     expect(content.name).toBe("Jane Doe");
-    expect(content.experience.map((company) => [company.company, company.dates])).toEqual([
+    expect(companies(content).map((company) => [company.company, company.dates])).toEqual([
       ["Northwind Logistics", "Mar 2021 – Present"],
       ["Fieldnote", "Jun 2018 – Feb 2021"],
       ["Studio Brik", "Sep 2015 – May 2018"],
     ]);
-    expect(content.experience[0].roles[0].bullets).toHaveLength(3);
-    expect(content.experience[2].roles[0].skills).toEqual(["HTML & CSS", "Interaction design"]);
+    expect(companies(content)[0].roles[0].bullets).toHaveLength(3);
+    expect(companies(content)[2].roles[0].skills).toEqual(["HTML & CSS", "Interaction design"]);
     expect(content.education[0]).toMatchObject({ dates: "2013 – 2015", notes: "Thesis on trust in automated scheduling tools" });
     expect(content.skills).toBe(
       "Interaction design · Design systems · Prototyping · User research · Figma · HTML & CSS · Workshop facilitation",
@@ -76,6 +79,7 @@ describe("resumeContent", () => {
       languages: [],
       interests: [],
       experience: [],
+      experienceGroups: [],
       projects: [],
       education: [],
       courses: [],
@@ -105,11 +109,11 @@ describe("resumeContent", () => {
   it("takes a tailored resume's text from its units", () => {
     const content = resumeContent(profile, { units: demoResumeUnits() });
     expect(content.summary).toMatch(/^Senior product designer with nine years of making complex/);
-    expect(content.experience[0].roles[0].bullets[0]).toBe(
+    expect(companies(content)[0].roles[0].bullets[0]).toBe(
       "Led the redesign of the carrier portal used daily by 4,000+ dispatchers: a dense, high-stakes workflow",
     );
     // Role skills still come from the profile (RES-6).
-    expect(content.experience[0].roles[0].skills).toContain("Design systems");
+    expect(companies(content)[0].roles[0].skills).toContain("Design systems");
     expect(content.skills).toMatch(/^Design systems · User research · Figma · /);
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
     expect(content.interests).toBe("Long-distance cycling · Risograph printing · Community garden volunteer");
@@ -205,7 +209,7 @@ describe("resumeContent", () => {
     ];
     const content = resumeContent(profile, { units });
     expect(content.summary).toBe("");
-    expect(content.experience.map((company) => [company.company, company.roles[0].bullets])).toEqual([
+    expect(companies(content).map((company) => [company.company, company.roles[0].bullets])).toEqual([
       ["Fieldnote", ["Ran research"]],
       ["Northwind Logistics", ["Led the portal redesign"]],
     ]);
@@ -227,12 +231,12 @@ describe("resumeContent", () => {
 
     it("prints a company's roles together under it, with the span they cover", () => {
       const content = resumeContent(promoted, { today });
-      expect(content.experience.map((company) => [company.company, company.dates, company.roles.map((role) => role.id)])).toEqual([
+      expect(companies(content).map((company) => [company.company, company.dates, company.roles.map((role) => role.id)])).toEqual([
         ["Northwind Logistics", "Mar 2021 – Present", ["senior", "junior"]],
         ["Fieldnote", "Jun 2018 – Feb 2021", [rest[0].id]],
         ["Studio Brik", "Sep 2015 – May 2018", [rest[1].id]],
       ]);
-      expect(content.experience[0].roles.map((role) => role.dates)).toEqual(["Apr 2023 – Present", "Mar 2021 – Mar 2023"]);
+      expect(companies(content)[0].roles.map((role) => role.dates)).toEqual(["Apr 2023 – Present", "Mar 2021 – Mar 2023"]);
     });
 
     it("groups a tailored resume's roles the same way, whatever the order of its units", () => {
@@ -242,23 +246,91 @@ describe("resumeContent", () => {
         { id: "experience:senior", label: "Northwind", text: "Led the team" },
       ];
       const content = resumeContent(promoted, { units });
-      expect(content.experience.map((company) => company.roles.map((role) => role.bullets[0]))).toEqual([
+      expect(companies(content).map((company) => company.roles.map((role) => role.bullets[0]))).toEqual([
         ["Ran research", "Led the team"],
         ["Shipped"],
       ]);
     });
 
     it("shows locations only when asked: once for a company in one place, on each role after a move", () => {
-      expect(resumeContent(promoted).experience.every((company) => !company.location && company.roles.every((role) => !role.location))).toBe(true);
+      expect(companies(resumeContent(promoted)).every((company) => !company.location && company.roles.every((role) => !role.location))).toBe(true);
 
-      const shown = resumeContent(promoted, { showLocations: true }).experience[0];
+      const shown = companies(resumeContent(promoted, { showLocations: true }))[0];
       expect(shown.location).toBe(northwind.location.trim());
       expect(shown.roles.map((role) => role.location)).toEqual(["", ""]);
 
       const moved = { ...promoted, experience: promoted.experience.map((role) => (role.id === "senior" ? { ...role, location: "Remote" } : role)) };
-      const split = resumeContent(moved, { showLocations: true }).experience[0];
+      const split = companies(resumeContent(moved, { showLocations: true }))[0];
       expect(split.location).toBe("");
       expect(split.roles.map((role) => role.location)).toEqual(["Remote", northwind.location.trim()]);
+    });
+  });
+
+  describe("experience groups (.scratch/experience-groups)", () => {
+    const [northwind, fieldnote, brik] = profile.experience;
+    const grouped: ProfileData = {
+      ...profile,
+      experienceGroups: [
+        { id: "nonprofit", name: "Esperienze nel terzo settore" },
+        { id: "tech", name: "  Esperienze professionali " },
+      ],
+      experience: [
+        { ...northwind, groupId: "tech" },
+        { ...fieldnote, groupId: "nonprofit" },
+        { ...brik, groupId: null },
+      ],
+    };
+    const headings = (content: ReturnType<typeof resumeContent>) =>
+      content.experience.map((section) => [section.title, section.companies.map((company) => company.company)]);
+
+    it("gives a profile without groups the one heading it always had", () => {
+      const content = resumeContent(profile, {}, documentLabels("Italian"));
+      expect(content.experience).toHaveLength(1);
+      expect(content.experience[0]).toMatchObject({ groupId: null, title: "Esperienza professionale" });
+    });
+
+    it("puts each group under its own heading, as typed, in the groups' order, then the roles without one", () => {
+      expect(headings(resumeContent(grouped, {}, documentLabels("Italian")))).toEqual([
+        ["Esperienze nel terzo settore", ["Fieldnote"]],
+        ["Esperienze professionali", ["Northwind Logistics"]],
+        ["Esperienza professionale", ["Studio Brik"]],
+      ]);
+    });
+
+    it("leaves out a group without roles, names an unnamed one like the section, and treats a removed group as none", () => {
+      const content = resumeContent({
+        ...grouped,
+        experienceGroups: [{ id: "empty", name: "Volunteering" }, { id: "nonprofit", name: " " }],
+      });
+      expect(headings(content)).toEqual([
+        ["Experience", ["Fieldnote"]],
+        ["Experience", ["Northwind Logistics", "Studio Brik"]],
+      ]);
+    });
+
+    it("keeps a promotion together only within one group", () => {
+      const split: ProfileData = {
+        ...grouped,
+        experience: [...grouped.experience, { ...northwind, id: "junior", groupId: "nonprofit", current: false, endYear: 2021, endMonth: 1 }],
+      };
+      expect(headings(resumeContent(split))).toEqual([
+        ["Esperienze nel terzo settore", ["Fieldnote", "Northwind Logistics"]],
+        ["Esperienze professionali", ["Northwind Logistics"]],
+        ["Experience", ["Studio Brik"]],
+      ]);
+    });
+
+    it("orders a tailored resume's headings by where their first role's unit is", () => {
+      const units = [
+        { id: `experience:${brik.id}`, label: "Studio Brik", text: "Built sites" },
+        { id: `experience:${northwind.id}`, label: "Northwind", text: "Led the team" },
+        { id: `experience:${fieldnote.id}`, label: "Fieldnote", text: "Ran research" },
+      ];
+      expect(headings(resumeContent(grouped, { units }))).toEqual([
+        ["Experience", ["Studio Brik"]],
+        ["Esperienze professionali", ["Northwind Logistics"]],
+        ["Esperienze nel terzo settore", ["Fieldnote"]],
+      ]);
     });
   });
 });

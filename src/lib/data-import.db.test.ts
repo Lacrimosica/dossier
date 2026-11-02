@@ -269,6 +269,28 @@ describe("importExport (E10-6)", () => {
     expect(await prisma().course.count()).toBe(0);
   });
 
+  it("restores experience groups and each role's, and reads files from before them as having none (.scratch/experience-groups)", async () => {
+    const group = await prisma().entryGroup.create({ data: { section: "EXPERIENCE", name: "Esperienze nel terzo settore" } });
+    const [role] = await prisma().experience.findMany({ orderBy: { sort: "asc" }, take: 1 });
+    await prisma().experience.update({ where: { id: role.id }, data: { groupId: group.id } });
+    const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
+
+    await prisma().entryGroup.deleteMany();
+    await importExport(prisma(), exportSchema.parse(file));
+    expect(await prisma().entryGroup.findMany()).toEqual([group]);
+    expect(await prisma().experience.findUniqueOrThrow({ where: { id: role.id } })).toMatchObject({ groupId: group.id });
+
+    // An older file: no groups, and roles without a groupId.
+    const roles = file.profile.experience.map((entry: Record<string, unknown>) => Object.fromEntries(Object.entries(entry).filter(([key]) => key !== "groupId")));
+    const old = { ...file.profile, groups: undefined, experience: roles };
+    const parsed = parseExport(JSON.stringify({ ...file, schemaVersion: 7, profile: old }));
+    expect(parsed).toMatchObject({ ok: true, data: { schemaVersion: 7, profile: { groups: [] } } });
+    if (!parsed.ok) return;
+    await importExport(prisma(), parsed.data);
+    expect(await prisma().entryGroup.count()).toBe(0);
+    expect(await prisma().experience.count({ where: { groupId: { not: null } } })).toBe(0);
+  });
+
   it("restores the photo, the themes' photo options and each application's Photo and Locations switches, and reads older files with the defaults (#224)", async () => {
     const png = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
     await prisma().profileField.createMany({ data: [{ key: "photo", value: png }, { key: "photoOnResumes", value: "false" }] });

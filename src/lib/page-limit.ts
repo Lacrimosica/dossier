@@ -16,7 +16,9 @@ import { citationExcerpt } from "@/lib/citation";
 // page limit is trimmed once, when the application is created (decided 28
 // September 2026). Measured in the real PDF: courses go first, the least
 // relevant (the last) first, since tailoring lists them by relevance; then the
-// oldest roles, then the last bullets of the oldest roles left, then the
+// oldest roles, those under the last heading first when the roles are in
+// groups (.scratch/experience-groups), since tailoring puts the group that
+// matters most first; then the last bullets of the oldest roles left, then the
 // oldest projects, then publications from the bottom of the list (#218). What's cut is kept on the
 // document, so it can be put back.
 
@@ -34,6 +36,18 @@ function oldestFirst(units: Unit[], entries: { id: string; startYear: number | n
     .sort((a, b) => start.get(a.unit.id)! - start.get(b.unit.id)!);
 }
 
+/**
+ * Roles under the last heading first, keeping their order within it. The
+ * headings are in the order of their first role's unit, as the resume shows
+ * them; without groups, there's one and nothing moves.
+ */
+function lastGroupFirst<T extends { unit: Unit; index: number }>(roles: T[], profile: ProfileData): T[] {
+  const known = new Set(profile.experienceGroups.map((group) => group.id));
+  const groups = new Map(profile.experience.map((role) => [`experience:${role.id}`, role.groupId !== null && known.has(role.groupId) ? role.groupId : null]));
+  const headings = [...new Set(roles.toSorted((a, b) => a.index - b.index).map(({ unit }) => groups.get(unit.id)))];
+  return roles.toSorted((a, b) => headings.indexOf(groups.get(b.unit.id)) - headings.indexOf(groups.get(a.unit.id)));
+}
+
 const leaveOut = (units: Unit[], { unit, index }: { unit: Unit; index: number }): Cut => ({
   trimmed: { kind: "unit", unit, index },
   units: units.filter((_, position) => position !== index),
@@ -45,7 +59,7 @@ export function nextCut(units: Unit[], profile: ProfileData): Cut | null {
   const course = units.findLastIndex((unit) => isCourseUnit(unit.id));
   if (course >= 0) return leaveOut(units, { unit: units[course], index: course });
 
-  const roles = oldestFirst(units, profile.experience, "experience:");
+  const roles = lastGroupFirst(oldestFirst(units, profile.experience, "experience:"), profile);
 
   // The oldest role, while more than one is left.
   if (roles.length > 1) return leaveOut(units, roles[0]);

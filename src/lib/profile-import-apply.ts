@@ -25,6 +25,8 @@ export async function applyImportedProfile(db: PrismaClient, profile: ImportedPr
     async (tx) => {
       if (mode === "replace") {
         await tx.experience.deleteMany();
+        // Imported roles come in without a group (.scratch/experience-groups).
+        await tx.entryGroup.deleteMany();
         await tx.project.deleteMany();
         await tx.education.deleteMany();
         await tx.course.deleteMany();

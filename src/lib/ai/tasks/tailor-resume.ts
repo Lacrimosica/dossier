@@ -28,13 +28,15 @@ import {
   type TaskResult,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@10";
+export const TAILOR_RESUME_VERSION = "tailor-resume@11";
 
 const answerSchema = z.object({
   /** The line under the name, for this job (.scratch/tailored-headline). */
   headline: z.string(),
   summary: z.string(),
   roles: z.array(z.object({ id: z.string(), bullets: z.array(z.string()) })),
+  /** The profile's experience groups by id, the one closest to this job first (.scratch/experience-groups). */
+  groupOrder: z.array(z.string()),
   projects: z.array(z.object({ id: z.string(), bullets: z.array(z.string()) })),
   /** The profile's skills, most relevant first; leave out ones that don't help. */
   skills: z.array(z.string()),
@@ -50,6 +52,7 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - headline: the one short line under the candidate's name, for this job: a title, optionally with a focus after " · " (e.g. "Data Engineer · Streaming and analytics"). Use titles the candidate has held and skills they have, not the job's title unless they've held it. Start from their own headline.
 - summary: 2–3 sentences in the first person without "I" at the start of every sentence, about the candidate as this job would see them.
 - roles: every role from the profile, by id. Recent roles and those closest to this job get the most bullets (up to 5); older roles that don't bear on it get 1–2. Lead with what this job cares about, keep each bullet to about a line, and start with a verb.
+- groupOrder: when the profile's experience has groups (each role's "group"), every group's id from experienceGroups, the group closest to this job first; each group is a heading of its own on the resume. Never move a role to another group. An empty list when there are none.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
 - skills: the candidate's own skills, most relevant to this job first. Copy their names exactly; you may leave out ones that don't help.
 - Read the posting for what the job does day to day and what it values, and let that decide what leads. Requirements marked "gap" are what the candidate doesn't have: never write them into the resume, not even in other words. When the posting names a skill the candidate has under another spelling ("PostgreSQL" for "Postgres"), use the posting's in bullets and the summary.
@@ -159,7 +162,7 @@ export async function tailorResume(
  */
 export function resumeUnits(
   profile: ProfileData,
-  answer: Omit<z.infer<typeof answerSchema>, "headline" | "interests"> & { headline?: string; interests?: string[] },
+  answer: Omit<z.infer<typeof answerSchema>, "headline" | "interests" | "groupOrder"> & { headline?: string; interests?: string[]; groupOrder?: string[] },
   labels: DocumentLabels = ENGLISH_LABELS): Unit[] {
   const roles = new Map(answer.roles.map((role) => [role.id, role.bullets]));
   const projects = new Map(answer.projects.map((project) => [project.id, project.bullets]));
@@ -175,7 +178,7 @@ export function resumeUnits(
   const units: Unit[] = [
     { id: HEADLINE_UNIT, label: "Headline", text: answer.headline?.trim() || profile.basics.headline.trim() },
     { id: "summary", label: "Summary", text: answer.summary.trim() },
-    ...profile.experience.map((entry) => {
+    ...inGroupOrder(profile, answer.groupOrder ?? []).map((entry) => {
       const bullets = (roles.get(entry.id) ?? entry.bullets.split("\n")).map((line) => line.trim()).filter(Boolean);
       return { id: `experience:${entry.id}`, label: `${entry.company || entry.role} role`, text: bullets.join("\n") };
     }),
@@ -203,6 +206,19 @@ export function resumeUnits(
     { id: "interests", label: "Interests", text: interests.join(" · ") },
   ];
   return unitsSchema.parse(units);
+}
+
+/**
+ * The roles group by group, the groups in `order` (.scratch/experience-groups):
+ * the model's, with any group it left out after them in the profile's order,
+ * then the roles without a group. Within a group they keep the profile's
+ * order. A profile without groups keeps its order.
+ */
+export function inGroupOrder(profile: Pick<ProfileData, "experience" | "experienceGroups">, order: string[]) {
+  const known = new Set(profile.experienceGroups.map((group) => group.id));
+  const groups = [...new Set([...order.filter((id) => known.has(id)), ...known])];
+  const groupOf = (groupId: string | null) => (groupId !== null && known.has(groupId) ? groupId : null);
+  return [...groups, null].flatMap((groupId) => profile.experience.filter((entry) => groupOf(entry.groupId) === groupId));
 }
 
 /** The courses the model chose, in its order: each once, only those shown on resumes. */

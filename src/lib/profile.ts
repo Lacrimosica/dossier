@@ -154,7 +154,14 @@ export type ExperienceItem = DateSpan & {
   location: string;
   bullets: string;
   skillIds: string[];
+  /** Its experience group, or null for the section's own heading. */
+  groupId: string | null;
 };
+/**
+ * A named block of roles with a heading of its own on resumes
+ * (.scratch/experience-groups), e.g. "Esperienze nel terzo settore".
+ */
+export type GroupItem = { id: string; name: string };
 /** A project (PRO-13): what was built, where to see it, and the skills used, like a role. */
 export type ProjectItem = DateSpan & {
   id: string;
@@ -198,6 +205,8 @@ export type ProfileData = {
   /** Hobbies and interests, as typed, in the order added. */
   interests: string[];
   experience: ExperienceItem[];
+  /** Experience groups in the order set by hand; empty when the roles aren't grouped. */
+  experienceGroups: GroupItem[];
   projects: ProjectItem[];
   education: EducationItem[];
   /** Courses and certificates, with the ones kept off resumes too. */

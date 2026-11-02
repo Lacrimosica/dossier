@@ -77,9 +77,33 @@ model Experience {
   /// One point per line.
   bullets    String            @default("")
   sort       Int               @default(0)
+  /// The group whose heading it goes under (.scratch/experience-groups); null for the section's own heading.
+  groupId    String?
+  group      EntryGroup?       @relation(fields: [groupId], references: [id], onDelete: SetNull)
   skills     ExperienceSkill[]
   createdAt  DateTime          @default(now())
   updatedAt  DateTime          @updatedAt
+
+  @@index([groupId])
+}
+
+/// Which profile section a group belongs to.
+enum GroupSection {
+  EXPERIENCE
+}
+
+/// A named block of entries within one section, with a heading of its own on
+/// resumes, e.g. "Esperienze nel terzo settore" next to "Esperienze
+/// professionali" (.scratch/experience-groups). Deleting a group leaves its
+/// entries without one.
+model EntryGroup {
+  id         String       @id @default(cuid())
+  section    GroupSection
+  name       String       @default("")
+  sort       Int          @default(0)
+  experience Experience[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 }
 
 /// A skill used in a role (PRO-6). Deleting either side removes the link (PRO-3).

@@ -151,6 +151,7 @@ describe("applyImportedProfile (E4-10)", () => {
     await prisma().setting.create({ data: { key: "experienceOrder", value: "manual" } });
     await prisma().setting.create({ data: { key: "projectOrder", value: "manual" } });
     await prisma().setting.create({ data: { key: "courseOrder", value: "manual" } });
+    await prisma().entryGroup.create({ data: { section: "EXPERIENCE", name: "Non-profit" } });
     await prisma().profileField.create({ data: { key: "showAge", value: "false" } });
     // A resume's text has no photo, so the profile's stays (#224).
     await prisma().profileField.createMany({ data: [{ key: "photo", value: "data:image/png;base64,iVBORw0KGgo=" }, { key: "photoOnResumes", value: "false" }] });
@@ -161,6 +162,8 @@ describe("applyImportedProfile (E4-10)", () => {
     expect((await prisma().skill.findMany()).map((skill) => skill.name).sort()).toEqual(["User research", "figma"]);
     expect((await prisma().experience.findMany()).map((role) => role.company).sort()).toEqual(["Acme Payments", "fieldnote"]);
     expect((await prisma().setting.findUnique({ where: { key: "experienceOrder" } }))?.value).toBe("date");
+    // Imported roles have no groups (.scratch/experience-groups).
+    expect(await prisma().entryGroup.count()).toBe(0);
     expect((await prisma().project.findMany()).map((project) => project.name).sort()).toEqual(["Design tokens CLI", "payout simulator"]);
     expect((await prisma().setting.findUnique({ where: { key: "projectOrder" } }))?.value).toBe("date");
     expect((await prisma().publication.findMany({ orderBy: { sort: "asc" } })).map((entry) => entry.citation)).toEqual([

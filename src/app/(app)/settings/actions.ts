@@ -259,6 +259,7 @@ export const deleteEverything = action(z.object({ confirm: z.literal("DELETE") }
     // Applications take their history, documents, chat and notes along.
     await tx.application.deleteMany();
     await tx.experience.deleteMany();
+    await tx.entryGroup.deleteMany();
     await tx.project.deleteMany();
     await tx.skill.deleteMany();
     await tx.language.deleteMany();

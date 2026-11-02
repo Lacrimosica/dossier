@@ -52,6 +52,7 @@ function Harness() {
     languages: [],
     interests: [],
     experience: [],
+    experienceGroups: [],
     projects: [],
     education: [],
     courses: [bootcamp, workshop],

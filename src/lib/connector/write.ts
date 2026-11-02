@@ -35,6 +35,11 @@ export const writtenResumeSchema = z.object({
   roles: z
     .array(z.object({ id: z.string(), bullets: z.array(z.string().max(400)).max(8) }))
     .describe("Every role from get_profile by its id, with 2–5 tailored bullets; a role left out keeps its own bullets"),
+  groupOrder: z
+    .array(z.string())
+    .max(50)
+    .default([])
+    .describe("When get_profile has experienceGroups: their ids, the group closest to this job first. Each is a heading of its own; roles stay in their group"),
   projects: z.array(z.object({ id: z.string(), bullets: z.array(z.string().max(400)).max(6) })).default([]),
   skills: z.array(z.string().max(100)).describe("The profile's own skills, most relevant first; others are dropped"),
   interests: z

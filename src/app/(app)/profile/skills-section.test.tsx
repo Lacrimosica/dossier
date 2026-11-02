@@ -29,9 +29,10 @@ const profile = (): ProfileData => ({
   languages: [{ id: "l1", code: "nl", name: "Dutch", level: "NATIVE" }],
   interests: ["Chess", "Cycling", "Sourdough baking"],
   experience: [
-    { id: "e1", role: "A", company: "", location: "", bullets: "", skillIds: ["s1", "s2"], ...span },
-    { id: "e2", role: "B", company: "", location: "", bullets: "", skillIds: ["s1"], ...span },
+    { id: "e1", role: "A", company: "", location: "", bullets: "", skillIds: ["s1", "s2"], groupId: null, ...span },
+    { id: "e2", role: "B", company: "", location: "", bullets: "", skillIds: ["s1"], groupId: null, ...span },
   ],
+  experienceGroups: [],
   projects: [],
   education: [],
   courses: [],

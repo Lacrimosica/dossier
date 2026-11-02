@@ -144,6 +144,18 @@ describe("ResumeDocument", () => {
     expect(screen.getByText("34 Jahre")).toBeInTheDocument();
   });
 
+  it("gives each experience group its heading as typed, then the roles without one under the translated one (.scratch/experience-groups)", () => {
+    const [northwind, fieldnote, brik] = profile.experience;
+    const grouped = {
+      ...profile,
+      experienceGroups: [{ id: "np", name: "Esperienze nel terzo settore" }, { id: "tech", name: "Esperienze professionali" }],
+      experience: [{ ...northwind, groupId: "tech" }, { ...fieldnote, groupId: "np" }, { ...brik, groupId: null }],
+    };
+    render(<ResumeDocument theme={theme("editorial")} profile={grouped} paper="A4" today={today} language="Italian" />);
+    expect(sectionTitles().slice(1, 4)).toEqual(["Esperienze nel terzo settore", "Esperienze professionali", "Esperienza professionale"]);
+    expect(screen.getByRole("heading", { name: "Esperienze nel terzo settore" }).closest("section")).toHaveTextContent("Fieldnote");
+  });
+
   it("keeps English headings for a language without its own", () => {
     render(<ResumeDocument theme={theme("editorial")} profile={profile} paper="A4" today={today} language="Hebrew" />);
     expect(sectionTitles()).toEqual(["Profile", "Experience", "Projects", "Education", "Courses & certificates", "Publications", "Skills", "Languages", "Interests"]);

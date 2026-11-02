@@ -46,6 +46,20 @@ describe("nextCut (E10-10)", () => {
     expect(cut.units.map((unit) => unit.id)).not.toContain("experience:e3");
   });
 
+  it("leaves out the oldest role under the last heading first when the roles are in groups (.scratch/experience-groups)", () => {
+    // Studio Brik (e3), the oldest, leads under its own group; Northwind (e1) and Fieldnote (e2) follow under another.
+    const grouped = {
+      ...profile,
+      experienceGroups: [{ id: "nonprofit", name: "Non-profit" }, { id: "tech", name: "Tech" }],
+      experience: profile.experience.map((role) => ({ ...role, groupId: role.id === "e3" ? "nonprofit" : "tech" })),
+    };
+    const role = (id: string) => units.find((unit) => unit.id === id)!;
+    const reordered = [...units.filter((unit) => !unit.id.startsWith("experience:")), role("experience:e3"), role("experience:e1"), role("experience:e2")];
+    expect(nextCut(reordered, grouped)!.trimmed).toMatchObject({ kind: "unit", unit: { id: "experience:e2" } });
+    const next = nextCut(nextCut(reordered, grouped)!.units, grouped)!;
+    expect(next.trimmed).toMatchObject({ kind: "unit", unit: { id: "experience:e1" } });
+  });
+
   it("then shortens the last role left, keeping its first bullet", () => {
     const one = units.filter((unit) => unit.id !== "experience:e2" && unit.id !== "experience:e3");
     const bullets = one.find((unit) => unit.id === "experience:e1")!.text.split("\n");

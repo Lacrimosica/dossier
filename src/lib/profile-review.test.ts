@@ -17,6 +17,7 @@ const role = (id: string, fields: Partial<ExperienceItem> = {}): ExperienceItem 
   current: true,
   bullets: "",
   skillIds: [],
+  groupId: null,
   ...fields,
 });
 
@@ -38,6 +39,7 @@ const course = (id: string, fields: Partial<CourseItem> = {}): CourseItem => ({
 const profile = (fields: Partial<ProfileData>): ProfileData => ({
   ...demoProfile(),
   experience: [],
+  experienceGroups: [],
   projects: [],
   education: [],
   courses: [],
@@ -72,6 +74,8 @@ describe("buildFixes: merges", () => {
       current: true,
       bullets: "Led the payments team\nShipped the new checkout\nHired four engineers",
       skillIds: ["s1", "s2"],
+      // The kept role's group; applying a merge never changes it.
+      groupId: null,
     });
   });
 

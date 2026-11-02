@@ -103,6 +103,7 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
       await tx.emailMessage.deleteMany();
       await tx.application.deleteMany();
       await tx.experience.deleteMany();
+      await tx.entryGroup.deleteMany();
       await tx.project.deleteMany();
       await tx.skill.deleteMany();
       await Promise.all([
@@ -121,7 +122,12 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
       await tx.profileField.createMany({ data: profile.fields });
       await tx.skill.createMany({ data: profile.skills });
       await tx.language.createMany({ data: importedLanguages(profile.languages) });
-      await tx.experience.createMany({ data: profile.experience.map((entry) => omit(entry, "skillIds")) });
+      await tx.entryGroup.createMany({ data: profile.groups });
+      // A role whose group isn't in the file goes under the section's own heading.
+      const groupIds = new Set(profile.groups.map((group) => group.id));
+      await tx.experience.createMany({
+        data: profile.experience.map((entry) => ({ ...omit(entry, "skillIds"), groupId: entry.groupId !== null && groupIds.has(entry.groupId) ? entry.groupId : null })),
+      });
       await tx.experienceSkill.createMany({
         data: profile.experience.flatMap((entry) => entry.skillIds.map((skillId) => ({ experienceId: entry.id, skillId }))),
         skipDuplicates: true,

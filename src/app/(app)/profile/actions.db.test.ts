@@ -13,6 +13,7 @@ import {
   createCourse,
   createEducation,
   createExperience,
+  createExperienceGroup,
   createProject,
   createPublication,
   createReference,
@@ -22,6 +23,11 @@ import {
   removeCourse,
   removeEducation,
   removeExperience,
+  removeExperienceGroup,
+  renameExperienceGroup,
+  reorderExperienceGroups,
+  restoreExperienceGroup,
+  setExperienceGroup,
   removeProject,
   removePublication,
   reorderPublications,
@@ -280,6 +286,71 @@ describe("profile actions", () => {
     await expect(restoreEducation(degree)).resolves.toMatchObject({ ok: true, data: { degree: "MSc" } });
     await expect(restoreReference(reference)).resolves.toMatchObject({ ok: true, data: { name: "Jane Doe" } });
     expect(await prisma().reference.findUniqueOrThrow({ where: { id: reference.id } })).toMatchObject({ email: "jane.doe@example.com" });
+  });
+});
+
+describe("experience groups (.scratch/experience-groups)", () => {
+  const group = async (name: string) => {
+    const created = await createExperienceGroup({ name });
+    if (!created.ok) throw new Error(created.error);
+    return created.data;
+  };
+
+  it("creates groups last, renames and reorders them, and loads them in that order with each role's", async () => {
+    const tech = await group("Tech");
+    const nonprofit = await group("");
+    await renameExperienceGroup({ id: nonprofit.id, name: "Esperienze nel terzo settore" });
+    const role = await createExperience({ groupId: nonprofit.id });
+    expect(role).toMatchObject({ ok: true, data: { groupId: nonprofit.id } });
+
+    await reorderExperienceGroups({ ids: [nonprofit.id, tech.id] });
+    const profile = await loadProfile();
+    expect(profile.experienceGroups).toEqual([
+      { id: nonprofit.id, name: "Esperienze nel terzo settore" },
+      { id: tech.id, name: "Tech" },
+    ]);
+    expect(profile.experience.map((entry) => entry.groupId)).toEqual([nonprofit.id]);
+    expect(await reorderExperienceGroups({ ids: [tech.id] })).toMatchObject({ ok: false });
+  });
+
+  it("moves a role between groups and out of them, and refuses a group that's gone", async () => {
+    const tech = await group("Tech");
+    const role = await prisma().experience.create({ data: { role: "Developer" } });
+    await setExperienceGroup({ id: role.id, groupId: tech.id });
+    expect(await prisma().experience.findUniqueOrThrow({ where: { id: role.id } })).toMatchObject({ groupId: tech.id });
+    await setExperienceGroup({ id: role.id, groupId: null });
+    expect(await prisma().experience.findUniqueOrThrow({ where: { id: role.id } })).toMatchObject({ groupId: null });
+
+    expect(await setExperienceGroup({ id: role.id, groupId: "gone" })).toMatchObject({ ok: false, error: expect.stringMatching(/removed in the meantime/) });
+    // A role added or put back under a group that's gone has none.
+    expect(await createExperience({ groupId: "gone" })).toMatchObject({ ok: true, data: { groupId: null } });
+  });
+
+  it("removes a group but keeps its roles, and Undo puts it back in its place with them", async () => {
+    await group("First");
+    const [middle, last] = [await group("Middle"), await group("Last")];
+    const inside = await prisma().experience.create({ data: { role: "Coordinator", groupId: middle.id } });
+    const elsewhere = await prisma().experience.create({ data: { role: "Developer", groupId: last.id } });
+
+    const removed = await removeExperienceGroup({ id: middle.id });
+    expect(removed).toEqual({ ok: true, data: [inside.id] });
+    expect(await prisma().experience.findUniqueOrThrow({ where: { id: inside.id } })).toMatchObject({ groupId: null });
+
+    // Meanwhile the role went to another group: Undo leaves it there.
+    const moved = await prisma().experience.create({ data: { role: "Volunteer" } });
+    await prisma().experience.update({ where: { id: inside.id }, data: { groupId: last.id } });
+    const restored = await restoreExperienceGroup({ id: middle.id, name: middle.name, roleIds: [inside.id, moved.id], index: 1 });
+    expect(restored).toEqual({ ok: true, data: { group: { id: middle.id, name: "Middle" }, roleIds: [moved.id] } });
+    expect((await loadProfile()).experienceGroups.map((entry) => entry.name)).toEqual(["First", "Middle", "Last"]);
+    expect(await prisma().experience.findUniqueOrThrow({ where: { id: elsewhere.id } })).toMatchObject({ groupId: last.id });
+  });
+
+  it("puts a removed role back in its group", async () => {
+    const tech = await group("Tech");
+    const created = await createExperience({ groupId: tech.id });
+    if (!created.ok) throw new Error(created.error);
+    await removeExperience({ id: created.data.id });
+    expect(await restoreExperience(created.data)).toMatchObject({ ok: true, data: { groupId: tech.id } });
   });
 });
 

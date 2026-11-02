@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { demoProfile } from "@/lib/demo-profile";
+import { loadProfile } from "@/lib/profile-data";
 import { saveSettings } from "@/lib/settings-data";
 import { createTestClient, resetDatabase } from "@/test/db";
 
@@ -16,7 +17,7 @@ vi.mock("@/lib/prisma", async () => {
 });
 vi.mock("@/lib/profile-data", async () => {
   const { demoProfile } = await import("@/lib/demo-profile");
-  return { loadProfile: async () => demoProfile() };
+  return { loadProfile: vi.fn(async () => demoProfile()) };
 });
 // Trimming renders PDFs; here nothing needs cutting.
 vi.mock("@/lib/page-limit", async (importOriginal) => ({
@@ -40,6 +41,7 @@ const written = (overrides: Partial<WrittenApplication> = {}): WrittenApplicatio
       { id: role.id, bullets: ["Led the redesign of the payments flow"] },
       { id: "made-up", bullets: ["Invented role"] },
     ],
+    groupOrder: [],
     projects: [],
     skills: [profile.skills[0].name, "Not a skill of theirs"],
     education: [],
@@ -99,6 +101,19 @@ describe("an application written in Claude chat (#221)", () => {
     const document = await prisma().document.findFirstOrThrow({ where: { applicationId, kind: "RESUME" } });
     const units = document.units as { id: string; text: string }[];
     expect(units.filter((unit) => unit.id.startsWith("course:"))).toEqual([{ id: "course:c2", label: "UX Writing Workshop", text: "Microcopy" }]);
+  });
+
+  it("lays out the roles group by group in Claude's order (.scratch/experience-groups)", async () => {
+    const [e1, e2, e3] = profile.experience;
+    vi.mocked(loadProfile).mockResolvedValueOnce({
+      ...profile,
+      experienceGroups: [{ id: "tech", name: "Tech" }, { id: "nonprofit", name: "Non-profit" }],
+      experience: [{ ...e1, groupId: "tech" }, { ...e2, groupId: "nonprofit" }, { ...e3, groupId: "tech" }],
+    });
+    const { applicationId } = await saveWrittenApplication(written({ resume: { ...written().resume, groupOrder: ["nonprofit"] } }));
+    const document = await prisma().document.findFirstOrThrow({ where: { applicationId, kind: "RESUME" } });
+    const roles = (document.units as { id: string }[]).filter((unit) => unit.id.startsWith("experience:")).map((unit) => unit.id);
+    expect(roles).toEqual([`experience:${e2.id}`, `experience:${e1.id}`, `experience:${e3.id}`]);
   });
 
   it("stores Claude's headline, or the profile's when Claude gives none (.scratch/tailored-headline)", async () => {

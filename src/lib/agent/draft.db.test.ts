@@ -56,7 +56,7 @@ vi.mock("@/lib/ai", async (importOriginal) => ({
               source.failWriting -= 1;
               return "no json";
             }
-            return { headline: "", summary: "Product designer for payments.", roles: [], projects: [], skills: ["Figma"], interests: [], education: [], courses: [] };
+            return { headline: "", summary: "Product designer for payments.", roles: [], groupOrder: [], projects: [], skills: ["Figma"], interests: [], education: [], courses: [] };
           case "cover_letter":
             return { recipient: "Ledgerly · Hiring team", greeting: "Dear Ledgerly team,", paragraphs: [{ label: "Opening", text: "Payments need calm design." }], signOff: "Warm regards," };
           default:

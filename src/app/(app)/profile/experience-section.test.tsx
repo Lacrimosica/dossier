@@ -1,15 +1,21 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { toast } from "@/components/toast";
-import type { EntryOrder, ExperienceItem, ProfileData } from "@/lib/profile";
+import type { EntryOrder, ExperienceItem, GroupItem, ProfileData } from "@/lib/profile";
 
 import {
   attachNewSkill,
   createExperience,
+  createExperienceGroup,
   removeExperience,
+  removeExperienceGroup,
+  renameExperienceGroup,
+  reorderExperienceGroups,
+  restoreExperienceGroup,
+  setExperienceGroup,
   reorderEntries,
   restoreExperience,
   saveExperience,
@@ -25,6 +31,12 @@ vi.mock("./actions", () => ({
   attachNewSkill: vi.fn(),
   setExperienceSkill: vi.fn(async () => ({ ok: true, data: null })),
   createExperience: vi.fn(),
+  createExperienceGroup: vi.fn(),
+  renameExperienceGroup: vi.fn(async () => ({ ok: true, data: null })),
+  reorderExperienceGroups: vi.fn(async () => ({ ok: true, data: null })),
+  removeExperienceGroup: vi.fn(),
+  restoreExperienceGroup: vi.fn(),
+  setExperienceGroup: vi.fn(async () => ({ ok: true, data: null })),
   saveExperience: vi.fn(async () => ({ ok: true, data: null })),
   removeExperience: vi.fn(async () => ({ ok: true, data: null })),
   restoreExperience: vi.fn(),
@@ -47,11 +59,20 @@ const northwind: ExperienceItem = {
   endMonth: null,
   current: true,
   skillIds: ["s1"],
+  groupId: null,
 };
 const fieldnote: ExperienceItem = { ...northwind, id: "e2", role: "Product Designer", company: "Fieldnote", current: false, startYear: 2018, startMonth: 6, endYear: 2021, endMonth: 2, skillIds: [] };
 
 let latest: ProfileData;
-function Harness({ order = "date", experience = [northwind, fieldnote] }: { order?: EntryOrder; experience?: ExperienceItem[] }) {
+function Harness({
+  order = "date",
+  experience = [northwind, fieldnote],
+  groups = [],
+}: {
+  order?: EntryOrder;
+  experience?: ExperienceItem[];
+  groups?: GroupItem[];
+}) {
   const [state, setState] = useState<ProfileData>({
     basics: {} as ProfileData["basics"],
     skills: [
@@ -61,6 +82,7 @@ function Harness({ order = "date", experience = [northwind, fieldnote] }: { orde
     languages: [],
     interests: [],
     experience,
+    experienceGroups: groups,
     projects: [],
     education: [],
     courses: [],
@@ -145,7 +167,7 @@ describe("ExperienceSection", () => {
 
   it("shows the empty state", () => {
     function Empty() {
-      const [state, setState] = useState<ProfileData>({ basics: {} as ProfileData["basics"], skills: [], languages: [], interests: [], experience: [], projects: [], education: [], courses: [], publications: [], references: [], facts: [], photo: null });
+      const [state, setState] = useState<ProfileData>({ basics: {} as ProfileData["basics"], skills: [], languages: [], interests: [], experience: [], experienceGroups: [], projects: [], education: [], courses: [], publications: [], references: [], facts: [], photo: null });
       return <ExperienceSection order="date" profile={state} update={(change) => setState(change)} />;
     }
     render(<Empty />);
@@ -324,5 +346,106 @@ describe("roles at one company", () => {
     await user.click(screen.getByRole("button", { name: "They’re different companies" }));
     expect(keepCompaniesApart).toHaveBeenCalledWith({ fingerprint: "northwind logistics\nnorthwind logistics ltd" });
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});
+
+describe("ExperienceSection with groups (.scratch/experience-groups)", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const tech: GroupItem = { id: "g-tech", name: "Tech" };
+  const nonprofit: GroupItem = { id: "g-np", name: "Esperienze nel terzo settore" };
+  const volunteer: ExperienceItem = { ...fieldnote, id: "e3", role: "Volunteer coordinator", company: "Caritas", startYear: 2016, endYear: 2017 };
+  const grouped = () => (
+    <Harness
+      groups={[nonprofit, tech]}
+      experience={[{ ...northwind, groupId: tech.id }, { ...fieldnote, groupId: tech.id }, { ...volunteer, groupId: nonprofit.id }]}
+    />
+  );
+  const region = (name: string) => screen.getByRole("region", { name });
+
+  it("offers groups without showing a Group field until there is one", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.getByText(/each group gets its own heading on your resumes/)).toBeInTheDocument();
+    await user.click(header(/Senior Product Designer/));
+    expect(screen.queryByLabelText("Group")).not.toBeInTheDocument();
+  });
+
+  it("shows each group's roles under it, and the roles without one after them", () => {
+    render(
+      <Harness groups={[nonprofit, tech]} experience={[{ ...northwind, groupId: tech.id }, { ...fieldnote, groupId: "removed" }, { ...volunteer, groupId: nonprofit.id }]} />,
+    );
+    const regions = screen.getAllByRole("region").map((element) => element.getAttribute("aria-label") ?? element.textContent?.slice(0, 14));
+    expect(regions).toEqual(["Group: Esperienze nel terzo settore", "Group: Tech", "Not in a group"]);
+    expect(region("Group: Tech")).toHaveTextContent("Senior Product Designer");
+    expect(region("Group: Esperienze nel terzo settore")).toHaveTextContent("Volunteer coordinator");
+    // A role whose group is gone counts as having none.
+    expect(screen.getByRole("region", { name: "Not in a group" })).toHaveTextContent("Fieldnote");
+  });
+
+  it("adds a role to the group it's added under", async () => {
+    const user = userEvent.setup();
+    vi.mocked(createExperience).mockResolvedValue({ ok: true, data: { ...northwind, id: "e4", role: "", groupId: nonprofit.id } });
+    render(grouped());
+    await user.click(within(region("Group: Esperienze nel terzo settore")).getByRole("button", { name: "+ Add a role" }));
+    expect(createExperience).toHaveBeenCalledWith({ groupId: nonprofit.id });
+    expect(await within(region("Group: Esperienze nel terzo settore")).findByRole("button", { name: /New role/, expanded: true })).toBeInTheDocument();
+  });
+
+  it("moves a role to another group from its Group field", async () => {
+    const user = userEvent.setup();
+    render(grouped());
+    await user.click(header(/Volunteer coordinator/));
+    await user.selectOptions(screen.getByLabelText("Group"), "Tech");
+    expect(setExperienceGroup).toHaveBeenCalledWith({ id: "e3", groupId: tech.id });
+    await waitFor(() => expect(toast).toHaveBeenCalledWith("Moved “Volunteer coordinator” to “Tech”."));
+    expect(region("Group: Tech")).toHaveTextContent("Volunteer coordinator");
+    expect(latest.experience.find((role) => role.id === "e3")?.groupId).toBe(tech.id);
+  });
+
+  it("adds a group with its name field focused, and autosaves the name", async () => {
+    const user = userEvent.setup();
+    vi.mocked(createExperienceGroup).mockResolvedValue({ ok: true, data: { id: "g-new", name: "" } });
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Add a group" }));
+    const name = await screen.findByLabelText("Group name");
+    expect(name).toHaveFocus();
+    // The roles it had are now without a group, until one is picked.
+    expect(region("Not in a group")).toHaveTextContent("Senior Product Designer");
+
+    await user.type(name, "Volunteering");
+    await waitFor(() => expect(renameExperienceGroup).toHaveBeenLastCalledWith({ id: "g-new", name: "Volunteering" }), { timeout: 2000 });
+    expect(latest.experienceGroups).toEqual([{ id: "g-new", name: "Volunteering" }]);
+  });
+
+  it("reorders groups, and saves a reorder within a group as the whole section's order", async () => {
+    const user = userEvent.setup();
+    render(grouped());
+    await user.click(screen.getByRole("button", { name: "Move the group “Esperienze nel terzo settore” down" }));
+    expect(reorderExperienceGroups).toHaveBeenCalledWith({ ids: [tech.id, nonprofit.id] });
+    expect(latest.experienceGroups.map((group) => group.id)).toEqual([tech.id, nonprofit.id]);
+
+    await user.click(screen.getByRole("button", { name: "Move “Product Designer” up" }));
+    expect(reorderEntries).toHaveBeenLastCalledWith({ section: "experience", ids: ["e2", "e1", "e3"] });
+  });
+
+  it("removes a group but keeps its roles, and Undo puts it back with them", async () => {
+    const user = userEvent.setup();
+    vi.mocked(removeExperienceGroup).mockResolvedValue({ ok: true, data: ["e3"] });
+    vi.mocked(restoreExperienceGroup).mockResolvedValue({ ok: true, data: { group: nonprofit, roleIds: ["e3"] } });
+    render(grouped());
+    await user.click(within(region("Group: Esperienze nel terzo settore")).getByRole("button", { name: "Remove group" }));
+
+    expect(removeExperienceGroup).toHaveBeenCalledWith({ id: nonprofit.id });
+    expect(region("Not in a group")).toHaveTextContent("Volunteer coordinator");
+    await waitFor(() =>
+      expect(toast).toHaveBeenCalledWith("Removed the group “Esperienze nel terzo settore”. Its roles are still in your profile.", expect.anything()),
+    );
+
+    const { action } = vi.mocked(toast).mock.calls.at(-1)![1]!;
+    await act(async () => action!.onClick());
+    expect(restoreExperienceGroup).toHaveBeenCalledWith({ id: nonprofit.id, name: nonprofit.name, roleIds: ["e3"], index: 0 });
+    expect(latest.experienceGroups.map((group) => group.id)).toEqual([nonprofit.id, tech.id]);
+    expect(region("Group: Esperienze nel terzo settore")).toHaveTextContent("Volunteer coordinator");
   });
 });

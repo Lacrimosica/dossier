@@ -24,6 +24,8 @@ type Profile = {
   summary: string;
   skills: string[];
   experience: { id: string; bullets: string[] }[];
+  /** Left out when the roles aren't grouped. */
+  experienceGroups?: { id: string; name: string }[];
   projects: { id: string; bullets: string[] }[];
   education: { id: string; notes: string }[];
   /** Left out when the profile has none on resumes. */
@@ -80,6 +82,8 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
       headline: `${profile.headline} · Payments`,
       summary: profile.summary,
       roles: profile.experience.map((entry) => ({ id: entry.id, bullets: entry.bullets })),
+      // The profile's own order of groups.
+      groupOrder: (profile.experienceGroups ?? []).map((group) => group.id),
       projects: profile.projects.map((entry) => ({ id: entry.id, bullets: entry.bullets })),
       skills: profile.skills,
       education: profile.education.map((entry) => ({ id: entry.id, notes: entry.notes })),

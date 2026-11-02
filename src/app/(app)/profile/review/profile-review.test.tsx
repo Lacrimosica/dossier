@@ -32,7 +32,7 @@ vi.mock("@/components/toast", () => {
   };
 });
 
-const role = { location: "", startYear: 2021, startMonth: 3, endYear: null, endMonth: null, current: true, skillIds: [] };
+const role = { location: "", startYear: 2021, startMonth: 3, endYear: null, endMonth: null, current: true, skillIds: [], groupId: null };
 const profile: ProfileData = {
   ...demoProfile(),
   experience: [

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { GroupSection } from "@/generated/prisma/enums";
 import { photoFromFields } from "@/lib/photo";
 import { prisma } from "@/lib/prisma";
 import { basicsFromFields, factTexts, INTERESTS_KEY, interestsFromValue, inEntryOrder, type FactItem, type ProfileData } from "@/lib/profile";
@@ -14,14 +15,15 @@ export async function loadProfileName(): Promise<string> {
 /**
  * The whole profile for the editor. Experience, projects, education and
  * courses are newest first by start date, or in the order set by hand (E4-9);
- * publications are always in the order set by hand (#218).
+ * publications and experience groups are always in the order set by hand (#218).
  */
 export async function loadProfile(): Promise<ProfileData> {
-  const [fields, skills, languages, experience, projects, education, courses, publications, references, facts, settings] = await Promise.all([
+  const [fields, skills, languages, experience, groups, projects, education, courses, publications, references, facts, settings] = await Promise.all([
     prisma.profileField.findMany(),
     prisma.skill.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
     prisma.language.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
     prisma.experience.findMany({ include: { skills: { select: { skillId: true } } } }),
+    prisma.entryGroup.findMany({ where: { section: GroupSection.EXPERIENCE }, orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
     prisma.project.findMany({ include: { skills: { select: { skillId: true } } } }),
     prisma.education.findMany(),
     prisma.course.findMany(),
@@ -49,7 +51,9 @@ export async function loadProfile(): Promise<ProfileData> {
       endMonth: entry.endMonth,
       current: entry.current,
       skillIds: entry.skills.map((link) => link.skillId),
+      groupId: entry.groupId,
     })),
+    experienceGroups: groups.map(({ id, name }) => ({ id, name })),
     projects: inEntryOrder(projects, settings.projectOrder).map((entry) => ({
       id: entry.id,
       name: entry.name,

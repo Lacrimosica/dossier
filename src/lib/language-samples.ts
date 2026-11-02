@@ -330,8 +330,10 @@ export function sampleProfile(sample: Sample): ProfileData {
         endMonth: null,
         current: true,
         skillIds: sample.skills.map((_, index) => `skill-${index}`),
+        groupId: null,
       },
     ],
+    experienceGroups: [],
     projects: [],
     education: [
       {

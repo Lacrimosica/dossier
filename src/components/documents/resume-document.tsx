@@ -33,7 +33,7 @@ const sampleText = (content: ResumeContent) =>
     content.name,
     content.headline,
     content.summary,
-    ...content.experience.flatMap((company) => company.roles.flatMap((role) => [role.role, ...role.bullets])),
+    ...content.experience.flatMap((section) => section.companies.flatMap((company) => company.roles.flatMap((role) => [role.role, ...role.bullets]))),
     ...content.projects.flatMap((project) => [project.name, ...project.bullets]),
   ].join(" ");
 
@@ -91,9 +91,10 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
         {renderUnit({ id: "summary", children: <p className={styles.summary}>{content.summary}</p> })}
       </DocumentSection>
     ),
-    content.experience.length > 0 && (
-      <DocumentSection key="experience" title={labels.experience}>
-        {content.experience.map((company) => {
+    // A heading per experience group, then "Experience" for the roles without one (.scratch/experience-groups).
+    ...content.experience.map((section) => (
+      <DocumentSection key={section.groupId === null ? "experience" : `experience-group:${section.groupId}`} title={section.title}>
+        {section.companies.map((company) => {
           const role = (entry: (typeof company.roles)[number], className: string, organisation: string, place: string, nested = false) =>
             renderUnit({
               id: `experience:${entry.id}`,
@@ -132,7 +133,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
           );
         })}
       </DocumentSection>
-    ),
+    )),
     content.projects.length > 0 && (
       <DocumentSection key="projects" title={labels.projects}>
         {content.projects.map((project) => (

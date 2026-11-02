@@ -16,26 +16,11 @@ export type ResumeContent = {
   contacts: string[];
   summary: string;
   /**
-   * Roles by company: a promotion's roles together under the company once,
-   * where its latest role would be (companyGroups). Most companies have one.
+   * Roles under their headings: one per experience group, then "Experience"
+   * for the roles without one (.scratch/experience-groups). A profile
+   * without groups has just that one.
    */
-  experience: {
-    company: string;
-    /** Where its roles were, when the resume shows locations and they were all in one place; otherwise "". */
-    location: string;
-    /** From the first role's start to the last one's end. */
-    dates: string;
-    roles: {
-      id: string;
-      role: string;
-      /** Where this role was, when the resume shows locations and the company's roles were in different places. */
-      location: string;
-      dates: string;
-      bullets: string[];
-      /** The skills used in the role (RES-6). */
-      skills: string[];
-    }[];
-  }[];
+  experience: ExperienceSection[];
   /** Projects (PRO-13), laid out like roles. */
   projects: {
     id: string;
@@ -76,6 +61,35 @@ export type ResumeContent = {
   /** "Bouldering · Sourdough baking · …" */
   interests: string;
   references: { id: string; name: string; role: string; contact: string }[];
+};
+
+/** Roles under one heading, by company. */
+export type ExperienceSection = {
+  /** The experience group's id, or null for the roles without one. */
+  groupId: string | null;
+  /** The group's name as typed, or the document's "Experience" heading. */
+  title: string;
+  /**
+   * Roles by company: a promotion's roles together under the company once,
+   * where its latest role would be (companyGroups). Most companies have one.
+   */
+  companies: {
+    company: string;
+    /** Where its roles were, when the resume shows locations and they were all in one place; otherwise "". */
+    location: string;
+    /** From the first role's start to the last one's end. */
+    dates: string;
+    roles: {
+      id: string;
+      role: string;
+      /** Where this role was, when the resume shows locations and the company's roles were in different places. */
+      location: string;
+      dates: string;
+      bullets: string[];
+      /** The skills used in the role (RES-6). */
+      skills: string[];
+    }[];
+  }[];
 };
 
 export type ResumeOptions = {
@@ -136,7 +150,7 @@ export function resumeContent(
   const dates = { locale: labels.locale, present: labels.present };
 
   type Role = ProfileData["experience"][number];
-  const experience = (roles: { entry: Role; text: string }[]): ResumeContent["experience"] =>
+  const companies = (roles: { entry: Role; text: string }[]): ExperienceSection["companies"] =>
     companyGroups(roles.map(({ entry, text }) => ({ ...entry, text }))).map((group) => {
       // One place for the whole company goes on its line; a move between offices shows on each role.
       const places = [...new Set(group.map((entry) => entry.location.trim()).filter(Boolean))];
@@ -154,6 +168,18 @@ export function resumeContent(
           skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
         })),
       };
+    });
+  // A role's group, or null without one or when the group is gone.
+  const groups = new Map(profile.experienceGroups.map((group) => [group.id, group]));
+  const groupOf = (role: Role) => (role.groupId !== null && groups.has(role.groupId) ? role.groupId : null);
+  /** Roles under their headings, in the order `headings` gives; a heading without roles is left out. */
+  const experience = (roles: { entry: Role; text: string }[], headings: (string | null)[]): ExperienceSection[] =>
+    headings.flatMap((groupId) => {
+      const under = roles.filter(({ entry }) => groupOf(entry) === groupId);
+      if (under.length === 0) return [];
+      // An unnamed group still gets a heading: the section's own.
+      const title = (groupId !== null && groups.get(groupId)!.name.trim()) || labels.experience;
+      return [{ groupId, title, companies: companies(under) }];
     });
   const project = (entry: ProfileData["projects"][number], bullets: string) => ({
     id: entry.id,
@@ -192,7 +218,11 @@ export function resumeContent(
     photo: profile.photo && (showPhoto ?? profile.photo.onResumes) ? profile.photo.src : null,
     contacts: contactItems(basics, today, labels),
     summary: basics.summary.trim(),
-    experience: experience(profile.experience.map((entry) => ({ entry, text: entry.bullets }))),
+    // The groups in the profile's order, then the roles without one.
+    experience: experience(
+      profile.experience.map((entry) => ({ entry, text: entry.bullets })),
+      [...profile.experienceGroups.map((group) => group.id), null],
+    ),
     projects: profile.projects.map((entry) => project(entry, entry.bullets)),
     education: profile.education.map((entry) => education(entry, entry.notes)),
     courses: resumeCourses(profile.courses).map((entry) => course(entry, entry.notes)),
@@ -228,7 +258,9 @@ export function resumeContent(
     content.skills = text("skills").trim();
     content.languages = text("languages").trim();
     content.interests = text("interests").trim();
-    content.experience = experience(withUnit("experience:", profile.experience));
+    // Each heading where its first role is: tailoring and the editor decide the groups' order by the units'.
+    const roles = withUnit("experience:", profile.experience);
+    content.experience = experience(roles, [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
     content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),

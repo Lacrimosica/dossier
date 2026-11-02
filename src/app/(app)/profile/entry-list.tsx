@@ -22,6 +22,11 @@ export type Ordering = {
   save: (ids: string[]) => Promise<ActionResult<null>>;
   /** Back to date order; answers with the ids in that order. Without it, the entries have no dates and only an order set by hand (#218). */
   sortByDate?: () => Promise<ActionResult<string[]>>;
+  /**
+   * Told when the list goes from date order to its own order or back, for
+   * lists that share one order: each experience group's (.scratch/experience-groups).
+   */
+  onModeChange?: (mode: EntryOrder) => void;
 };
 
 /**
@@ -72,7 +77,17 @@ export function EntryList<T extends { id: string }>({
   const [openId, setOpenId] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [mode, setMode] = useState<EntryOrder>(ordering?.mode ?? "date");
+  const [mode, setModeState] = useState<EntryOrder>(ordering?.mode ?? "date");
+  // A list sharing its order with others follows a change made in one of them.
+  const [modeProp, setModeProp] = useState(ordering?.mode);
+  if (ordering?.mode !== modeProp) {
+    setModeProp(ordering?.mode);
+    if (ordering?.mode) setModeState(ordering.mode);
+  }
+  const setMode = (next: EntryOrder) => {
+    setModeState(next);
+    ordering?.onModeChange?.(next);
+  };
   const [announcement, setAnnouncement] = useState("");
   const dndId = useId();
 

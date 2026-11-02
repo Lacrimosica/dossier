@@ -30,7 +30,7 @@ export function DragHandle({ ref, ...props }: ComponentProps<"span">) {
 }
 
 /** ↑ or ↓: stays focusable at the ends (aria-disabled), so focus isn't lost after the last move. */
-function MoveButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
+export function MoveButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: ReactNode }) {
   return (
     <button
       type="button"
