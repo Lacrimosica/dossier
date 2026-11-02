@@ -242,10 +242,16 @@ describe("the document tabs (E8-2)", () => {
     expect(setShowLocations).toHaveBeenCalledWith({ id: "app-1", show: true });
   });
 
-  it("has no Locations switch when no role has a location", () => {
-    const profile = { ...props.profile, experience: props.profile.experience.map((role) => ({ ...role, location: "" })) };
-    render(<ApplicationView {...props} profile={profile} />);
+  it("has no Locations switch when no role or degree has a location", () => {
+    const experience = props.profile.experience.map((role) => ({ ...role, location: "" }));
+    const education = props.profile.education.map((entry) => ({ ...entry, location: "" }));
+    const { unmount } = render(<ApplicationView {...props} profile={{ ...props.profile, experience, education }} />);
     expect(screen.queryByRole("switch", { name: "Locations" })).not.toBeInTheDocument();
+    unmount();
+
+    // A degree's place is enough (.scratch/education-locations).
+    render(<ApplicationView {...props} profile={{ ...props.profile, experience, education: education.map((entry, index) => (index === 0 ? { ...entry, location: "Delft" } : entry)) }} />);
+    expect(screen.getByRole("switch", { name: "Locations" })).toBeInTheDocument();
   });
 
   it("changes the resume's and cover letter's theme together from the Theme menu (#226)", async () => {

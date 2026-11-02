@@ -126,7 +126,18 @@ const project = z.object({
   createdAt: date,
   updatedAt: date,
 });
-const education = z.object({ id: text, degree: text, school: text, ...span, notes: text, sort: int, createdAt: date, updatedAt: date });
+const education = z.object({
+  id: text,
+  degree: text,
+  school: text,
+  /** Absent in exports made before degrees had a location (.scratch/education-locations). */
+  location: text.default(""),
+  ...span,
+  notes: text,
+  sort: int,
+  createdAt: date,
+  updatedAt: date,
+});
 /** A course, workshop or certificate: dates without "Present". */
 const course = z.object({
   id: text,

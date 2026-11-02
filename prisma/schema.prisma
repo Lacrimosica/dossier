@@ -156,6 +156,8 @@ model Education {
   id         String   @id @default(cuid())
   degree     String   @default("")
   school     String   @default("")
+  /// Where it was, as for a role: "Bologna, Italy" (.scratch/education-locations).
+  location   String   @default("")
   startYear  Int?
   startMonth Int?
   endYear    Int?

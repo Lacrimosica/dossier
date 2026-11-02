@@ -33,7 +33,7 @@ describe("writeDocumentsJob (E7-6)", () => {
       { id: "test-job", step: async (name) => void steps.push(name), signal: new AbortController().signal },
     );
     expect(steps).toEqual(WRITE_DOCUMENTS_STEPS.slice(0, 2));
-    expect(result.resumeWith).toBe("tailor-resume@12");
+    expect(result.resumeWith).toBe("tailor-resume@13");
     expect(result.letterWith).toBe("write-cover-letter@7");
     // Strict mode: the fact guard marks what the profile doesn't back.
     expect(result.resume[1]).toMatchObject({ id: "summary", unverified: ["Google"] });

@@ -71,6 +71,7 @@ export async function loadProfile(): Promise<ProfileData> {
       id: entry.id,
       degree: entry.degree,
       school: entry.school,
+      location: entry.location,
       notes: entry.notes,
       startYear: entry.startYear,
       startMonth: entry.startMonth,

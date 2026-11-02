@@ -54,7 +54,7 @@ const answer: ReviewAnswer = {
   skillMerges: [{ ids: ["js", "javascript"], keep: "javascript", reason: "The same skill." }],
 };
 const done = (result: ReviewAnswer) =>
-  ({ id: "job-1", type: "review-profile", status: "DONE", step: null, error: null, result: { answer: result, versions: {}, reviewedWith: "review-profile@1" } }) as const;
+  ({ id: "job-1", type: "review-profile", status: "DONE", step: null, error: null, result: { answer: result, versions: {}, reviewedWith: "review-profile@2" } }) as const;
 const page = (props: Partial<Parameters<typeof ProfileReview>[0]> = {}) => (
   <ProfileReview aiReady provider="LOCAL" initialJobId="job-1" profile={profile} skipped={[]} {...props} />
 );

@@ -31,7 +31,8 @@ export type ResumeContent = {
     bullets: string[];
     skills: string[];
   }[];
-  education: { id: string; degree: string; school: string; dates: string; notes: string }[];
+  /** `location` is where it was, when the resume shows locations; otherwise "". */
+  education: { id: string; degree: string; school: string; location: string; dates: string; notes: string }[];
   /** Courses & certificates, after education; only the ones that help, on a tailored resume. */
   courses: {
     id: string;
@@ -99,7 +100,7 @@ export type ResumeOptions = {
   includeReferences?: boolean;
   /** An application's Photo switch (#224); null or left out follows the profile's "Show on resumes". */
   showPhoto?: boolean | null;
-  /** Each role's location next to its company: Settings → "Work locations on resumes", or the application's choice. */
+  /** Each role's and degree's location next to its company or school: Settings → "Locations on resumes", or the application's choice. */
   showLocations?: boolean;
   /** For "Age N"; defaults to now. */
   today?: Date;
@@ -203,6 +204,7 @@ export function resumeContent(
     id: entry.id,
     degree: entry.degree.trim(),
     school: entry.school.trim(),
+    location: showLocations ? entry.location.trim() : "",
     dates: formatDateRange(entry, dates),
     notes: notes.trim(),
   });

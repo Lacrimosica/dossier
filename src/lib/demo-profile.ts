@@ -92,6 +92,7 @@ export function demoProfile(): ProfileData {
       id: entry.id,
       degree: entry.degree,
       school: entry.school,
+      location: entry.location,
       notes: entry.notes,
       ...dateSpan(entry.start, entry.end),
     })),

@@ -334,7 +334,7 @@ function Preview({ profile }: { profile: ImportedProfile }) {
             <Entry
               key={index}
               title={[entry.degree, entry.school].filter(Boolean).join(" · ")}
-              meta={formatDateRange(entry)}
+              meta={[entry.location, formatDateRange(entry)].filter(Boolean).join(" · ")}
               unverified={entry.unverified}
             >
               {entry.notes && <p>{entry.notes}</p>}

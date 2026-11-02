@@ -30,7 +30,10 @@ export const importedProfileSchema = z.object({
   projects: z
     .array(z.object({ name: z.string(), link: z.string(), bullets: z.string(), skills: z.array(z.string()), ...span, unverified }))
     .default([]),
-  education: z.array(z.object({ degree: z.string(), school: z.string(), notes: z.string(), ...span, unverified })),
+  /** `location` is absent in readings made before degrees had one (.scratch/education-locations). */
+  education: z.array(
+    z.object({ degree: z.string(), school: z.string(), location: z.string().default(""), notes: z.string(), ...span, unverified }),
+  ),
   /** Absent in readings made before courses & certificates. */
   courses: z
     .array(

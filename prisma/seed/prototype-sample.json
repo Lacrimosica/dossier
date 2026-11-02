@@ -76,6 +76,7 @@
       {
         "id": "d1",
         "school": "TU Delft",
+        "location": "Delft",
         "degree": "MSc Design for Interaction",
         "start": "2013",
         "end": "2015",
@@ -84,6 +85,7 @@
       {
         "id": "d2",
         "school": "Willem de Kooning Academy",
+        "location": "Rotterdam",
         "degree": "BA Communication Design",
         "start": "2010",
         "end": "2013",

@@ -273,17 +273,17 @@ describe("profile actions", () => {
     const person = await createReference({});
     if (!school.ok || !person.ok) throw new Error("create failed");
 
-    const degree = { ...school.data, degree: "MSc", school: "TU Delft", startYear: 2013, endYear: 2015 };
+    const degree = { ...school.data, degree: "MSc", school: "TU Delft", location: "Delft, Netherlands", startYear: 2013, endYear: 2015 };
     const reference = { ...person.data, name: "Jane Doe", email: "jane.doe@example.com" };
     await saveEducation(degree);
     await saveReference(reference);
-    expect(await prisma().education.findUniqueOrThrow({ where: { id: degree.id } })).toMatchObject({ school: "TU Delft", endYear: 2015 });
+    expect(await prisma().education.findUniqueOrThrow({ where: { id: degree.id } })).toMatchObject({ school: "TU Delft", location: "Delft, Netherlands", endYear: 2015 });
 
     await removeEducation({ id: degree.id });
     await removeReference({ id: reference.id });
     expect(await prisma().education.count() + await prisma().reference.count()).toBe(0);
 
-    await expect(restoreEducation(degree)).resolves.toMatchObject({ ok: true, data: { degree: "MSc" } });
+    await expect(restoreEducation(degree)).resolves.toMatchObject({ ok: true, data: { degree: "MSc", location: "Delft, Netherlands" } });
     await expect(restoreReference(reference)).resolves.toMatchObject({ ok: true, data: { name: "Jane Doe" } });
     expect(await prisma().reference.findUniqueOrThrow({ where: { id: reference.id } })).toMatchObject({ email: "jane.doe@example.com" });
   });
@@ -437,7 +437,7 @@ describe("courses & certificates", () => {
   it("moves an education entry to courses, and back with Undo", async () => {
     const created = await createEducation({});
     if (!created.ok) throw new Error("create failed");
-    const entry = { ...created.data, degree: "Accessibility for Designers", school: "Deque University", notes: "WCAG audits", startYear: 2023, startMonth: 3, endYear: 2023, endMonth: 5 };
+    const entry = { ...created.data, degree: "Accessibility for Designers", school: "Deque University", location: "Online", notes: "WCAG audits", startYear: 2023, startMonth: 3, endYear: 2023, endMonth: 5 };
     await saveEducation(entry);
 
     const moved = await moveEducationToCourses({ id: entry.id });
@@ -637,7 +637,7 @@ describe("the profile review (.scratch/profile-review)", () => {
   const merge = { section: "experience", ids: ["a", "b"], keep: "a", bullets: null, reason: "Entered twice." };
   const finished = async (answer: object) => {
     const versions = Object.fromEntries((await prisma().experience.findMany()).map((entry) => [`experience:${entry.id}`, entry.updatedAt.toISOString()]));
-    return prisma().job.create({ data: { type: "review-profile", input: {}, status: "DONE", result: { answer, versions, reviewedWith: "review-profile@1" } } });
+    return prisma().job.create({ data: { type: "review-profile", input: {}, status: "DONE", result: { answer, versions, reviewedWith: "review-profile@2" } } });
   };
 
   beforeEach(async () => {

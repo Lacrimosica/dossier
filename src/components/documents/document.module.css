@@ -376,7 +376,16 @@
   color: var(--on-accent);
 }
 
-/* Bold header: the name in bold (resolveTheme), and the contacts in ink, split by bars. */
+/* Bold header: the name in bold (resolveTheme), and the contacts in ink, split by bars, close under it. */
+/* Beside a photo, the header's own gap is the space before the photo, so only the text block's tightens. */
+.boldHeader :is(.header:not(.headerWithPhoto), .headerText) {
+  gap: calc(var(--u) * 1);
+}
+
+.boldHeader .header {
+  margin-bottom: calc(var(--u) * var(--gap) * 0.6);
+}
+
 .boldHeader .contactLine {
   margin-top: 0;
   color: var(--doc-ink);

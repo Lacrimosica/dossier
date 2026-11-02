@@ -28,7 +28,7 @@ import {
   type TaskResult,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@12";
+export const TAILOR_RESUME_VERSION = "tailor-resume@13";
 
 const answerSchema = z.object({
   /** The line under the name, for this job (.scratch/tailored-headline). */
@@ -63,14 +63,15 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - The profile's publications go on the resume word for word, so don't answer with them; the summary may mention them.`;
 
 /**
- * Settings → "Work locations on resumes" is "When the posting asks": the
- * model says whether this posting cares where the candidate has worked. It
+ * Settings → "Locations on resumes" is "When the posting asks": the model
+ * says whether this posting cares where the candidate has worked or studied
+ * (.scratch/education-locations). It
  * only decides whether the locations typed in the profile are printed; it
  * never writes one.
  */
 const withLocations = answerSchema.extend({ showLocations: z.boolean() });
 const LOCATIONS_QUESTION =
-  "- showLocations: true when the posting cares where the candidate has worked: experience in a country, region or market, being local or able to relocate, or work authorisation somewhere. Otherwise false. The resume then shows the location each role has in the profile.";
+  "- showLocations: true when the posting cares where the candidate has worked or studied: experience in a country, region or market, being local or able to relocate, work authorisation somewhere, or a degree or qualification from a particular country. Otherwise false. The resume then shows the location each role and degree has in the profile.";
 
 /** SET-9: asked for when "Resume length" has a limit; anything still over is trimmed afterwards (E10-10). */
 function pageFit(maxPages: number | null | undefined): string | null {
@@ -93,7 +94,7 @@ export type TailorInput = {
   posting: string;
   /** For which roles are recent. */
   today?: Date;
-  /** Settings → "Work locations on resumes"; only "posting" asks the model. */
+  /** Settings → "Locations on resumes"; only "posting" asks the model. */
   locations?: RoleLocations;
 };
 

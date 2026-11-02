@@ -273,6 +273,15 @@ describe("resumeContent", () => {
     });
   });
 
+  it("shows a degree's location only when locations show, and nothing for one without (.scratch/education-locations)", () => {
+    const [delft, academy] = profile.education;
+    const withPlaces = { ...profile, education: [{ ...delft, location: " Delft, Netherlands " }, { ...academy, location: "" }] };
+    expect(resumeContent(withPlaces).education.map((entry) => entry.location)).toEqual(["", ""]);
+    expect(resumeContent(withPlaces, { showLocations: true }).education.map((entry) => entry.location)).toEqual(["Delft, Netherlands", ""]);
+    const units = [{ id: `education:${delft.id}`, label: delft.degree, text: "" }];
+    expect(resumeContent(withPlaces, { units, showLocations: true }).education).toMatchObject([{ id: delft.id, location: "Delft, Netherlands" }]);
+  });
+
   describe("experience groups (.scratch/experience-groups)", () => {
     const [northwind, fieldnote, brik] = profile.experience;
     const grouped: ProfileData = {

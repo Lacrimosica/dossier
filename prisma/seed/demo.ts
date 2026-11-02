@@ -163,9 +163,9 @@ export async function seedDemo(
         projectIds.set(entry.id, created.id);
       }
       const educationIds = new Map<string, string>();
-      for (const [sort, { id, degree, school, notes, start, end }] of education.entries()) {
+      for (const [sort, { id, degree, school, location, notes, start, end }] of education.entries()) {
         const created = await tx.education.create({
-          data: { degree, school, notes, sort, ...dateSpan(start, end) },
+          data: { degree, school, location, notes, sort, ...dateSpan(start, end) },
         });
         educationIds.set(id, created.id);
       }

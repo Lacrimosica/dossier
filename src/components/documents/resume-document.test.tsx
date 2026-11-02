@@ -188,6 +188,14 @@ describe("ResumeDocument", () => {
     expect(screen.getByText("Thesis on trust in automated scheduling tools")).toBeInTheDocument();
   });
 
+  it("prints a degree's location after its school when locations show (.scratch/education-locations)", () => {
+    const [delft] = profile.education;
+    const { rerender } = render(<ResumeDocument theme={theme("editorial")} profile={profile} paper="A4" today={today} />);
+    expect(screen.getByText(new RegExp(`^${delft.degree}`)).closest("[data-unit]")).not.toHaveTextContent(`${delft.school} · ${delft.location}`);
+    rerender(<ResumeDocument theme={theme("editorial")} profile={profile} paper="A4" today={today} showLocations />);
+    expect(screen.getByText(new RegExp(`^${delft.degree}`)).closest("[data-unit]")).toHaveTextContent(`${delft.school} · ${delft.location}`);
+  });
+
   it("writes its headings, dates, levels and age in the document's language", () => {
     const withAge = { ...profile, basics: { ...profile.basics, birthOnResumes: "age" as const } };
     render(<ResumeDocument theme={theme("modern")} profile={withAge} paper="A4" today={today} language="German" includeReferences />);

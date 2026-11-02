@@ -7,7 +7,7 @@ import { importedProfileSchema, type ImportedProfile } from "@/lib/profile-impor
 
 import { system, type Task } from "./prompt-parts";
 
-export const EXTRACT_PROFILE_VERSION = "extract-profile@5";
+export const EXTRACT_PROFILE_VERSION = "extract-profile@6";
 
 // What the model returns; code checks every part of it (E4-10).
 const text = z.string().nullable();
@@ -39,7 +39,7 @@ const answerSchema = z.object({
     z.object({ role: z.string(), company: z.string(), location: text, ...dates, bullets: z.array(z.string()), skills: z.array(z.string()) }),
   ),
   projects: z.array(z.object({ name: z.string(), link: text, ...dates, bullets: z.array(z.string()), skills: z.array(z.string()) })),
-  education: z.array(z.object({ degree: z.string(), school: z.string(), ...dates, notes: text })),
+  education: z.array(z.object({ degree: z.string(), school: z.string(), location: text, ...dates, notes: text })),
   courses: z.array(
     z.object({
       name: z.string(),
@@ -66,7 +66,7 @@ Take everything only from the resume: never add, guess or improve facts. Use nul
 - interests: the hobbies and interests the resume lists, each short ("Bouldering", "Sourdough baking"), once each, in its order.
 - experience: every role, most recent first. startYear and endYear as four-digit years, startMonth and endMonth as 1–12 (null when only a year is given); current is true when the role hasn't ended ("present", "today"). bullets: what they did, one item per point, in the resume's words. skills: the skills from your skills list this role mentions.
 - projects: every project the resume lists apart from its roles (side, open-source, course or thesis projects), most recent first, with its link if given, the same dates, bullets as for roles, and the skills from your skills list it mentions. A project described inside a role stays in that role's bullets.
-- education: every degree or longer programme of study, with the same dates, and notes (grade, focus, thesis) if given.
+- education: every degree or longer programme of study, with the same dates; location (the city and/or country of the school, as the resume gives it) if given; and notes (grade, focus, thesis) if given.
 - courses: every workshop, short course, training, bootcamp or certificate: anything shorter or less formal than a degree. name; provider (who ran or issued it); startYear and startMonth for when it took place, and endYear and endMonth only when it ran over more than one month; duration in the resume's words ("3 days", "16 hours") if given; link to the certificate or course if given; notes if given.
 - publications: every paper, article, book or chapter the resume lists as the candidate's publications, in its order. citation: the whole entry exactly as the resume writes it, word for word, without its link; link: its DOI or web address if given.
 - references: only people the resume names as references, with how they know the candidate (relation), their company, email and phone.
@@ -175,6 +175,7 @@ export function checkedProfile(answer: z.infer<typeof answerSchema>, resume: str
       .map((entry) => ({
         degree: clean(entry.degree),
         school: clean(entry.school),
+        location: clean(entry.location),
         notes: clean(entry.notes),
         ...span(entry),
         unverified: missing(clean(entry.degree), clean(entry.school)),

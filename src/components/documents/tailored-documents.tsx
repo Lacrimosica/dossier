@@ -29,7 +29,7 @@ export function TailoredResume({
   followThemeLayout: boolean;
   /** The application's Photo switch (#224); null follows the profile. */
   showPhoto: boolean | null;
-  /** Each role's location (Settings → "Work locations on resumes", or the Locations switch). */
+  /** Each role's and degree's location (Settings → "Locations on resumes", or the Locations switch). */
   showLocations: boolean;
   /** Settings → "Privacy consent line", for this resume's language; null leaves it off. */
   privacyConsent: string | null;

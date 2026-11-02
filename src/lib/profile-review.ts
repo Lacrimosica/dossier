@@ -42,7 +42,7 @@ const MAX_REASON = 300;
 const TEXT_FIELDS = {
   experience: ["role", "company", "location"],
   projects: ["name", "link"],
-  education: ["degree", "school"],
+  education: ["degree", "school", "location"],
   courses: ["name", "provider", "duration", "link"],
 } as const satisfies { [S in ReviewSection]: readonly (keyof Entries[S])[] };
 

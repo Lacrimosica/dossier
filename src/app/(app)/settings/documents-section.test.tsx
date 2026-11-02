@@ -83,10 +83,10 @@ describe("Documents settings (E10-3)", () => {
     expect(updateSettings).toHaveBeenLastCalledWith({ pageLimit: "none" });
   });
 
-  it("leaves work locations off resumes until chosen", async () => {
+  it("leaves locations off resumes until chosen", async () => {
     const user = userEvent.setup();
     open();
-    const select = screen.getByLabelText("Work locations on resumes") as HTMLSelectElement;
+    const select = screen.getByLabelText("Locations on resumes") as HTMLSelectElement;
     expect([...select.options].map((option) => option.text)).toEqual(["Never", "When the posting asks", "Always"]);
     expect(select).toHaveValue("never");
     await user.selectOptions(select, "When the posting asks");

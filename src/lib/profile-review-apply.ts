@@ -91,8 +91,8 @@ async function save(tx: Tx, fix: Extract<ProfileFix, { after: unknown }>): Promi
       return;
     }
     case "education": {
-      const { degree, school, current, notes } = fix.after;
-      await tx.education.update({ where: { id }, data: { degree, school, ...dates(fix.after), current, notes } });
+      const { degree, school, location, current, notes } = fix.after;
+      await tx.education.update({ where: { id }, data: { degree, school, location, ...dates(fix.after), current, notes } });
       return;
     }
     case "courses": {

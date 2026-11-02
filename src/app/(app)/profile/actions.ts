@@ -462,6 +462,7 @@ const educationFields = z.object({
   id,
   degree: text(200),
   school: text(200),
+  location: text(200),
   notes: text(5000),
   ...dateSpan,
 });
@@ -470,6 +471,7 @@ const educationItem = (entry: z.infer<typeof educationFields>) => ({
   id: entry.id,
   degree: entry.degree,
   school: entry.school,
+  location: entry.location,
   notes: entry.notes,
   startYear: entry.startYear,
   startMonth: entry.startMonth,

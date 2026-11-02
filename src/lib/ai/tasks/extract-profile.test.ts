@@ -85,7 +85,7 @@ const answer = {
     },
     { name: " ", link: null, startYear: null, startMonth: null, endYear: null, endMonth: null, current: false, bullets: [], skills: [] },
   ],
-  education: [{ degree: "MSc Interaction Design", school: "TU Delft", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, notes: null }],
+  education: [{ degree: "MSc Interaction Design", school: "TU Delft", location: " Delft, Netherlands ", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, notes: null }],
   courses: [
     { name: "UX Writing Workshop", provider: "Content Design London", startYear: 2021, startMonth: 10, endYear: null, endMonth: 14, duration: " 2 days ", link: null, notes: null },
     { name: "Invented certificate", provider: null, startYear: 1820, startMonth: null, endYear: null, endMonth: null, duration: null, link: null, notes: null },
@@ -115,7 +115,7 @@ describe("extractProfile (E4-10)", () => {
   it("checks the answer: dates in range, levels, one of each skill, and names looked up in the resume", async () => {
     const provider = new MockProvider({ reply: () => answer });
     const { data, promptVersion } = await extractProfile(provider, { resume: RESUME, today: new Date("2026-09-29") }, options);
-    expect(promptVersion).toBe("extract-profile@5");
+    expect(promptVersion).toBe("extract-profile@6");
     expect(data.basics).toEqual({
       name: "John Doe",
       headline: "Senior Product Designer",
@@ -181,7 +181,7 @@ describe("extractProfile (E4-10)", () => {
         unverified: [],
       },
     ]);
-    expect(data.education[0]).toMatchObject({ degree: "MSc Interaction Design", school: "TU Delft", unverified: [] });
+    expect(data.education[0]).toMatchObject({ degree: "MSc Interaction Design", school: "TU Delft", location: "Delft, Netherlands", unverified: [] });
     // Courses apart from degrees, without "Present"; dates out of range dropped, one not in the resume marked.
     expect(data.courses).toEqual([
       { name: "UX Writing Workshop", provider: "Content Design London", duration: "2 days", link: "", notes: "", startYear: 2021, startMonth: 10, endYear: null, endMonth: null, unverified: [] },

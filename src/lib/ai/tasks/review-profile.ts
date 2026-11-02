@@ -5,7 +5,7 @@ import { REVIEW_SECTIONS, type ReviewAnswer } from "@/lib/profile-review";
 
 import { system, type Task } from "./prompt-parts";
 
-export const REVIEW_PROFILE_VERSION = "review-profile@1";
+export const REVIEW_PROFILE_VERSION = "review-profile@2";
 
 // The profile review (.scratch/profile-review): the model looks for the same
 // entry entered twice and for entries that contradict themselves. It only
@@ -76,7 +76,7 @@ export function profileForReview(profile: ProfileData, skipped: readonly string[
         bullets: bullets(entry.bullets),
         skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
       })),
-      education: profile.education.map((entry) => ({ id: entry.id, degree: entry.degree, school: entry.school, ...dates(entry), current: entry.current, notes: entry.notes })),
+      education: profile.education.map((entry) => ({ id: entry.id, degree: entry.degree, school: entry.school, location: entry.location, ...dates(entry), current: entry.current, notes: entry.notes })),
       // All of them, those kept off resumes too: a hidden copy is still a copy.
       courses: profile.courses.map((entry) => ({ id: entry.id, name: entry.name, provider: entry.provider, ...dates(entry), duration: entry.duration, notes: entry.notes })),
       skills: profile.skills.map(({ id, name }) => ({ id, name })),

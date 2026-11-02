@@ -37,7 +37,7 @@ const imported: ImportedProfile = {
     { name: "payout simulator", link: "github.com/john/payout-sim", bullets: "", skills: ["User research"], ...noDates, unverified: [] },
     { name: "Design tokens CLI", link: "", bullets: "Built a CLI", skills: ["figma"], startYear: 2024, startMonth: null, endYear: null, endMonth: null, current: true, unverified: [] },
   ],
-  education: [{ degree: "MSc Interaction Design", school: "TU Delft", notes: "", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, unverified: [] }],
+  education: [{ degree: "MSc Interaction Design", school: "TU Delft", location: "Delft", notes: "", startYear: 2015, startMonth: null, endYear: 2017, endMonth: null, current: false, unverified: [] }],
   courses: [
     { name: "ux writing workshop", provider: "Content Design London", duration: "2 days", link: "", notes: "", startYear: null, startMonth: null, endYear: null, endMonth: null, unverified: [] },
     { name: "Data bootcamp", provider: "Le Wagon", duration: "", link: "", notes: "", startYear: 2024, startMonth: 2, endYear: 2024, endMonth: 3, unverified: [] },

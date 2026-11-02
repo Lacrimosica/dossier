@@ -316,6 +316,18 @@ describe("importExport (E10-6)", () => {
     expect(await prisma().application.findFirstOrThrow({ where: { company: "Ledgerly" } })).toMatchObject({ showPhoto: null, showLocations: null });
   });
 
+  it("restores each degree's location, and reads older files without one (.scratch/education-locations)", async () => {
+    const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
+    expect(file.profile.education.map((entry: { location: string }) => entry.location).sort()).toEqual(["Delft", "Rotterdam"]);
+
+    await importExport(prisma(), exportSchema.parse(file));
+    expect((await prisma().education.findMany()).map((entry) => entry.location).sort()).toEqual(["Delft", "Rotterdam"]);
+
+    const older = { ...file, profile: { ...file.profile, education: file.profile.education.map((entry: object) => ({ ...entry, location: undefined })) } };
+    await importExport(prisma(), exportSchema.parse(older));
+    expect((await prisma().education.findMany()).map((entry) => entry.location)).toEqual(["", ""]);
+  });
+
   it("reads files from before facts, with an application's note as its first fact (PRO-14, APP-15)", async () => {
     const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
     const [first, ...rest] = file.applications;

@@ -341,6 +341,7 @@ export function sampleProfile(sample: Sample): ProfileData {
         id: "degree",
         degree: sample.degree,
         school: sample.school,
+        location: sample.city,
         notes: "",
         startYear: 2013,
         startMonth: null,

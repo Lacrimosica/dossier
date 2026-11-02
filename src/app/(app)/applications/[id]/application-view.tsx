@@ -732,7 +732,7 @@ export function ApplicationView({
                     <PreviewSwitch label="Sidebar layout" checked={followLayout} onCheckedChange={changeLayout} />
                   )}
                   {profile.photo && <PreviewSwitch label="Photo" checked={showPhoto} onCheckedChange={changePhoto} />}
-                  {profile.experience.some((role) => role.location.trim()) && (
+                  {[...profile.experience, ...profile.education].some((entry) => entry.location.trim()) && (
                     <PreviewSwitch label="Locations" checked={showLocations} onCheckedChange={changeLocations} />
                   )}
                   {historyButton(DocumentKind.RESUME)}

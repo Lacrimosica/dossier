@@ -51,11 +51,17 @@ function EducationForm({
         autoFocus={autoFocus}
       />
       <Input
-        className="col-span-2"
         label="School"
         placeholder="Springfield University"
         value={entry.school}
         onChange={(event) => set({ school: event.target.value })}
+      />
+      <Input
+        label="Location"
+        placeholder="Bologna, Italy"
+        hint="Optional. Shows next to the school when your resume shows locations."
+        value={entry.location}
+        onChange={(event) => set({ location: event.target.value })}
       />
       <MonthYearField
         label="Started"
@@ -156,7 +162,7 @@ export function EducationSection({ profile, update, order }: { profile: ProfileD
       }}
       summary={(entry) => ({
         title: entry.degree.trim() || "New entry",
-        subtitle: entry.school.trim(),
+        subtitle: [entry.school, entry.location].filter((part) => part.trim()).join(" · "),
         meta: formatDateRange(entry),
       })}
       create={() => createEducation({})}

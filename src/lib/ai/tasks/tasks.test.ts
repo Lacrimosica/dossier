@@ -218,6 +218,7 @@ describe("tailorResume", () => {
     }
     expect(text).toContain('"skillsUsed"');
     expect(text).toContain('"name": "Tidewater design tokens"');
+    expect(text).toMatch(/"school": "TU Delft",\s+"location": "Delft"/);
     expect(text).toMatch(/Never invent or embellish an employer/);
     expect(text).toMatch(/same language as the job posting/);
     expect(text).toContain("What the candidate tells you for this application:\n- Mention my interest in fintech.");
@@ -230,7 +231,7 @@ describe("tailorResume", () => {
   it("asks whether the posting cares where the candidate worked only when the setting leaves it to the posting", async () => {
     const asked = model({ ...answer, showLocations: true });
     const tailored = await tailorResume(asked, { profile, extracted, match: null, facts: [], posting, locations: "posting" }, options);
-    expect(prompt(asked)).toMatch(/showLocations: true when the posting cares where the candidate has worked/);
+    expect(prompt(asked)).toMatch(/showLocations: true when the posting cares where the candidate has worked or studied/);
     expect(tailored.showLocations).toBe(true);
 
     for (const locations of ["never", "always"] as const) {
@@ -251,7 +252,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@12");
+    expect(promptVersion).toBe("tailor-resume@13");
     expect(data.map((unit) => unit.id)).toEqual([
       "headline",
       "summary",

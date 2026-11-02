@@ -15,6 +15,8 @@ const RESUME = docxWith([
   "Experience",
   "Design Lead, Acme Payments, Utrecht, March 2021 – present",
   "Led the redesign of the payout flow",
+  "Education",
+  "BA Interaction Design, HKU, Utrecht, 2014 – 2018",
   "Skills: Figma",
   "Languages: Dutch (native)",
 ]);
@@ -51,12 +53,14 @@ test("reads a resume, shows what it found and merges it into the profile", async
   await expect(preview).toContainText("Led the redesign of the payout flow");
   // "Service design" isn't in the file.
   await expect(page.locator("li", { hasText: "Service design" })).toContainText("check");
+  // A degree's place comes along like a role's (.scratch/education-locations).
+  await expect(page.locator("section", { has: page.getByRole("heading", { name: "Education" }) })).toContainText("Utrecht · 2014 – 2018");
   const { violations } = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"]).analyze();
   expect(violations.filter((violation) => violation.impact === "serious" || violation.impact === "critical")).toEqual([]);
 
   await page.getByRole("button", { name: "Merge into my profile" }).click();
   await expect(page).toHaveURL("/profile");
-  await expect(page.getByText(/^Added to your profile: 1 role, 0 projects, 0 degrees, 2 skills, 1 language, 0 references\./)).toBeVisible();
+  await expect(page.getByText(/^Added to your profile: 1 role, 0 projects, 1 degree, 2 skills, 1 language, 0 references\./)).toBeVisible();
   // What the resume says wins; the demo profile's other roles stay.
   await expect(page.getByLabel("Full name")).toHaveValue("John Doe");
   await page.goto("/profile?section=experience");
@@ -90,6 +94,9 @@ test("reads Markdown too", async ({ page }) => {
     "## Experience",
     "### Design Lead, **Acme Payments**, Utrecht, March 2021 – present",
     "- Led the redesign of the payout flow",
+    "",
+    "## Education",
+    "### BA Interaction Design, **HKU**, Utrecht, 2014 – 2018",
     "",
     "**Skills:** Figma · **Languages:** Dutch (native)",
   ].join("\n");

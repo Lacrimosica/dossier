@@ -175,7 +175,7 @@ export type ProjectItem = DateSpan & {
   bullets: string;
   skillIds: string[];
 };
-export type EducationItem = DateSpan & { id: string; degree: string; school: string; notes: string };
+export type EducationItem = DateSpan & { id: string; degree: string; school: string; location: string; notes: string };
 /**
  * A course, workshop or certificate: shorter or less formal than a degree.
  * Its dates are a single month, or a range when it ran longer; it has no "Present".

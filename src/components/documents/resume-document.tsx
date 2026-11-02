@@ -178,7 +178,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
             {renderUnit({
               id: `education:${entry.id}`,
               className: styles.entry,
-              head: <EntryHead title={entry.degree} organisation={entry.school} dates={entry.dates} {...heads} />,
+              head: <EntryHead title={entry.degree} organisation={entry.school} place={entry.location} dates={entry.dates} {...heads} />,
               children: entry.notes && <p className={styles.muted}>{entry.notes}</p>,
             })}
           </Fragment>

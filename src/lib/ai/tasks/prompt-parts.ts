@@ -76,6 +76,7 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
         id: entry.id,
         degree: entry.degree,
         school: entry.school,
+        location: entry.location,
         dates: formatDateRange(entry),
         notes: entry.notes,
       })),

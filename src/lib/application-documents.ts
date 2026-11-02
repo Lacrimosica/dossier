@@ -78,7 +78,7 @@ export async function loadDocuments(id: string) {
     email: documentData(DocumentKind.EMAIL)?.units ?? null,
     /** Settings → "Include references", when the posting asks for them (SET-9). */
     includeReferences: settings.includeRefs && extracted?.asksForReferences === true,
-    /** The Locations switch, or what tailoring decided, or Settings → "Work locations on resumes". */
+    /** The Locations switch, or what tailoring decided, or Settings → "Locations on resumes". */
     showLocations: showsRoleLocations(settings.roleLocations, application.showLocations),
     /** Settings → "Privacy consent line", when it applies to the application's language. */
     privacyConsent: privacyConsentLine(settings, application.language),

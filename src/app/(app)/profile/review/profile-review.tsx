@@ -286,8 +286,8 @@ function heading(section: ReviewSection, entry: ReviewEntry): [string, string] {
       return [name, join(link, dates)];
     }
     case "education": {
-      const { degree, school } = entry as ProfileData["education"][number];
-      return [join(degree, school), dates];
+      const { degree, school, location } = entry as ProfileData["education"][number];
+      return [join(degree, school), join(location, dates)];
     }
     case "courses": {
       const { name, provider, duration, link } = entry as ProfileData["courses"][number];

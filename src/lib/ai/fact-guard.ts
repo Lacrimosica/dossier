@@ -73,7 +73,7 @@ export function sourcesFor(profile: ProfileData, extracted: Extracted | null, po
     ...profile.interests,
     ...profile.experience.flatMap((entry) => [entry.role, entry.company, entry.location, formatDateRange(entry), entry.bullets]),
     ...profile.projects.flatMap((entry) => [entry.name, entry.link, formatDateRange(entry), entry.bullets]),
-    ...profile.education.flatMap((entry) => [entry.degree, entry.school, formatDateRange(entry), entry.notes]),
+    ...profile.education.flatMap((entry) => [entry.degree, entry.school, entry.location, formatDateRange(entry), entry.notes]),
     // Every course backs what's said about it, including those kept off resumes: the profile says they happened.
     ...profile.courses.flatMap((entry) => [entry.name, entry.provider, entry.duration, formatDateRange({ ...entry, current: false }), entry.notes]),
     // The candidate's own citations back what's said about their work (#218).

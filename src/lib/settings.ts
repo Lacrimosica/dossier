@@ -60,9 +60,11 @@ const roleLocations = z.enum(["never", "posting", "always"]);
 export type RoleLocations = z.infer<typeof roleLocations>;
 
 /**
- * "Work locations on resumes": whether a role's location prints next to its
- * company. "posting" leaves it to tailoring, which shows them when the
- * posting cares where you've worked. The base resume has no posting to ask,
+ * "Locations on resumes": whether a role's location prints next to its
+ * company, and a degree's next to its school (.scratch/education-locations:
+ * both or neither, so a resume never says where you worked but not where you
+ * studied). The key keeps its older name. "posting" leaves it to tailoring,
+ * which shows them when the posting cares where you've worked or studied. The base resume has no posting to ask,
  * so it shows them unless the setting is "never": it's the whole resume.
  */
 export const ROLE_LOCATIONS: readonly { value: RoleLocations; label: string }[] = [

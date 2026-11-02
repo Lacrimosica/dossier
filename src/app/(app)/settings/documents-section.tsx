@@ -204,8 +204,8 @@ export function DocumentsSection({
           ))}
         </Select>
         <Select
-          label="Work locations on resumes"
-          hint="The city or country of each role, next to the company. “When the posting asks” shows them on your base resume, and on a tailored one when the job cares where you've worked. You can still switch them on or off for each resume."
+          label="Locations on resumes"
+          hint="The city or country of each role and degree, next to the company or school. “When the posting asks” shows them on your base resume, and on a tailored one when the job cares where you've worked or studied. You can still switch them on or off for each resume."
           value={settings.roleLocations}
           onChange={(event) => change({ roleLocations: event.target.value as RoleLocations })}
         >

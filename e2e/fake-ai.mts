@@ -90,7 +90,7 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
       // Only the first course, as if the rest didn't help with this job.
       courses: (profile.courses ?? []).slice(0, 1).map((entry) => ({ id: entry.id, notes: entry.notes })),
       interests: profile.interests ?? [],
-      // Asked only when Settings → "Work locations on resumes" leaves it to the posting.
+      // Asked only when Settings → "Locations on resumes" leaves it to the posting.
       showLocations: false,
     };
   },
@@ -205,7 +205,19 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
       },
     ],
     projects: [],
-    education: [],
+    education: [
+      {
+        degree: "BA Interaction Design",
+        school: "HKU",
+        location: "Utrecht",
+        startYear: 2014,
+        startMonth: null,
+        endYear: 2018,
+        endMonth: null,
+        current: false,
+        notes: "",
+      },
+    ],
     courses: [],
     publications: [],
     references: [],
