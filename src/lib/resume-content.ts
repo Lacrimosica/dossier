@@ -73,6 +73,8 @@ export type ResumeContent = {
   skills: string;
   /** "Dutch: Native · English: Fluent (C2)" */
   languages: string;
+  /** "Bouldering · Sourdough baking · …" */
+  interests: string;
   references: { id: string; name: string; role: string; contact: string }[];
 };
 
@@ -197,6 +199,7 @@ export function resumeContent(
     publications: resumePublications(profile.publications).map((entry) => publication(entry, entry.citation)),
     skills: profile.skills.map((skill) => skill.name).join(" · "),
     languages: languagesLine(profile.languages, labels),
+    interests: profile.interests.join(" · "),
     references: includeReferences
       ? profile.references.map((reference) => ({
           id: reference.id,
@@ -224,6 +227,7 @@ export function resumeContent(
     content.summary = text("summary").trim();
     content.skills = text("skills").trim();
     content.languages = text("languages").trim();
+    content.interests = text("interests").trim();
     content.experience = experience(withUnit("experience:", profile.experience));
     content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>

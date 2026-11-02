@@ -203,7 +203,7 @@ export function ProfileImport({
               open={confirmReplace}
               onOpenChange={setConfirmReplace}
               title="Replace your profile?"
-              description="Your basics, skills, languages, roles, projects, education, courses, publications and references are removed first; then your profile holds exactly what was read from the resume. Your applications and their documents stay as they are."
+              description="Your basics, skills, languages, interests, roles, projects, education, courses, publications and references are removed first; then your profile holds exactly what was read from the resume. Your applications and their documents stay as they are."
               confirmLabel="Replace my profile"
               onConfirm={() => void apply("replace")}
             />
@@ -266,6 +266,18 @@ function Preview({ profile }: { profile: ImportedProfile }) {
               <li key={language.name}>
                 {language.name}: {languageLevelLabel(language.level)}
                 {!language.levelGiven && <span className="text-muted"> (no level given; change it any time)</span>}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+
+      {profile.interests.length > 0 && (
+        <Section title="Interests">
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {profile.interests.map((interest) => (
+              <li key={interest} className="rounded-full border border-line-field bg-input px-3 py-1">
+                {interest}
               </li>
             ))}
           </ul>

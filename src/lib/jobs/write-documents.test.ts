@@ -20,7 +20,7 @@ describe("writeDocumentsJob (E7-6)", () => {
     provider.current = new MockProvider({
       reply: (call) =>
         call.json?.name === "tailored_resume"
-          ? { headline: "", summary: "Designer at Google.", roles: [], projects: [], skills: ["Figma"], education: [], courses: [] }
+          ? { headline: "", summary: "Designer at Google.", roles: [], projects: [], skills: ["Figma"], interests: [], education: [], courses: [] }
           : { recipient: "Ledgerly · Hiring team", greeting: "Dear Ledgerly team,", paragraphs: [{ label: "Opening", text: "I'd love to join Ledgerly." }], signOff: "Warm regards," },
     });
     const steps: string[] = [];
@@ -33,7 +33,7 @@ describe("writeDocumentsJob (E7-6)", () => {
       { id: "test-job", step: async (name) => void steps.push(name), signal: new AbortController().signal },
     );
     expect(steps).toEqual(WRITE_DOCUMENTS_STEPS.slice(0, 2));
-    expect(result.resumeWith).toBe("tailor-resume@9");
+    expect(result.resumeWith).toBe("tailor-resume@10");
     expect(result.letterWith).toBe("write-cover-letter@7");
     // Strict mode: the fact guard marks what the profile doesn't back.
     expect(result.resume[1]).toMatchObject({ id: "summary", unverified: ["Google"] });
@@ -44,7 +44,7 @@ describe("writeDocumentsJob (E7-6)", () => {
   });
 
   it("skips the cover letter, and its call to the AI, when it isn't wanted", async () => {
-    const mock = new MockProvider({ reply: () => ({ headline: "", summary: "Designer.", roles: [], projects: [], skills: ["Figma"], education: [], courses: [] }) });
+    const mock = new MockProvider({ reply: () => ({ headline: "", summary: "Designer.", roles: [], projects: [], skills: ["Figma"], interests: [], education: [], courses: [] }) });
     provider.current = mock;
     const steps: string[] = [];
     const extracted = {

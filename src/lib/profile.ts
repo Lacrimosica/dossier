@@ -127,6 +127,23 @@ export function fieldsFromBasics(basics: Basics): Record<ProfileKey, string | nu
   };
 }
 
+// Interests are one ProfileField row, one per line, so exports and Delete
+// everything cover them with the basics. A resume lists them last, and a
+// tailored one keeps those that say something to the job.
+
+/** The ProfileField key for interests. */
+export const INTERESTS_KEY = "interests";
+
+/** The interests in a ProfileField row's value: one per line, without blanks or repeats. */
+export function interestsFromValue(value: string | undefined): string[] {
+  const interests: string[] = [];
+  for (const line of (value ?? "").split("\n")) {
+    const interest = line.trim();
+    if (interest && !interests.some((known) => sameName(known, interest))) interests.push(interest);
+  }
+  return interests;
+}
+
 export type SkillItem = { id: string; name: string };
 /** A spoken language: by its code, named in English, or as written without one (.scratch/language-codes). */
 export type LanguageItem = { id: string; code: string | null; name: string; level: LanguageLevel };
@@ -178,6 +195,8 @@ export type ProfileData = {
   photo: ProfilePhoto | null;
   skills: SkillItem[];
   languages: LanguageItem[];
+  /** Hobbies and interests, as typed, in the order added. */
+  interests: string[];
   experience: ExperienceItem[];
   projects: ProjectItem[];
   education: EducationItem[];

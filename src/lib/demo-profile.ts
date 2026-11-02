@@ -43,7 +43,7 @@ export const LEVELS_BY_LABEL = new Map<string, LanguageLevel>(
 
 /** The sample profile as `loadProfile()` returns it, with the prototype's ids. */
 export function demoProfile(): ProfileData {
-  const { experience, projects, education, courses, publications, skills, languages, references, facts, birthOnResumes, ...basics } = sample.profile;
+  const { experience, projects, education, courses, publications, skills, languages, interests, references, facts, birthOnResumes, ...basics } = sample.profile;
   const skillId = (name: string) => `skill-${skills.indexOf(name) + 1}`;
   return {
     basics: {
@@ -67,6 +67,7 @@ export function demoProfile(): ProfileData {
       name,
       level: LEVELS_BY_LABEL.get(level)!,
     })),
+    interests,
     experience: experience.map((entry) => ({
       id: entry.id,
       role: entry.role,
@@ -117,7 +118,7 @@ export function demoResumeUnits(
   publicationId: (sampleId: string) => string = (id) => id,
   courseId: (sampleId: string) => string = (id) => id,
 ): Unit[] {
-  const { experience, projects, education, courses, publications, skills, languages } = sample.profile;
+  const { experience, projects, education, courses, publications, skills, languages, interests } = sample.profile;
   const { resume, requirements } = sample.ledgerly;
   // Skills the posting asks for come first.
   const asked = requirements.flatMap((requirement) =>
@@ -150,6 +151,7 @@ export function demoResumeUnits(
       label: "Languages",
       text: languages.map((language) => `${language.name}: ${language.level}`).join(" · "),
     },
+    { id: "interests", label: "Interests", text: interests.join(" · ") },
   ];
 }
 

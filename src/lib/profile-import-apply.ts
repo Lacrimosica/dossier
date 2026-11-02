@@ -4,7 +4,7 @@ import type { Prisma, PrismaClient } from "@/generated/prisma/client";
 import { citationText } from "@/lib/citation";
 import { findSpokenLanguage } from "@/lib/language-data";
 import { spokenLanguage } from "@/lib/languages";
-import { BASICS_FIELDS, sameName } from "@/lib/profile";
+import { BASICS_FIELDS, INTERESTS_KEY, interestsFromValue, sameName } from "@/lib/profile";
 import type { ImportedProfile, ImportMode } from "@/lib/profile-import";
 import { settingsFromRows } from "@/lib/settings";
 import { saveSettings } from "@/lib/settings-data";
@@ -32,7 +32,7 @@ export async function applyImportedProfile(db: PrismaClient, profile: ImportedPr
         await tx.reference.deleteMany();
         await tx.language.deleteMany();
         await tx.skill.deleteMany();
-        await tx.profileField.deleteMany({ where: { key: { in: [...BASICS_FIELDS] } } });
+        await tx.profileField.deleteMany({ where: { key: { in: [...BASICS_FIELDS, INTERESTS_KEY] } } });
         await saveSettings({ experienceOrder: "date", projectOrder: "date", educationOrder: "date", courseOrder: "date" }, tx);
       }
       const order = settingsFromRows(
@@ -45,6 +45,7 @@ export async function applyImportedProfile(db: PrismaClient, profile: ImportedPr
 
       const skillIds = await applySkills(tx, profile);
       await applyLanguages(tx, profile);
+      await applyInterests(tx, profile);
 
       const nextExperienceSort = await sorter(tx, "experience", order.experienceOrder === "manual");
       const roles = await tx.experience.findMany({ include: { skills: { select: { skillId: true } } } });
@@ -171,4 +172,12 @@ function filled<T extends Record<string, unknown>>(fields: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(fields).filter(([key, value]) => (dates.includes(key) ? hasDates : typeof value === "string" ? value.trim() !== "" : true)),
   ) as Partial<T>;
+}
+
+/** The file's interests after the profile's, each once in any case. */
+async function applyInterests(tx: Tx, profile: ImportedProfile): Promise<void> {
+  if (profile.interests.length === 0) return;
+  const row = await tx.profileField.findUnique({ where: { key: INTERESTS_KEY } });
+  const value = interestsFromValue([row?.value ?? "", ...profile.interests].join("\n")).join("\n");
+  await tx.profileField.upsert({ where: { key: INTERESTS_KEY }, create: { key: INTERESTS_KEY, value }, update: { value } });
 }

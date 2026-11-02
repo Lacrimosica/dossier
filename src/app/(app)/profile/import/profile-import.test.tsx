@@ -38,6 +38,7 @@ const profile: ImportedProfile = {
     { name: "Service design", found: false },
   ],
   languages: [{ name: "German", level: LanguageLevel.B2, levelGiven: false }],
+  interests: [],
   experience: [
     {
       role: "Design Lead",

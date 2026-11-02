@@ -49,6 +49,7 @@ export function profileForPrompt(profile: ProfileData, { includeReferences = fal
       ...(facts.length > 0 ? { factsAboutMe: facts } : {}),
       skills: profile.skills.map((skill) => skill.name),
       languages: profile.languages.map((language) => `${language.name}: ${languageLevelLabel(language.level)}`),
+      ...(profile.interests.length > 0 ? { interests: profile.interests } : {}),
       experience: profile.experience.map((entry) => ({
         id: entry.id,
         role: entry.role,

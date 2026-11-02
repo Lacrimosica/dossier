@@ -10,7 +10,7 @@ import { companyKey } from "@/lib/companies";
 import { findSpokenLanguage } from "@/lib/language-data";
 import { LANGUAGE_CODES, languageName, spokenLanguage } from "@/lib/languages";
 import { prisma } from "@/lib/prisma";
-import { BIRTH_ON_RESUMES, fieldsFromBasics, inEntryOrder } from "@/lib/profile";
+import { BIRTH_ON_RESUMES, fieldsFromBasics, inEntryOrder, INTERESTS_KEY, interestsFromValue } from "@/lib/profile";
 import { findOrCreateSkill, firstSort, nextSort } from "@/lib/profile-entries";
 import { isAiConfigured } from "@/lib/ai/config";
 import { discardProfileImports, importProfileJob } from "@/lib/jobs/import-profile";
@@ -139,6 +139,19 @@ export const removeLanguage = action(z.object({ id }), async ({ id }) => {
   await prisma.language.deleteMany({ where: { id } });
   return null;
 });
+
+/** Saves the interests in their order: the whole list, as each add or remove changes it. */
+export const saveInterests = action(
+  z.object({ interests: z.array(z.string().trim().max(100)).max(50) }),
+  async ({ interests }) => {
+    const kept = interestsFromValue(interests.join("\n"));
+    const value = kept.join("\n");
+    await (value
+      ? prisma.profileField.upsert({ where: { key: INTERESTS_KEY }, create: { key: INTERESTS_KEY, value }, update: { value } })
+      : prisma.profileField.deleteMany({ where: { key: INTERESTS_KEY } }));
+    return { interests: kept };
+  },
+);
 
 // ─── Experience (PRO-5, PRO-6) ───────────────────────────────────────────────
 

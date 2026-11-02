@@ -51,7 +51,7 @@ export function ProfileEditor({
 
   const counts: Record<SectionId, string> = {
     basics: `${filledBasics(profile.basics)}/${REQUIRED_BASICS.length}`,
-    skills: String(profile.skills.length + profile.languages.length),
+    skills: String(profile.skills.length + profile.languages.length + profile.interests.length),
     experience: String(profile.experience.length),
     projects: String(profile.projects.length),
     education: String(profile.education.length),

@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { toast } from "@/components/toast";
 import type { ProfileData } from "@/lib/profile";
 
-import { addLanguage, addSkill, removeLanguage, removeSkill, setLanguageLevel } from "./actions";
+import { addLanguage, addSkill, removeLanguage, removeSkill, saveInterests, setLanguageLevel } from "./actions";
 import { SkillsSection } from "./skills-section";
 
 vi.mock("./actions", () => ({
@@ -15,6 +15,7 @@ vi.mock("./actions", () => ({
   addLanguage: vi.fn(),
   setLanguageLevel: vi.fn(),
   removeLanguage: vi.fn(),
+  saveInterests: vi.fn(),
 }));
 vi.mock("@/components/toast", () => ({ toast: vi.fn() }));
 
@@ -26,6 +27,7 @@ const profile = (): ProfileData => ({
     { id: "s2", name: "User research" },
   ],
   languages: [{ id: "l1", code: "nl", name: "Dutch", level: "NATIVE" }],
+  interests: ["Chess", "Cycling", "Sourdough baking"],
   experience: [
     { id: "e1", role: "A", company: "", location: "", bullets: "", skillIds: ["s1", "s2"], ...span },
     { id: "e2", role: "B", company: "", location: "", bullets: "", skillIds: ["s1"], ...span },
@@ -165,5 +167,43 @@ describe("Languages", () => {
     await user.click(screen.getByRole("button", { name: "Remove Dutch" }));
     expect(removeLanguage).toHaveBeenCalledWith({ id: "l1" });
     expect(screen.queryByLabelText("Dutch level")).not.toBeInTheDocument();
+  });
+});
+
+describe("Interests", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(saveInterests).mockImplementation(async ({ interests }) => ({ ok: true, data: { interests } }));
+  });
+
+  it("adds an interest with Enter, after the others", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.type(screen.getByLabelText("Add an interest"), "Bouldering{Enter}");
+    expect(saveInterests).toHaveBeenCalledWith({ interests: ["Chess", "Cycling", "Sourdough baking", "Bouldering"] });
+    expect(within(screen.getByRole("list", { name: "Your interests" })).getAllByRole("listitem")[3]).toHaveTextContent("Bouldering");
+    expect(screen.getByLabelText("Add an interest")).toHaveValue("");
+  });
+
+  it("ignores an interest that's already there, in any case", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.type(screen.getByLabelText("Add an interest"), "chess{Enter}");
+    expect(saveInterests).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith("“Chess” is already in your interests.");
+  });
+
+  it("removes an interest, and puts it back when saving fails", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: "Remove Chess" }));
+    expect(saveInterests).toHaveBeenCalledWith({ interests: ["Cycling", "Sourdough baking"] });
+    expect(latest.interests).toEqual(["Cycling", "Sourdough baking"]);
+
+    vi.mocked(saveInterests).mockResolvedValue({ ok: false, error: "Something went wrong on the server. Please try again." });
+    await user.type(screen.getByLabelText("Add an interest"), "Chess{Enter}");
+    await waitFor(() => expect(latest.interests).toEqual(["Cycling", "Sourdough baking"]));
+    expect(screen.getByLabelText("Add an interest")).toHaveValue("Chess");
+    expect(toast).toHaveBeenCalledWith("Something went wrong on the server. Please try again.");
   });
 });

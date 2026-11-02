@@ -143,6 +143,7 @@ describe("demo seed", () => {
       "Accessibility for Designers",
       "Publication “Doe, J., & Vermeer, K. (2016). Trust in…”",
       "Languages",
+      "Interests",
     ]);
     const [publication] = await db.publication.findMany();
     expect(resume.find((unit) => unit.id === `publication:${publication.id}`)?.text).toBe(publication.citation);

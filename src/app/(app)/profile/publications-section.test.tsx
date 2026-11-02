@@ -31,6 +31,7 @@ function Harness() {
     basics: {} as ProfileData["basics"],
     skills: [],
     languages: [],
+    interests: [],
     experience: [],
     projects: [],
     education: [],

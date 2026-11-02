@@ -28,7 +28,7 @@ import {
   type TaskResult,
 } from "./prompt-parts";
 
-export const TAILOR_RESUME_VERSION = "tailor-resume@9";
+export const TAILOR_RESUME_VERSION = "tailor-resume@10";
 
 const answerSchema = z.object({
   /** The line under the name, for this job (.scratch/tailored-headline). */
@@ -38,6 +38,8 @@ const answerSchema = z.object({
   projects: z.array(z.object({ id: z.string(), bullets: z.array(z.string()) })),
   /** The profile's skills, most relevant first; leave out ones that don't help. */
   skills: z.array(z.string()),
+  /** The profile's interests worth showing to this job; an empty list leaves the section off. */
+  interests: z.array(z.string()),
   education: z.array(z.object({ id: z.string(), notes: z.string() })),
   /** Only the courses that help with this job, most relevant first. */
   courses: z.array(z.object({ id: z.string(), notes: z.string() })),
@@ -51,6 +53,7 @@ const INSTRUCTIONS = `You tailor a candidate's resume to one job, as JSON.
 - projects: every project from the profile, by id, with 1–3 bullets each, written like the roles' bullets: what was built and what it shows that this job cares about.
 - skills: the candidate's own skills, most relevant to this job first. Copy their names exactly; you may leave out ones that don't help.
 - Read the posting for what the job does day to day and what it values, and let that decide what leads. Requirements marked "gap" are what the candidate doesn't have: never write them into the resume, not even in other words. When the posting names a skill the candidate has under another spelling ("PostgreSQL" for "Postgres"), use the posting's in bullets and the summary.
+- interests: the candidate's own hobbies and interests, copied exactly, in the order that suits this job. Keep the ones that round out the picture; leave out any that would distract a reader here. An empty list is fine.
 - education: every entry by id, with its notes shortened or left empty.
 - courses: only the courses and certificates from the profile that help with this job, by id, most relevant first, with their notes shortened or left empty. Leave out the rest; an empty list is fine.
 - The profile's publications go on the resume word for word, so don't answer with them; the summary may mention them.`;
@@ -93,7 +96,7 @@ export type TailorInput = {
 /** The units, and whether the resume shows each role's location when tailoring decided it (null: the setting decides). */
 export type TailoredResume = TaskResult<Unit[]> & { showLocations: boolean | null };
 
-/** APP-4: the tailored resume as units (headline, summary, each role, each project, skills, each degree, the courses that help, each publication, languages). */
+/** APP-4: the tailored resume as units (headline, summary, each role, each project, skills, each degree, the courses that help, each publication, languages, interests). */
 export async function tailorResume(
   provider: AIProvider,
   { profile, extracted, match, facts, posting, today = new Date(), locations = "never" }: TailorInput,
@@ -147,7 +150,8 @@ export async function tailorResume(
 /**
  * Turns the answer into units, trusting nothing: an empty headline is the
  * profile's (as is a missing one, from the connector), unknown roles, projects,
- * degrees and courses are dropped, skills must be the profile's own, and a role or
+ * degrees and courses are dropped, skills and interests must be the profile's own
+ * (missing interests, from the connector, are all of them), and a role or
  * project the model skipped keeps its bullets from the profile. Courses are the
  * exception: the resume has only those the model chose, in its order. The publications and languages
  * come from the profile, publications word for word (#218), and languages with their levels in
@@ -155,13 +159,18 @@ export async function tailorResume(
  */
 export function resumeUnits(
   profile: ProfileData,
-  answer: Omit<z.infer<typeof answerSchema>, "headline"> & { headline?: string },
+  answer: Omit<z.infer<typeof answerSchema>, "headline" | "interests"> & { headline?: string; interests?: string[] },
   labels: DocumentLabels = ENGLISH_LABELS): Unit[] {
   const roles = new Map(answer.roles.map((role) => [role.id, role.bullets]));
   const projects = new Map(answer.projects.map((project) => [project.id, project.bullets]));
   const notes = new Map(answer.education.map((entry) => [entry.id, entry.notes]));
   const skills = [
     ...new Set(answer.skills.flatMap((name) => profile.skills.find((skill) => sameName(skill.name, name))?.name ?? [])),
+  ];
+  const interests = [
+    ...new Set(
+      (answer.interests ?? profile.interests).flatMap((name) => profile.interests.find((interest) => sameName(interest, name)) ?? []),
+    ),
   ];
   const units: Unit[] = [
     { id: HEADLINE_UNIT, label: "Headline", text: answer.headline?.trim() || profile.basics.headline.trim() },
@@ -191,6 +200,7 @@ export function resumeUnits(
       label: "Languages",
       text: languagesLine(profile.languages, labels),
     },
+    { id: "interests", label: "Interests", text: interests.join(" · ") },
   ];
   return unitsSchema.parse(units);
 }

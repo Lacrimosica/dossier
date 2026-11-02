@@ -8,7 +8,7 @@ import {
 } from "@/lib/application-data";
 import { courseDates, dateSpan, demoLetterUnits, demoProfile, demoResumeUnits, LEVELS_BY_LABEL } from "@/lib/demo-profile";
 import { spokenLanguage } from "@/lib/languages";
-import { basicsFromFields, fieldsFromBasics } from "@/lib/profile";
+import { basicsFromFields, fieldsFromBasics, INTERESTS_KEY } from "@/lib/profile";
 import { advance, type StatusFields } from "@/lib/status";
 
 import sample from "./prototype-sample.json";
@@ -116,9 +116,12 @@ export async function seedDemo(
       const { experience, projects, education, courses, publications, skills, languages, references, facts } = sample.profile;
       await tx.profileField.deleteMany();
       await tx.profileField.createMany({
-        data: Object.entries(fieldsFromBasics(demoProfile().basics)).flatMap(([key, value]) =>
-          value === null ? [] : [{ key, value }],
-        ),
+        data: [
+          ...Object.entries(fieldsFromBasics(demoProfile().basics)).flatMap(([key, value]) =>
+            value === null ? [] : [{ key, value }],
+          ),
+          { key: INTERESTS_KEY, value: sample.profile.interests.join("\n") },
+        ],
       });
 
       const skillIds = new Map<string, string>();

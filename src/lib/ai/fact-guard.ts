@@ -70,6 +70,7 @@ export function sourcesFor(profile: ProfileData, extracted: Extracted | null, po
     ...profile.languages.map((language) => `${language.name} ${languageLevelLabel(language.level)}`),
     // A document in another language names them in its own words: "Inglese" (.scratch/language-codes).
     ...profile.languages.flatMap((language) => (language.code ? languageNames(language.code) : [])),
+    ...profile.interests,
     ...profile.experience.flatMap((entry) => [entry.role, entry.company, entry.location, formatDateRange(entry), entry.bullets]),
     ...profile.projects.flatMap((entry) => [entry.name, entry.link, formatDateRange(entry), entry.bullets]),
     ...profile.education.flatMap((entry) => [entry.degree, entry.school, formatDateRange(entry), entry.notes]),
@@ -137,13 +138,13 @@ export function unverifiedFacts(text: string, sources: FactSources): string[] {
 
 /**
  * Checks each unit and notes what couldn't be backed on the unit itself.
- * Units built from the profile in code (skills, languages, the sign-off)
+ * Units built from the profile in code (skills, languages, interests, the sign-off)
  * aren't checked.
  */
 export function guardUnits(units: Unit[], sources: FactSources): Unit[] {
   return units.map(({ id, label, text }) => {
     const unit = { id, label, text };
-    if (["skills", "languages", "sign-off"].includes(id)) return unit;
+    if (["skills", "languages", "interests", "sign-off"].includes(id)) return unit;
     const unverified = unverifiedFacts(text, sources);
     return unverified.length > 0 ? { ...unit, unverified } : unit;
   });

@@ -12,6 +12,7 @@ import { isoDate } from "./extract-posting";
 import { sameSkill } from "./match-requirements";
 import { BULLET_RULES, COVER_LETTER_APPROACH, PLAIN_WORDING } from "./prompt-parts";
 import { withoutFrame } from "./write-cover-letter";
+import { resumeUnits } from "./tailor-resume";
 import { recipient } from "./write-email";
 import {
   extractPosting,
@@ -194,6 +195,7 @@ describe("tailorResume", () => {
       { id: "p9", bullets: ["Invented project"] },
     ],
     skills: ["Design systems", "figma", "Kubernetes", "User research"],
+    interests: ["risograph printing", "Skydiving", "Long-distance cycling"],
     education: [{ id: "d1", notes: "Thesis on trust in automation" }],
     courses: [],
   };
@@ -240,7 +242,7 @@ describe("tailorResume", () => {
 
   it("returns units, keeping only real roles and the profile's own skills (APP-4)", async () => {
     const { data, promptVersion } = await tailorResume(model(answer), { profile, extracted, match: null, facts: [], posting }, options);
-    expect(promptVersion).toBe("tailor-resume@9");
+    expect(promptVersion).toBe("tailor-resume@10");
     expect(data.map((unit) => unit.id)).toEqual([
       "headline",
       "summary",
@@ -253,6 +255,7 @@ describe("tailorResume", () => {
       "education:d2",
       "publication:u1",
       "languages",
+      "interests",
     ]);
     expect(data.find((unit) => unit.id === "project:p1")).toEqual({
       id: "project:p1",
@@ -264,6 +267,15 @@ describe("tailorResume", () => {
     expect(data.find((unit) => unit.id === "experience:e2")?.text).toBe(profile.experience[1].bullets);
     expect(data.find((unit) => unit.id === "skills")?.text).toBe("Design systems · Figma · User research");
     expect(data.find((unit) => unit.id === "languages")?.text).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
+    // Only the profile's own interests, in the model's order and the profile's spelling.
+    expect(data.find((unit) => unit.id === "interests")?.text).toBe("Risograph printing · Long-distance cycling");
+  });
+
+  it("keeps every interest when the answer has none to choose from, as the connector may", () => {
+    const { interests, ...withoutInterests } = answer;
+    expect(interests).toHaveLength(3);
+    expect(resumeUnits(profile, withoutInterests).find((unit) => unit.id === "interests")?.text).toBe(profile.interests.join(" · "));
+    expect(resumeUnits(profile, { ...withoutInterests, interests: [] }).find((unit) => unit.id === "interests")?.text).toBe("");
   });
 
   it("writes a headline for the job, or keeps the profile's when the answer has none (.scratch/tailored-headline)", async () => {
@@ -298,7 +310,7 @@ describe("tailorResume", () => {
     const { data } = await tailorResume(provider, { profile: { ...profile, courses: [...profile.courses, hidden] }, extracted, match: null, facts: [], posting }, options);
     expect(data.filter((unit) => unit.id.startsWith("course:"))).toEqual([{ id: "course:c2", label: "UX Writing Workshop", text: "Microcopy" }]);
     // Degrees before courses, courses before publications.
-    expect(data.map((unit) => unit.id).slice(-4)).toEqual(["education:d2", "course:c2", "publication:u1", "languages"]);
+    expect(data.map((unit) => unit.id).slice(-5)).toEqual(["education:d2", "course:c2", "publication:u1", "languages", "interests"]);
     const text = prompt(provider);
     expect(text).toContain(`"name": "Accessibility for Designers"`);
     expect(text).toContain(`"length": "6 weekend sessions"`);
@@ -321,7 +333,7 @@ describe("tailorResume", () => {
 
   it("asks for a resume that fits the page limit, when there is one (E10-10)", async () => {
     const system = async (maxPages: number | null) => {
-      const provider = model({ headline: "", summary: "Designer.", roles: [], projects: [], skills: [], education: [], courses: [] });
+      const provider = model({ headline: "", summary: "Designer.", roles: [], projects: [], skills: [], interests: [], education: [], courses: [] });
       await tailorResume(provider, { profile, extracted, match: null, facts: [], posting }, { ...options, maxPages });
       return sent(provider).system;
     };
@@ -661,6 +673,7 @@ describe("the fact guard in the writing tasks (E6-6)", () => {
     roles: [{ id: "e1", bullets: ["Led the redesign of the carrier portal used daily by 4,000+ dispatchers"] }],
     projects: [],
     skills: ["Figma"],
+    interests: [],
     education: [],
     courses: [],
   };

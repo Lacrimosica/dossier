@@ -44,6 +44,7 @@ function Harness() {
       { id: "s2", name: "SQL" },
     ],
     languages: [],
+    interests: [],
     experience: [],
     projects: [churn, thesis],
     education: [],

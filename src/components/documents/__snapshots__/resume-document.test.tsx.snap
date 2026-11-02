@@ -487,6 +487,22 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -976,6 +992,22 @@ exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
         >
           <p>
             Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
           </p>
         </div>
       </section>
@@ -1471,6 +1503,22 @@ exports[`ResumeDocument > renders the demo profile in Classic 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -1584,6 +1632,22 @@ exports[`ResumeDocument > renders the demo profile in Console 1`] = `
         >
           <p>
             Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
           </p>
         </div>
       </section>
@@ -2470,6 +2534,22 @@ exports[`ResumeDocument > renders the demo profile in Editorial 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -2962,6 +3042,22 @@ exports[`ResumeDocument > renders the demo profile in Folio 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -3075,6 +3171,22 @@ exports[`ResumeDocument > renders the demo profile in Ledger 1`] = `
         >
           <p>
             Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
           </p>
         </div>
       </section>
@@ -3961,6 +4073,22 @@ exports[`ResumeDocument > renders the demo profile in Minimal 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -4074,6 +4202,22 @@ exports[`ResumeDocument > renders the demo profile in Modern 1`] = `
         >
           <p>
             Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
           </p>
         </div>
       </section>
@@ -4960,6 +5104,22 @@ exports[`ResumeDocument > renders the demo profile in Signal 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -5467,6 +5627,22 @@ exports[`ResumeDocument > renders the demo profile in Studio 1`] = `
           </p>
         </div>
       </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
     </div>
   </div>
 </article>
@@ -5580,6 +5756,22 @@ exports[`ResumeDocument > renders the demo profile in Technical 1`] = `
         >
           <p>
             Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
           </p>
         </div>
       </section>

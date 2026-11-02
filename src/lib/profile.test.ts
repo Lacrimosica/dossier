@@ -9,6 +9,7 @@ import {
   byStartDateDesc,
   inEntryOrder,
   fieldsFromBasics,
+  interestsFromValue,
   filledBasics,
   formatDateRange,
   formatMonthYear,
@@ -197,3 +198,9 @@ describe("inEntryOrder (E4-9)", () => {
   });
 });
 
+describe("interests", () => {
+  it("reads one per line, trimmed, without blanks or repeats in any case", () => {
+    expect(interestsFromValue("Bouldering\n  \n Chess \nbouldering")).toEqual(["Bouldering", "Chess"]);
+    expect(interestsFromValue(undefined)).toEqual([]);
+  });
+});

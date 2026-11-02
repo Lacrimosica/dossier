@@ -59,6 +59,7 @@ function Harness({ order = "date", experience = [northwind, fieldnote] }: { orde
       { id: "s2", name: "Figma" },
     ],
     languages: [],
+    interests: [],
     experience,
     projects: [],
     education: [],
@@ -144,7 +145,7 @@ describe("ExperienceSection", () => {
 
   it("shows the empty state", () => {
     function Empty() {
-      const [state, setState] = useState<ProfileData>({ basics: {} as ProfileData["basics"], skills: [], languages: [], experience: [], projects: [], education: [], courses: [], publications: [], references: [], facts: [], photo: null });
+      const [state, setState] = useState<ProfileData>({ basics: {} as ProfileData["basics"], skills: [], languages: [], interests: [], experience: [], projects: [], education: [], courses: [], publications: [], references: [], facts: [], photo: null });
       return <ExperienceSection order="date" profile={state} update={(change) => setState(change)} />;
     }
     render(<Empty />);

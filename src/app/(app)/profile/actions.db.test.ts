@@ -26,6 +26,7 @@ import {
   removePublication,
   reorderPublications,
   restorePublication,
+  saveInterests,
   savePublication,
   restoreExperience,
   restoreProject,
@@ -134,6 +135,16 @@ describe("profile actions", () => {
     expect(await addLanguage({ name: "Klingon", level: "A1" })).toMatchObject({ ok: true, data: { language: { code: null, name: "Klingon" } } });
     expect(await addLanguage({ name: "Nope", code: "xx", level: "A1" })).toMatchObject({ ok: false });
     expect(await prisma().language.count()).toBe(3);
+  });
+
+  it("saves interests as one list, without blanks or repeats, and removes the row when they're all gone", async () => {
+    const saved = await saveInterests({ interests: ["Bouldering", " ", "Sourdough baking", "bouldering"] });
+    expect(saved).toEqual({ ok: true, data: { interests: ["Bouldering", "Sourdough baking"] } });
+    expect((await loadProfile()).interests).toEqual(["Bouldering", "Sourdough baking"]);
+
+    await saveInterests({ interests: [] });
+    expect(await prisma().profileField.count({ where: { key: "interests" } })).toBe(0);
+    expect((await loadProfile()).interests).toEqual([]);
   });
 
   it("gives a language saved by name before codes its code when it's added again", async () => {

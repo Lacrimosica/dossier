@@ -2,7 +2,7 @@ import "server-only";
 
 import { photoFromFields } from "@/lib/photo";
 import { prisma } from "@/lib/prisma";
-import { basicsFromFields, factTexts, inEntryOrder, type FactItem, type ProfileData } from "@/lib/profile";
+import { basicsFromFields, factTexts, INTERESTS_KEY, interestsFromValue, inEntryOrder, type FactItem, type ProfileData } from "@/lib/profile";
 import { loadSettings } from "@/lib/settings-data";
 
 /** The profile's name, "" without one: for the sidebar, the sign-in greeting and file names. */
@@ -36,6 +36,7 @@ export async function loadProfile(): Promise<ProfileData> {
     photo: photoFromFields(fields),
     skills: skills.map(({ id, name }) => ({ id, name })),
     languages: languages.map(({ id, code, name, level }) => ({ id, code, name, level })),
+    interests: interestsFromValue(fields.find((field) => field.key === INTERESTS_KEY)?.value),
     experience: inEntryOrder(experience, settings.experienceOrder).map((entry) => ({
       id: entry.id,
       role: entry.role,

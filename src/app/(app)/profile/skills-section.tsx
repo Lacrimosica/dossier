@@ -13,7 +13,7 @@ import { LANGUAGE_LEVELS, languageLevelLabel, sameName, type ProfileData } from 
 
 import { spokenLanguage } from "@/lib/languages";
 
-import { addLanguage, addSkill, removeLanguage, removeSkill, setLanguageLevel } from "./actions";
+import { addLanguage, addSkill, removeLanguage, removeSkill, saveInterests, setLanguageLevel } from "./actions";
 import { LanguagePicker, type PickedLanguage } from "./language-picker";
 import { useTrackSave } from "@/components/save-tracker";
 
@@ -250,12 +250,75 @@ function LanguagesCard({ profile, update }: { profile: ProfileData; update: Upda
   );
 }
 
+/** Hobbies and interests: Enter adds one, × removes it. The list saves as a whole. */
+function InterestsCard({ profile, update }: { profile: ProfileData; update: UpdateProfile }) {
+  const track = useTrackSave();
+  const [draft, setDraft] = useState("");
+
+  async function save(interests: string[], restoreDraft = "") {
+    const before = profile;
+    update((current) => ({ ...current, interests }));
+    const result = await track(saveInterests({ interests }));
+    if (!result.ok) {
+      update(() => before);
+      setDraft(restoreDraft);
+      toast(result.error);
+    }
+  }
+
+  function add() {
+    const name = draft.trim();
+    if (!name) return;
+    setDraft("");
+    const existing = profile.interests.find((interest) => sameName(interest, name));
+    if (existing) {
+      toast(`“${existing}” is already in your interests.`);
+      return;
+    }
+    void save([...profile.interests, name], name);
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    add();
+  };
+
+  return (
+    <ChipCard title="Interests" count={profile.interests.length} optional>
+      {profile.interests.length > 0 && (
+        <ul className="flex flex-wrap gap-2" aria-label="Your interests">
+          {profile.interests.map((interest) => (
+            <li key={interest}>
+              <RemovableChip
+                removeLabel={`Remove ${interest}`}
+                onRemove={() => void save(profile.interests.filter((item) => item !== interest))}
+              >
+                {interest}
+              </RemovableChip>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Input
+        aria-label="Add an interest"
+        placeholder="e.g. Bouldering"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={onKeyDown}
+        enterKeyHint="done"
+      />
+    </ChipCard>
+  );
+}
+
 /** The Skills & languages section. */
 export function SkillsSection({ profile, update }: { profile: ProfileData; update: UpdateProfile }) {
   return (
     <div className="flex flex-col gap-4">
       <SkillsCard profile={profile} update={update} />
       <LanguagesCard profile={profile} update={update} />
+      <InterestsCard profile={profile} update={update} />
     </div>
   );
 }

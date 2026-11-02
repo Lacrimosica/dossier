@@ -56,6 +56,7 @@ describe("resumeContent", () => {
       "Interaction design · Design systems · Prototyping · User research · Figma · HTML & CSS · Workshop facilitation",
     );
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
+    expect(content.interests).toBe("Long-distance cycling · Risograph printing · Community garden volunteer");
   });
 
   it("includes references only when asked", () => {
@@ -73,6 +74,7 @@ describe("resumeContent", () => {
       basics: { ...profile.basics, ...Object.fromEntries(Object.keys(profile.basics).map((key) => [key, ""])), birthOnResumes: "none" },
       skills: [],
       languages: [],
+      interests: [],
       experience: [],
       projects: [],
       education: [],
@@ -95,6 +97,7 @@ describe("resumeContent", () => {
       publications: [],
       skills: "",
       languages: "",
+      interests: "",
       references: [],
     });
   });
@@ -109,6 +112,9 @@ describe("resumeContent", () => {
     expect(content.experience[0].roles[0].skills).toContain("Design systems");
     expect(content.skills).toMatch(/^Design systems · User research · Figma · /);
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
+    expect(content.interests).toBe("Long-distance cycling · Risograph printing · Community garden volunteer");
+    // A tailored resume without an interests unit has none.
+    expect(resumeContent(profile, { units: demoResumeUnits().filter((unit) => unit.id !== "interests") }).interests).toBe("");
   });
 
   it("takes the headline from a tailored resume's own, the profile's without one, and none when it was left out", () => {

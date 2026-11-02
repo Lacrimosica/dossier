@@ -77,6 +77,11 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
         {renderUnit({ id: "languages", children: <p>{content.languages}</p> })}
       </DocumentSection>
     ),
+    content.interests && (
+      <DocumentSection key="interests" title={labels.interests}>
+        {renderUnit({ id: "interests", children: <p>{content.interests}</p> })}
+      </DocumentSection>
+    ),
   ].filter(Boolean);
 
   const main = [

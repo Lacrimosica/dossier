@@ -8,7 +8,7 @@ import { DocumentKind } from "@/generated/prisma/enums";
 
 /**
  * A part of a tailored document that can be edited, regenerated or refined
- * on its own (APP-4). Ids are stable: "headline", "summary", "skills", "languages",
+ * on its own (APP-4). Ids are stable: "headline", "summary", "skills", "languages", "interests",
  * "experience:<experience id>", "education:<education id>" in a resume, and
  * "paragraph:1", "paragraph:2"… and "sign-off" in a cover letter.
  */

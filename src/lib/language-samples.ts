@@ -316,6 +316,7 @@ export function sampleProfile(sample: Sample): ProfileData {
     },
     skills: sample.skills.map((name, index) => ({ id: `skill-${index}`, name })),
     languages: [],
+    interests: [],
     experience: [
       {
         id: "role",

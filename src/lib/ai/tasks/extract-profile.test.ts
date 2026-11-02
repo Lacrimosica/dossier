@@ -54,6 +54,7 @@ const answer = {
     { name: "English", level: "C1" },
     { name: "German", level: null },
   ],
+  interests: ["Bouldering", " ", "bouldering", "Sourdough baking"],
   experience: [
     {
       role: "Design Lead",
@@ -114,7 +115,7 @@ describe("extractProfile (E4-10)", () => {
   it("checks the answer: dates in range, levels, one of each skill, and names looked up in the resume", async () => {
     const provider = new MockProvider({ reply: () => answer });
     const { data, promptVersion } = await extractProfile(provider, { resume: RESUME, today: new Date("2026-09-29") }, options);
-    expect(promptVersion).toBe("extract-profile@4");
+    expect(promptVersion).toBe("extract-profile@5");
     expect(data.basics).toEqual({
       name: "John Doe",
       headline: "Senior Product Designer",
@@ -136,6 +137,7 @@ describe("extractProfile (E4-10)", () => {
       { name: "English", level: LanguageLevel.C1, levelGiven: true },
       { name: "German", level: LanguageLevel.B2, levelGiven: false },
     ]);
+    expect(data.interests).toEqual(["Bouldering", "Sourdough baking"]);
     expect(data.experience).toEqual([
       {
         role: "Design Lead",

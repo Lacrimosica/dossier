@@ -21,6 +21,8 @@ export const importedProfileSchema = z.object({
   basics: z.partialRecord(z.enum(BASICS_FIELDS), z.string()),
   skills: z.array(z.object({ name: z.string(), found: z.boolean() })),
   languages: z.array(z.object({ name: z.string(), level: z.enum(LanguageLevel), levelGiven: z.boolean() })),
+  /** Absent in readings made before interests. */
+  interests: z.array(z.string()).default([]),
   experience: z.array(
     z.object({ role: z.string(), company: z.string(), location: z.string(), bullets: z.string(), skills: z.array(z.string()), ...span, unverified }),
   ),
@@ -72,6 +74,7 @@ export function importCounts(profile: ImportedProfile): string {
     ...(profile.publications.length > 0 ? [plural(profile.publications.length, "publication", "publications")] : []),
     plural(profile.skills.length, "skill", "skills"),
     plural(profile.languages.length, "language", "languages"),
+    ...(profile.interests.length > 0 ? [plural(profile.interests.length, "interest", "interests")] : []),
     plural(profile.references.length, "reference", "references"),
   ].join(", ");
 }

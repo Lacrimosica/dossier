@@ -28,6 +28,7 @@ const imported: ImportedProfile = {
     { name: "dutch", level: LanguageLevel.NATIVE, levelGiven: true },
     { name: "German", level: LanguageLevel.B2, levelGiven: false },
   ],
+  interests: ["Bouldering", "chess"],
   experience: [
     { role: "Design Lead", company: "Acme Payments", location: "", bullets: "Led the payout redesign", skills: ["User research"], startYear: 2021, startMonth: 3, endYear: null, endMonth: null, current: true, unverified: [] },
     { role: "Product designer", company: "fieldnote", location: "Amsterdam", bullets: "", skills: ["figma"], ...noDates, unverified: [] },
@@ -69,7 +70,7 @@ describe("applyImportedProfile (E4-10)", () => {
     await applyImportedProfile(prisma(), imported, "merge");
 
     const fields = Object.fromEntries((await prisma().profileField.findMany()).map((field) => [field.key, field.value]));
-    expect(fields).toEqual({ name: "John Doe", email: "john@example.com", city: "Utrecht" });
+    expect(fields).toEqual({ name: "John Doe", email: "john@example.com", city: "Utrecht", interests: "Bouldering\nchess" });
     expect((await prisma().skill.findMany({ orderBy: { sort: "asc" } })).map((skill) => skill.name)).toEqual(["Figma", "Prototyping", "User research"]);
     expect(await prisma().language.findMany({ orderBy: { sort: "asc" }, select: { name: true, level: true } })).toEqual([
       { name: "Dutch", level: LanguageLevel.NATIVE },
@@ -131,6 +132,12 @@ describe("applyImportedProfile (E4-10)", () => {
     ]);
   });
 
+  it("adds the file's interests after the profile's, each once", async () => {
+    await prisma().profileField.create({ data: { key: "interests", value: "Chess\nCycling" } });
+    await applyImportedProfile(prisma(), imported, "merge");
+    expect((await prisma().profileField.findUnique({ where: { key: "interests" } }))?.value).toBe("Chess\nCycling\nBouldering");
+  });
+
   it("puts new entries first in a section ordered by hand", async () => {
     await existingProfile();
     await prisma().setting.create({ data: { key: "experienceOrder", value: "manual" } });
@@ -150,7 +157,7 @@ describe("applyImportedProfile (E4-10)", () => {
     await applyImportedProfile(prisma(), imported, "replace");
 
     const fields = Object.fromEntries((await prisma().profileField.findMany()).map((field) => [field.key, field.value]));
-    expect(fields).toEqual({ name: "John Doe", city: "Utrecht", showAge: "false", photo: "data:image/png;base64,iVBORw0KGgo=", photoOnResumes: "false" });
+    expect(fields).toEqual({ name: "John Doe", city: "Utrecht", showAge: "false", photo: "data:image/png;base64,iVBORw0KGgo=", photoOnResumes: "false", interests: "Bouldering\nchess" });
     expect((await prisma().skill.findMany()).map((skill) => skill.name).sort()).toEqual(["User research", "figma"]);
     expect((await prisma().experience.findMany()).map((role) => role.company).sort()).toEqual(["Acme Payments", "fieldnote"]);
     expect((await prisma().setting.findUnique({ where: { key: "experienceOrder" } }))?.value).toBe("date");
