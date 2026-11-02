@@ -223,6 +223,9 @@ export type ProfileData = {
   facts: FactItem[];
 };
 
+/** Facts for one person or one application: plenty, and still a prompt a local model can take. */
+export const MAX_FACTS = 50;
+
 /** The facts worth sending: trimmed, without empty ones. */
 export function factTexts(facts: { text: string }[]): string[] {
   return facts.map((fact) => fact.text.trim()).filter(Boolean);

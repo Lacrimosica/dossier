@@ -1,10 +1,12 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { loadProfile } from "@/lib/profile-data";
+import { saveSettings } from "@/lib/settings-data";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import {
   addLanguage,
+  applyProfileChat,
   applyProfileImport,
   applyProfileReview,
   addSkill,
@@ -17,6 +19,7 @@ import {
   createProject,
   createPublication,
   createReference,
+  discardProfileChat,
   discardProfileImport,
   discardProfileReview,
   moveEducationToCourses,
@@ -57,6 +60,8 @@ import {
   setLanguageLevel,
   sortEntriesByDate,
   startProfileReview,
+  sendProfileChat,
+  undoProfileChat,
   keepCompaniesApart,
   unifyCompanyName,
 } from "./actions";
@@ -682,5 +687,63 @@ describe("the profile review (.scratch/profile-review)", () => {
     expect(await prisma().job.findMany({ select: { id: true } })).toEqual([{ id: other.id }]);
     expect(await prisma().experience.count()).toBe(2);
     expect(await prisma().setting.findUnique({ where: { key: "reviewSkipped" } })).toMatchObject({ value: '["merge:experience:a,b"]' });
+  });
+});
+
+describe("the profile chat (.scratch/profile-chat)", () => {
+  const course = { kind: "add", section: "courses", entry: { name: "AWS Solutions Architect", provider: "Amazon", startYear: 2025, startMonth: 3 } } as const;
+  const words = "I got my AWS Solutions Architect cert from Amazon in March 2025.";
+
+  it("needs an AI provider to answer", async () => {
+    expect(await sendProfileChat({ turns: [{ role: "user", text: "Hi" }] })).toEqual({ ok: false, error: "Choose an AI provider in Settings first: it's what reads your messages." });
+    expect(await prisma().job.count()).toBe(0);
+  });
+
+  it("deletes an answer once it's shown, and only that job", async () => {
+    const job = await prisma().job.create({ data: { type: "profile-chat", input: {}, status: "DONE", result: {} } });
+    const other = await prisma().job.create({ data: { type: "read-posting", input: {}, status: "DONE" } });
+    await discardProfileChat({ jobId: job.id });
+    await discardProfileChat({ jobId: other.id });
+    expect(await prisma().job.findMany({ select: { id: true } })).toEqual([{ id: other.id }]);
+  });
+
+  it("applies a change and undoes it, answering with the profile", async () => {
+    const result = await applyProfileChat({ changes: [{ change: course, confirmed: false }], versions: {}, words });
+    if (!result.ok) throw new Error(result.error);
+    expect(result.data).toMatchObject({ applied: 1, message: "Saved to your profile." });
+    expect(result.data.profile.courses).toEqual([expect.objectContaining({ name: "AWS Solutions Architect", provider: "Amazon", startYear: 2025 })]);
+
+    const undone = await undoProfileChat({ undo: result.data.undo });
+    expect(undone).toMatchObject({ ok: true, data: { message: "Undone.", profile: { courses: [] } } });
+  });
+
+  it("in strict mode, holds back words the user didn't say until they confirm them", async () => {
+    await saveSettings({ strict: true });
+    const invented = { ...course, entry: { ...course.entry, provider: "Globex" } };
+    expect(await applyProfileChat({ changes: [{ change: invented, confirmed: false }], versions: {}, words })).toEqual({
+      ok: false,
+      error: "Check the marked words first: you didn't mention them, and your profile doesn't have them.",
+    });
+    expect(await prisma().course.count()).toBe(0);
+    expect(await applyProfileChat({ changes: [{ change: invented, confirmed: true }], versions: {}, words })).toMatchObject({ ok: true });
+    expect(await prisma().course.count()).toBe(1);
+  });
+
+  it("says when an entry changed after the answer, or there's nothing new", async () => {
+    await prisma().experience.create({ data: { id: "a", role: "Designer", company: "Acme", bullets: "Ran research" } });
+    const versions = { "experience:a": new Date(0).toISOString() };
+    const points = { kind: "addBullets" as const, section: "experience" as const, id: "a", bullets: ["Shipped the design system"] };
+    expect(await applyProfileChat({ changes: [{ change: points, confirmed: true }], versions, words: "" })).toMatchObject({
+      ok: true,
+      data: { applied: 0, message: "Nothing changed: you edited those entries in the meantime." },
+    });
+    expect(await applyProfileChat({ changes: [{ change: { kind: "addSkills", names: ["Figma"] }, confirmed: true }, { change: { kind: "addSkills", names: ["figma"] }, confirmed: true }], versions: {}, words: "" })).toMatchObject({
+      ok: true,
+      data: { applied: 1 },
+    });
+    expect(await applyProfileChat({ changes: [{ change: { kind: "addSkills", names: ["FIGMA"] }, confirmed: true }], versions: {}, words: "" })).toEqual({
+      ok: false,
+      error: "Your profile already has all of that.",
+    });
   });
 });

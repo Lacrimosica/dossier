@@ -104,6 +104,10 @@ test.describe("dark, with the sidebar collapsed", () => {
     await page.getByRole("combobox", { name: "Language" }).fill("Ital");
     await expect(page.getByRole("listbox", { name: "Languages" })).toBeVisible();
     await expectAccessible(page);
+    // "Add with AI" (.scratch/profile-chat), open.
+    await page.getByRole("button", { name: "Add with AI" }).click();
+    await expect(page.getByRole("dialog", { name: "Add with AI" })).toBeVisible();
+    await expectAccessible(page);
     await context.clearCookies({ name: "dossier_session" });
     await context.addCookies([{ name: "dossier_theme", value: "dark", url: baseURL! }]);
     await page.goto("/login");

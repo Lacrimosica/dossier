@@ -14,10 +14,14 @@ import { BIRTH_ON_RESUMES, fieldsFromBasics, inEntryOrder, INTERESTS_KEY, intere
 import { findOrCreateSkill, firstSort, nextSort } from "@/lib/profile-entries";
 import { isAiConfigured } from "@/lib/ai/config";
 import { discardProfileImports, importProfileJob } from "@/lib/jobs/import-profile";
+import { discardProfileChats, PROFILE_CHAT_KEY, profileChatJob } from "@/lib/jobs/profile-chat";
 import { discardProfileReviews, reviewProfileJob, type ReviewProfileResult } from "@/lib/jobs/review-profile";
 import { startJob } from "@/lib/jobs/runner";
 import { isPhotoDataUrl, PHOTO_KEY, PHOTO_MAX_LENGTH, PHOTO_ON_RESUMES_KEY } from "@/lib/photo";
-import { loadProfileName } from "@/lib/profile-data";
+import { sourcesFor, unverifiedFacts } from "@/lib/ai/fact-guard";
+import { changeText, checkProfileChanges, MAX_CHANGES, profileChangeSchema, undoStepSchema } from "@/lib/profile-changes";
+import { applyProfileChanges, undoProfileChanges } from "@/lib/profile-changes-apply";
+import { loadProfile, loadProfileName } from "@/lib/profile-data";
 import { importCounts } from "@/lib/profile-import";
 import { applyImportedProfile } from "@/lib/profile-import-apply";
 import { MAX_FIXES } from "@/lib/profile-review";
@@ -776,6 +780,68 @@ export const discardProfileReview = action(z.object({ jobId: id }), async ({ job
     await discardProfileReviews(jobId);
   }
   return null;
+});
+
+// ─── Profile chat (.scratch/profile-chat) ───────────────────────────────────
+
+const chatTurn = z.object({ role: z.enum(["user", "assistant"]), text: z.string().trim().min(1).max(4000) });
+
+/** Sends the chat's conversation, ending with the new message; an answer still on its way is dropped. */
+export const sendProfileChat = action(z.object({ turns: z.array(chatTurn).min(1).max(100) }), async ({ turns }) => {
+  if (!(await isAiConfigured())) throw new ActionError("Choose an AI provider in Settings first: it's what reads your messages.");
+  if (turns.at(-1)?.role !== "user") throw new ActionError("Write a message first.");
+  await discardProfileChats();
+  return { jobId: await startJob(profileChatJob, { turns }, { key: PROFILE_CHAT_KEY }) };
+});
+
+/** Deletes an answer once it's shown, or stops one on its way, so the conversation isn't kept. */
+export const discardProfileChat = action(z.object({ jobId: id }), async ({ jobId }) => {
+  await discardProfileChats(jobId);
+  return null;
+});
+
+const plural = (count: number, one: string, many: string) => (count === 1 ? one : many.replace("#", String(count)));
+
+/**
+ * Applies changes from the chat, checked again against the profile as it is
+ * now. In strict mode a change with names or numbers the user didn't say
+ * needs their confirmation first. Answers with the profile, for the editor,
+ * and what Undo needs.
+ */
+export const applyProfileChat = action(
+  z.object({
+    changes: z.array(z.object({ change: profileChangeSchema, confirmed: z.boolean() })).min(1).max(MAX_CHANGES),
+    versions: z.record(z.string(), z.string()),
+    /** What the user wrote in the chat, which backs what the changes say. */
+    words: z.string().max(400_000),
+  }),
+  async ({ changes, versions, words }) => {
+    const [profile, { strict }] = await Promise.all([loadProfile(), loadSettings()]);
+    if (strict) {
+      const sources = sourcesFor(profile, null, words);
+      const unsure = changes.filter(({ change, confirmed }) => !confirmed && unverifiedFacts(changeText(change), sources).length > 0);
+      if (unsure.length > 0) throw new ActionError("Check the marked words first: you didn't mention them, and your profile doesn't have them.");
+    }
+    const checked = checkProfileChanges(profile, changes.map(({ change }) => change));
+    if (checked.changes.length === 0) {
+      throw new ActionError(checked.refused[0]?.reason ?? "Your profile already has all of that.");
+    }
+    const { applied, stale, undo } = await applyProfileChanges(prisma, checked.changes, versions);
+    revalidatePath("/", "layout");
+    const left = stale.length + checked.refused.length;
+    const message =
+      applied.length === 0
+        ? "Nothing changed: you edited those entries in the meantime."
+        : `${plural(applied.length, "Saved to your profile.", "Saved # changes to your profile.")}${left > 0 ? ` ${plural(left, "One was left out because its entry changed.", "# were left out because their entries changed.")}` : ""}`;
+    return { profile: await loadProfile(), undo, applied: applied.length, message };
+  },
+);
+
+/** The toast's Undo: takes back what the chat saved, except entries changed since. */
+export const undoProfileChat = action(z.object({ undo: z.array(undoStepSchema).max(MAX_CHANGES * 4) }), async ({ undo }) => {
+  const { kept } = await undoProfileChanges(prisma, undo);
+  revalidatePath("/", "layout");
+  return { profile: await loadProfile(), message: kept === 0 ? "Undone." : plural(kept, "Undone, except one entry you changed since.", "Undone, except # entries you changed since.") };
 });
 
 // ─── References (PRO-8) ──────────────────────────────────────────────────────

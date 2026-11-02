@@ -11,6 +11,7 @@ import "./write-letter";
 import "./zip-pdfs";
 import "./import-profile";
 import "./review-profile";
+import "./profile-chat";
 import "./draft-reply";
 import "@/lib/agent/jobs";
 import "@/lib/agent/draft";

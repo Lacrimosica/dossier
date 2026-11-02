@@ -196,4 +196,32 @@ describe("the Claude connector's tools (#221)", () => {
     });
     expect(await tool("save_job_scores", { search_id: "gone", scores: [{ number: 1, score: 1, reasons: ["?"] }] })).toMatchObject({ isError: true });
   });
+
+  it("adds to the profile and corrects an entry by id, never deleting (.scratch/profile-chat)", async () => {
+    const before = { experience: await prisma().experience.count(), courses: await prisma().course.count() };
+    const role = await prisma().experience.findFirstOrThrow({ orderBy: { sort: "asc" } });
+    const answer = await tool("update_profile", {
+      words: "I got the AWS Solutions Architect certificate from Amazon in March 2025. Also add Kubernetes.",
+      changes: [
+        { kind: "add", section: "courses", entry: { name: "AWS Solutions Architect", provider: "Amazon", startYear: 2025, startMonth: 3 } },
+        { kind: "addSkills", names: ["Kubernetes"] },
+        { kind: "addBullets", section: "experience", id: role.id, bullets: ["Cut build times by 40% at Globex"] },
+        { kind: "edit", section: "courses", id: "gone", entry: { name: "X" } },
+      ],
+    });
+    expect(answer.isError).toBe(false);
+    expect(answer.json).toMatchObject({
+      applied: [expect.stringContaining("Add a course or certificate · AWS Solutions Architect · Amazon"), "Add a skill · Kubernetes", expect.stringContaining("Cut build times")],
+      refused: [{ reason: "That course isn't in your profile any more." }],
+      check_these: expect.arrayContaining(["Globex", "40%"]),
+      link: "https://dossier.example/profile",
+    });
+    expect(await prisma().course.count()).toBe(before.courses + 1);
+    expect(await prisma().experience.count()).toBe(before.experience);
+    expect((await prisma().experience.findUniqueOrThrow({ where: { id: role.id } })).bullets).toMatch(/Cut build times by 40% at Globex$/);
+    expect(await prisma().skill.count({ where: { name: "Kubernetes" } })).toBe(1);
+
+    expect(await tool("update_profile", { words: "", changes: [{ kind: "delete", section: "experience", id: role.id }] })).toMatchObject({ isError: true });
+    expect(await prisma().experience.count()).toBe(before.experience);
+  });
 });

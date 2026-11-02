@@ -6,6 +6,7 @@ import { z } from "zod";
 import { ApplicationStatus, DocumentKind } from "@/generated/prisma/enums";
 import { approveCandidate } from "@/lib/agent/draft";
 import { isAiUsable } from "@/lib/ai/config";
+import { sourcesFor, unverifiedFacts } from "@/lib/ai/fact-guard";
 import { profileForPrompt } from "@/lib/ai/tasks/prompt-parts";
 import { scoreFrom } from "@/lib/ai/tasks/score-posting";
 import { unitsSchema } from "@/lib/application-data";
@@ -20,6 +21,8 @@ import { saveScore } from "@/lib/posting-scores";
 import { loadSearch, runSearch, showMoreFor } from "@/lib/posting-searches";
 import { foundFromPosting, storePosting } from "@/lib/postings";
 import { prisma } from "@/lib/prisma";
+import { changeText, checkProfileChanges, describeChange, MAX_CHANGES, profileChangeSchema, type ProfileChange } from "@/lib/profile-changes";
+import { applyProfileChanges } from "@/lib/profile-changes-apply";
 import { loadProfile } from "@/lib/profile-data";
 import { statusInfo } from "@/lib/status";
 import { applyStatusChange } from "@/lib/status-changes";
@@ -32,8 +35,8 @@ import { saveWrittenApplication, WRITTEN_IN_CLAUDE, writtenDetailsSchema, writte
 // The Claude connector's tools (#221, src/app/api/mcp), adapted from Anirudh
 // Sharma's fork of Dossier: search for jobs, read the profile and the
 // applications, save applications and fit scores, and move applications
-// along. Like the AI features, they never send anything, and no tool
-// deletes or archives. Contact details, private notes and the letter's
+// along, and add to the profile (.scratch/profile-chat). Like the AI
+// features, they never send anything, and no tool deletes or archives. Contact details, private notes and the letter's
 // sender and signature stay out of what Claude is given.
 
 const text = (value: unknown): CallToolResult => ({ content: [{ type: "text", text: typeof value === "string" ? value : JSON.stringify(value, null, 2) }] });
@@ -136,6 +139,8 @@ export function createDossierServer(origin: string): McpServer {
         "To draft an application, you write it yourself: call get_profile and get_posting, write a tailored resume and cover letter " +
         "from facts in the profile only (never invent experience, employers, numbers or degrees; say what's missing instead), " +
         "show the user a short summary, then save it with save_application. Read or update applications with the other tools. " +
+        "When the user tells you something to add to their profile (a role, a certificate, a skill, a fact about them), call get_profile, then update_profile " +
+        "with only what they said; ask them for anything missing, such as dates or the issuer, rather than guessing. " +
         "Nothing is ever sent for the user: drafts wait in Dossier for them to review and download as PDFs.",
     },
   );
@@ -145,10 +150,47 @@ export function createDossierServer(origin: string): McpServer {
     {
       title: "Read the profile",
       description:
-        "The user's profile in Dossier: headline, summary, facts about them, skills, languages, interests, experience (with experienceGroups when the roles are grouped under headings of their own), projects, education, courses & certificates and publications, with the ids save_application uses. Contact details and links are left out.",
+        "The user's profile in Dossier: headline, summary, facts about them, skills, languages, interests, experience (with experienceGroups when the roles are grouped under headings of their own), projects, education, courses & certificates and publications, with the ids save_application and update_profile use. Contact details and links are left out.",
       annotations: { readOnlyHint: true },
     },
     async () => text({ ...JSON.parse(profileForPrompt(await loadProfile())), link: linkTo("/profile") }),
+  );
+
+  server.registerTool(
+    "update_profile",
+    {
+      title: "Add to the profile",
+      description:
+        "Adds to the user's profile in Dossier, or corrects an entry in it: roles (experience), projects, degrees (education), courses and certificates (courses), " +
+        "points on a role or project (addBullets), skills, languages, interests, facts about the user, and the headline, summary, city and country. " +
+        "Call get_profile first, and change an existing entry by its id rather than adding it again. Use only what the user told you: never invent employers, dates, numbers or degrees, " +
+        "and ask the user for anything missing instead. Bullets are one point each, without bullet characters. Nothing is ever deleted. " +
+        "Changes apply straight away; the user can change them in the profile.",
+      inputSchema: z.object({
+        changes: z.array(profileChangeSchema).min(1).max(MAX_CHANGES).describe("What to add or change, in order"),
+        words: z.string().max(20_000).describe("What the user said about these changes, in their words; Dossier flags names and numbers that aren't in it or the profile"),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false },
+    },
+    async ({ changes, words }) => {
+      const profile = await loadProfile();
+      const checked = checkProfileChanges(profile, changes);
+      const { applied, stale } = await applyProfileChanges(prisma, checked.changes, null);
+      const said = (change: ProfileChange) => {
+        const view = describeChange(profile, change);
+        return [view.action, view.title, ...view.details].filter(Boolean).join(" · ");
+      };
+      const sources = sourcesFor(profile, null, words);
+      const checkThese = [...new Set(applied.flatMap((change) => unverifiedFacts(changeText(change), sources)))];
+      const refused = [...checked.refused, ...stale.map((change) => ({ change, reason: "That entry isn't in the profile any more." }))];
+      return text({
+        applied: applied.map(said),
+        refused: refused.length > 0 ? refused.map(({ change, reason }) => ({ change: said(change), reason })) : undefined,
+        check_these: checkThese.length > 0 ? checkThese : undefined,
+        next: checkThese.length > 0 ? "These names or numbers aren't in what the user said or their profile; ask the user to check them." : undefined,
+        link: linkTo("/profile"),
+      });
+    },
   );
 
   server.registerTool(

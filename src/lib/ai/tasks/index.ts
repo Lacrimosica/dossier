@@ -4,6 +4,7 @@ export { EXTRACT_POSTING_VERSION, extractPosting } from "./extract-posting";
 export { EXTRACT_PROFILE_VERSION, extractProfile } from "./extract-profile";
 export { MATCH_REQUIREMENTS_VERSION, matchRequirements } from "./match-requirements";
 export type { TaskOptions, TaskResult } from "./prompt-parts";
+export { PROFILE_CHAT_VERSION, profileChat, type ProfileChatResult, type ProposedChange } from "./profile-chat";
 export { REFINE_CHAT_VERSION, refineChat, type ChatTurn, type Refinement } from "./refine-chat";
 export { REGENERATE_UNIT_VERSION, regenerateUnit } from "./regenerate-unit";
 export { REVIEW_PROFILE_VERSION, reviewProfile } from "./review-profile";

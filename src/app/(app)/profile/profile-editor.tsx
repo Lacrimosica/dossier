@@ -15,6 +15,7 @@ import { EducationSection } from "./education-section";
 import { ExperienceSection } from "./experience-section";
 import { FactsSection } from "./facts-section";
 import { ProjectsSection } from "./projects-section";
+import { ProfileChat } from "./profile-chat";
 import { PublicationsSection } from "./publications-section";
 import { ReferencesSection } from "./references-section";
 import { TrackSaveContext, useSaveTracker } from "@/components/save-tracker";
@@ -34,14 +35,22 @@ export function ProfileEditor({
   section,
   order,
   companiesKeptApart,
+  aiReady,
+  strict,
 }: {
   initial: ProfileData;
   section: SectionId;
   order: ProfileOrder;
   /** Company spellings the user said are different companies (Settings → companiesKeptApart). */
   companiesKeptApart: string[];
+  /** An AI provider is set up, for "Add with AI". */
+  aiReady: boolean;
+  /** Settings → "Never invent experience". */
+  strict: boolean;
 }) {
   const [profile, setProfile] = useState(initial);
+  // Goes up when "Add with AI" saves, so the section shows the profile as saved rather than what its fields held.
+  const [revision, setRevision] = useState(0);
   const saves = useSaveTracker();
 
   const index = SECTIONS.findIndex((entry) => entry.id === section);
@@ -88,6 +97,15 @@ export function ProfileEditor({
         actions={
           <>
             <SavedIndicator status={saves.status} savedAt={saves.savedAt} />
+            <ProfileChat
+              profile={profile}
+              aiReady={aiReady}
+              strict={strict}
+              onProfileChange={(saved) => {
+                setProfile(saved);
+                setRevision((current) => current + 1);
+              }}
+            />
             <Link href="/profile/import" className={buttonClassName("secondary")}>
               Import from a resume
             </Link>
@@ -134,7 +152,9 @@ export function ProfileEditor({
             </p>
           </div>
 
-          {body[section]}
+          <div key={revision} className="contents">
+            {body[section]}
+          </div>
 
           <div className="flex items-center justify-between gap-3 pt-2">
             {previous ? (

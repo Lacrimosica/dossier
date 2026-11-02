@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { action, ActionError } from "@/lib/action";
 import { prisma } from "@/lib/prisma";
+import { MAX_FACTS } from "@/lib/profile";
 import { nextSort } from "@/lib/profile-entries";
 
 // Facts the user tells the AI (PRO-14, APP-15): the profile's own when
@@ -14,8 +15,6 @@ const id = z.string().min(1);
 const applicationId = id.nullable();
 /** About a short paragraph: a fact, not a document. */
 const text = z.string().max(1000);
-/** Plenty for one person or one application, and still a prompt a local model can take. */
-const MAX_FACTS = 50;
 
 async function checkRoom(applicationId: string | null) {
   if (applicationId && !(await prisma.application.findUnique({ where: { id: applicationId }, select: { id: true } }))) {

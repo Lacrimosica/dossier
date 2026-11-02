@@ -145,7 +145,7 @@ async function applyLanguages(tx: Tx, profile: ImportedProfile): Promise<void> {
 }
 
 /** Sort values for new entries: first in an order set by hand, else after the rest. */
-async function sorter(tx: Tx, section: "experience" | "project" | "education" | "course", manual: boolean): Promise<() => number> {
+export async function sorter(tx: Tx, section: "experience" | "project" | "education" | "course", manual: boolean): Promise<() => number> {
   const range = { _min: { sort: true }, _max: { sort: true } } as const;
   const { _min, _max } =
     section === "experience"

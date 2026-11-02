@@ -155,6 +155,19 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
     signOff: "Warm regards,",
   }),
 
+  profile_chat: (messages) => {
+    const said = messages.at(-1)!.content;
+    const empty = { question: false, declined: false, addExperience: [], addProjects: [], addEducation: [], addCourses: [], edits: [], addBullets: [], skills: [], languages: [], interests: [], facts: [], basics: [] };
+    if (/certificate/i.test(said)) {
+      return {
+        ...empty,
+        reply: "Here's your certificate. Add it if it looks right.",
+        addCourses: [{ name: "AWS Solutions Architect", provider: "Amazon", duration: "", link: "", notes: "", startYear: 2025, startMonth: 3, endYear: null, endMonth: null }],
+      };
+    }
+    if (/\bwhen\b/i.test(said)) return { ...empty, reply: "When did you start there?", question: true };
+    return { ...empty, reply: "Tell me what to add to your profile: a role, a certificate, a skill or a fact about you." };
+  },
   refinement: (messages) => {
     const request = messages.at(-1)!.content;
     if (/kubernetes/i.test(request)) {
