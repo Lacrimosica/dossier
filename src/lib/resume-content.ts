@@ -2,7 +2,7 @@ import { HEADLINE_UNIT, type Unit } from "@/lib/application-data";
 import { ageLabel, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { publicationHref, publicationLink } from "@/lib/citation";
 import { companyGroups, companySpan } from "@/lib/companies";
-import { ageOn, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
+import { ageOn, formatBirthDate, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
 
 // What a resume shows, worked out from the profile (the base resume) or from
 // a tailored document's units, so the renderer only has to lay it out.
@@ -12,7 +12,7 @@ export type ResumeContent = {
   headline: string;
   /** The profile photo's data URL, or null when the resume has none (#224). */
   photo: string | null;
-  /** Email, phone, "City, Country", website, LinkedIn and "Age N", whichever are filled in. */
+  /** Email, phone, "City, Country", website, LinkedIn and "Age N" or "Born …", whichever are filled in. */
   contacts: string[];
   summary: string;
   /**
@@ -94,7 +94,8 @@ export const CONTACT_SEPARATOR = "  ·  ";
 
 /** Contact details in the order the resume header lists them. */
 export function contactItems(basics: Basics, today = new Date(), labels = ENGLISH_LABELS): string[] {
-  const age = basics.showAge ? ageOn(basics.dob, today) : null;
+  const age = basics.birthOnResumes === "age" ? ageOn(basics.dob, today) : null;
+  const birthDate = basics.birthOnResumes === "date" ? formatBirthDate(basics.dob, labels.locale) : "";
   return [
     basics.email,
     basics.phone,
@@ -102,6 +103,7 @@ export function contactItems(basics: Basics, today = new Date(), labels = ENGLIS
     basics.website,
     basics.linkedin,
     age === null ? "" : ageLabel(age, labels),
+    birthDate && labels.born(birthDate),
   ]
     .map((item) => item.trim())
     .filter(Boolean);

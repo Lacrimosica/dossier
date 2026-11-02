@@ -312,7 +312,7 @@ export function sampleProfile(sample: Sample): ProfileData {
       country: sample.country,
       linkedin: "",
       summary: sample.summary,
-      showAge: false,
+      birthOnResumes: "none",
     },
     skills: sample.skills.map((name, index) => ({ id: `skill-${index}`, name })),
     languages: [],

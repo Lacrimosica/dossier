@@ -164,18 +164,25 @@ describe("stored basics", () => {
     ...(Object.fromEntries(BASICS_FIELDS.map((field) => [field, ""])) as Record<(typeof BASICS_FIELDS)[number], string>),
     name: "Jane Doe",
     dob: "1992-04-18",
-    showAge: true,
+    birthOnResumes: "date" as const,
   };
 
   it("stores filled-in fields as text and marks empty ones for removal", () => {
-    expect(fieldsFromBasics(basics)).toMatchObject({ name: "Jane Doe", dob: "1992-04-18", showAge: "true", email: null });
-    expect(fieldsFromBasics({ ...basics, showAge: false }).showAge).toBeNull();
+    expect(fieldsFromBasics(basics)).toMatchObject({ name: "Jane Doe", dob: "1992-04-18", birthOnResumes: "date", email: null });
+    expect(fieldsFromBasics({ ...basics, birthOnResumes: "none" }).birthOnResumes).toBeNull();
+  });
+
+  it("reads an old profile's show-age switch as showing the age, and removes it on save", () => {
+    expect(basicsFromFields([{ key: "showAge", value: "true" }]).birthOnResumes).toBe("age");
+    expect(basicsFromFields([{ key: "showAge", value: "false" }]).birthOnResumes).toBe("none");
+    expect(basicsFromFields([{ key: "showAge", value: "true" }, { key: "birthOnResumes", value: "date" }]).birthOnResumes).toBe("date");
+    expect(fieldsFromBasics(basics).showAge).toBeNull();
   });
 
   it("reads them back, with missing keys empty and unknown ones ignored", () => {
     const rows = Object.entries(fieldsFromBasics(basics)).flatMap(([key, value]) => (value === null ? [] : [{ key, value }]));
     expect(basicsFromFields(rows)).toEqual(basics);
-    expect(basicsFromFields([{ key: "nickname", value: "Lee" }])).toEqual({ ...basics, name: "", dob: "", showAge: false });
+    expect(basicsFromFields([{ key: "nickname", value: "Lee" }])).toEqual({ ...basics, name: "", dob: "", birthOnResumes: "none" });
   });
 });
 

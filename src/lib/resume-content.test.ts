@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { documentLabels } from "@/lib/document-labels";
 import { demoProfile, demoResumeUnits } from "@/lib/demo-profile";
 import type { ProfileData } from "@/lib/profile";
 
@@ -20,9 +21,12 @@ describe("contactItems", () => {
     ]);
   });
 
-  it("adds the age only when show-age is on", () => {
-    expect(contactItems({ ...basics, showAge: true }, today).at(-1)).toBe("Age 34");
-    expect(contactItems({ ...basics, showAge: true, dob: "" }, today)).toHaveLength(5);
+  it("adds the age or the date of birth only when chosen", () => {
+    expect(contactItems({ ...basics, birthOnResumes: "age" }, today).at(-1)).toBe("Age 34");
+    expect(contactItems({ ...basics, birthOnResumes: "age", dob: "" }, today)).toHaveLength(5);
+    expect(contactItems({ ...basics, birthOnResumes: "date" }, today).at(-1)).toBe("Born April 18, 1992");
+    expect(contactItems({ ...basics, birthOnResumes: "date" }, today, documentLabels("German")).at(-1)).toBe("Geboren am 18. April 1992");
+    expect(contactItems({ ...basics, birthOnResumes: "date", dob: "" }, today)).toHaveLength(5);
   });
 
   it("skips what's empty", () => {
@@ -66,7 +70,7 @@ describe("resumeContent", () => {
 
   it("leaves an empty profile empty, apart from a placeholder name", () => {
     const empty: ProfileData = {
-      basics: { ...profile.basics, ...Object.fromEntries(Object.keys(profile.basics).map((key) => [key, ""])), showAge: false },
+      basics: { ...profile.basics, ...Object.fromEntries(Object.keys(profile.basics).map((key) => [key, ""])), birthOnResumes: "none" },
       skills: [],
       languages: [],
       experience: [],

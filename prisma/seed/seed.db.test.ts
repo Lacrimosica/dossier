@@ -55,7 +55,7 @@ describe("demo seed", () => {
       headline: "Senior Product Designer",
       dob: "1992-04-18",
       city: "Rotterdam",
-      showAge: false,
+      birthOnResumes: "none",
     });
     const counts = await Promise.all([
       db.experience.count(),

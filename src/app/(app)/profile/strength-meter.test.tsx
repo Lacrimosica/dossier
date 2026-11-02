@@ -7,7 +7,7 @@ import { StrengthMeter } from "./strength-meter";
 
 const basics: ProfileData["basics"] = {
   ...(Object.fromEntries(BASICS_FIELDS.map((field) => [field, ""])) as Record<(typeof BASICS_FIELDS)[number], string>),
-  showAge: false,
+  birthOnResumes: "none",
 };
 
 describe("StrengthMeter", () => {

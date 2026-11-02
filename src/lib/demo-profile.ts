@@ -2,7 +2,7 @@ import type { LanguageLevel } from "@/generated/prisma/enums";
 import type { Unit } from "@/lib/application-data";
 import { publicationLabel } from "@/lib/citation";
 import { languageCode } from "@/lib/languages";
-import { LANGUAGE_LEVELS, type DateSpan, type ProfileData } from "@/lib/profile";
+import { LANGUAGE_LEVELS, type BirthOnResumes, type DateSpan, type ProfileData } from "@/lib/profile";
 
 import sample from "../../prisma/seed/prototype-sample.json";
 
@@ -43,7 +43,7 @@ export const LEVELS_BY_LABEL = new Map<string, LanguageLevel>(
 
 /** The sample profile as `loadProfile()` returns it, with the prototype's ids. */
 export function demoProfile(): ProfileData {
-  const { experience, projects, education, courses, publications, skills, languages, references, facts, showAge, ...basics } = sample.profile;
+  const { experience, projects, education, courses, publications, skills, languages, references, facts, birthOnResumes, ...basics } = sample.profile;
   const skillId = (name: string) => `skill-${skills.indexOf(name) + 1}`;
   return {
     basics: {
@@ -58,7 +58,7 @@ export function demoProfile(): ProfileData {
       country: basics.country,
       linkedin: basics.linkedin,
       summary: basics.summary,
-      showAge,
+      birthOnResumes: birthOnResumes as BirthOnResumes,
     },
     skills: skills.map((name) => ({ id: skillId(name), name })),
     languages: languages.map(({ name, level }, index) => ({

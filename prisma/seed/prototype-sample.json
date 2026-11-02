@@ -6,7 +6,7 @@
     "email": "jane.doe@example.com",
     "phone": "+31 6 1234 5678",
     "dob": "1992-04-18",
-    "showAge": false,
+    "birthOnResumes": "none",
     "address": "Westersingel 42",
     "city": "Rotterdam",
     "country": "Netherlands",

@@ -57,7 +57,7 @@ describe("ResumeDocument", () => {
   });
 
   it("leaves out the tinted panel when the sidebar has nothing in it", () => {
-    const noContacts = { email: "", phone: "", city: "", country: "", website: "", linkedin: "", showAge: false };
+    const noContacts = { email: "", phone: "", city: "", country: "", website: "", linkedin: "", birthOnResumes: "none" as const };
     const empty = { ...profile, basics: { ...profile.basics, ...noContacts }, skills: [], languages: [] };
     const { container } = render(<ResumeDocument theme={theme("studio")} profile={empty} paper="A4" today={today} />);
     expect(container.innerHTML).not.toMatch(/sidebarPanel/);
@@ -112,7 +112,7 @@ describe("ResumeDocument", () => {
   });
 
   it("writes its headings, dates, levels and age in the document's language", () => {
-    const withAge = { ...profile, basics: { ...profile.basics, showAge: true } };
+    const withAge = { ...profile, basics: { ...profile.basics, birthOnResumes: "age" as const } };
     render(<ResumeDocument theme={theme("modern")} profile={withAge} paper="A4" today={today} language="German" includeReferences />);
     expect(sectionTitles()).toEqual(["Kontakt", "Kenntnisse", "Sprachen", "Profil", "Berufserfahrung", "Projekte", "Ausbildung", "Weiterbildung und Zertifikate", "Publikationen", "Referenzen"]);
     expect(screen.getByText("März 2021 – Heute")).toBeInTheDocument();

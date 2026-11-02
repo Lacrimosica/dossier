@@ -4,7 +4,7 @@ import { spokenLanguageName } from "@/lib/languages";
 import { LANGUAGE_LEVELS } from "@/lib/profile";
 
 // The words a document adds around the profile's own: section headings,
-// "Present", language levels, "Age 34", and a cover letter's recipient and
+// "Present", language levels, "Age 34" or "Born 18 April 1992", and a cover letter's recipient and
 // greeting where the AI didn't write them. Each language in the "Write
 // documents in" list has its own; any other language gets English ones,
 // like the app around them.
@@ -27,6 +27,8 @@ export type DocumentLabels = {
   present: string;
   /** "Age 34", given the number in the locale's digits. */
   age: (years: string) => string;
+  /** "Born 18 April 1992", given the date in the locale's words. */
+  born: (date: string) => string;
   levels: Record<LanguageLevel, string>;
   /** A cover letter's recipient, after the company's name: "Northwind · Hiring team". */
   hiringTeam: string;
@@ -62,6 +64,7 @@ const WORDS: Record<string, Words> = {
     references: "References",
     present: "Present",
     age: (years) => `Age ${years}`,
+    born: (date) => `Born ${date}`,
     // As the profile editor names them.
     levels: Object.fromEntries(LANGUAGE_LEVELS.map(({ value, label }) => [value, label])) as Record<LanguageLevel, string>,
     hiringTeam: "Hiring team",
@@ -80,6 +83,7 @@ const WORDS: Record<string, Words> = {
     references: "Referenties",
     present: "Heden",
     age: (years) => `${years} jaar`,
+    born: (date) => `Geboren ${date}`,
     levels: levels(["Moedertaal", "Vloeiend (C2)", "Zeer goed (C1)", "Goed (B2)", "Redelijk (B1)", "Basis (A2)", "Beginner (A1)"]),
     hiringTeam: "Recruitmentteam",
     greeting: (company) => (company ? `Beste team van ${company},` : "Geachte heer, mevrouw,"),
@@ -97,6 +101,7 @@ const WORDS: Record<string, Words> = {
     references: "Referenzen",
     present: "Heute",
     age: (years) => `${years} Jahre`,
+    born: (date) => `Geboren am ${date}`,
     levels: levels(["Muttersprache", "Fließend (C2)", "Fortgeschritten (C1)", "Gute Kenntnisse (B2)", "Mittelstufe (B1)", "Grundkenntnisse (A2)", "Anfänger (A1)"]),
     hiringTeam: "Personalabteilung",
     greeting: () => "Sehr geehrte Damen und Herren,",
@@ -114,6 +119,7 @@ const WORDS: Record<string, Words> = {
     references: "Références",
     present: "Aujourd’hui",
     age: (years) => `${years} ans`,
+    born: (date) => `Date de naissance : ${date}`,
     levels: levels(["Langue maternelle", "Courant (C2)", "Avancé (C1)", "Intermédiaire supérieur (B2)", "Intermédiaire (B1)", "Élémentaire (A2)", "Débutant (A1)"]),
     hiringTeam: "Service recrutement",
     greeting: () => "Madame, Monsieur,",
@@ -131,6 +137,7 @@ const WORDS: Record<string, Words> = {
     references: "Referencias",
     present: "Actualidad",
     age: (years) => `${years} años`,
+    born: (date) => `Fecha de nacimiento: ${date}`,
     levels: levels(["Nativo", "Fluido (C2)", "Avanzado (C1)", "Intermedio alto (B2)", "Intermedio (B1)", "Básico (A2)", "Principiante (A1)"]),
     hiringTeam: "Equipo de selección",
     greeting: (company) => (company ? `Estimado equipo de ${company}:` : "Estimado equipo de selección:"),
@@ -148,6 +155,7 @@ const WORDS: Record<string, Words> = {
     references: "Referenze",
     present: "Oggi",
     age: (years) => `${years} anni`,
+    born: (date) => `Data di nascita: ${date}`,
     levels: levels(["Madrelingua", "Fluente (C2)", "Avanzato (C1)", "Intermedio superiore (B2)", "Intermedio (B1)", "Elementare (A2)", "Principiante (A1)"]),
     hiringTeam: "Ufficio selezione",
     greeting: (company) => (company ? `Gentile team di ${company},` : "Gentili responsabili della selezione,"),
@@ -165,6 +173,7 @@ const WORDS: Record<string, Words> = {
     references: "Referências",
     present: "Atual",
     age: (years) => `${years} anos`,
+    born: (date) => `Data de nascimento: ${date}`,
     levels: levels(["Nativo", "Fluente (C2)", "Avançado (C1)", "Intermediário superior (B2)", "Intermediário (B1)", "Básico (A2)", "Iniciante (A1)"]),
     hiringTeam: "Equipe de recrutamento",
     greeting: (company) => (company ? `Prezada equipe de ${company},` : "Prezada equipe de recrutamento,"),
@@ -182,6 +191,7 @@ const WORDS: Record<string, Words> = {
     references: "Referencje",
     present: "Obecnie",
     age: (years) => `Wiek: ${years}`,
+    born: (date) => `Data urodzenia: ${date}`,
     levels: levels(["Język ojczysty", "Biegły (C2)", "Zaawansowany (C1)", "Wyższy średnio zaawansowany (B2)", "Średnio zaawansowany (B1)", "Podstawowy (A2)", "Początkujący (A1)"]),
     hiringTeam: "Dział rekrutacji",
     greeting: () => "Szanowni Państwo,",
@@ -199,6 +209,7 @@ const WORDS: Record<string, Words> = {
     references: "Referenser",
     present: "Nu",
     age: (years) => `${years} år`,
+    born: (date) => `Född ${date}`,
     levels: levels(["Modersmål", "Flytande (C2)", "Avancerad (C1)", "Övre medelnivå (B2)", "Medelnivå (B1)", "Grundläggande (A2)", "Nybörjare (A1)"]),
     hiringTeam: "Rekryteringsteamet",
     greeting: () => "Hej,",
@@ -216,6 +227,7 @@ const WORDS: Record<string, Words> = {
     references: "Referencer",
     present: "Nu",
     age: (years) => `${years} år`,
+    born: (date) => `Født ${date}`,
     levels: levels(["Modersmål", "Flydende (C2)", "Avanceret (C1)", "Øvre mellemniveau (B2)", "Mellemniveau (B1)", "Grundlæggende (A2)", "Begynder (A1)"]),
     hiringTeam: "Rekrutteringsteamet",
     greeting: () => "Kære rekrutteringsansvarlige,",
@@ -233,6 +245,7 @@ const WORDS: Record<string, Words> = {
     references: "Referanser",
     present: "Nå",
     age: (years) => `${years} år`,
+    born: (date) => `Født ${date}`,
     levels: levels(["Morsmål", "Flytende (C2)", "Avansert (C1)", "Øvre middels (B2)", "Middels (B1)", "Grunnleggende (A2)", "Nybegynner (A1)"]),
     hiringTeam: "Rekrutteringsteamet",
     greeting: () => "Hei,",
@@ -250,6 +263,7 @@ const WORDS: Record<string, Words> = {
     references: "Suosittelijat",
     present: "Nyt",
     age: (years) => `${years} vuotta`,
+    born: (date) => `Syntynyt ${date}`,
     levels: levels(["Äidinkieli", "Sujuva (C2)", "Edistynyt (C1)", "Hyvä (B2)", "Keskitaso (B1)", "Perustaso (A2)", "Alkeet (A1)"]),
     hiringTeam: "Rekrytointitiimi",
     greeting: () => "Hyvä vastaanottaja,",
@@ -267,6 +281,7 @@ const WORDS: Record<string, Words> = {
     references: "Reference",
     present: "Dosud",
     age: (years) => `Věk: ${years}`,
+    born: (date) => `Datum narození: ${date}`,
     levels: levels(["Mateřský jazyk", "Plynulá znalost (C2)", "Pokročilý (C1)", "Středně pokročilý (B2)", "Mírně pokročilý (B1)", "Základní (A2)", "Začátečník (A1)"]),
     hiringTeam: "Personální oddělení",
     greeting: () => "Vážená paní, vážený pane,",
@@ -284,6 +299,7 @@ const WORDS: Record<string, Words> = {
     references: "Συστάσεις",
     present: "Σήμερα",
     age: (years) => `${years} ετών`,
+    born: (date) => `Ημερομηνία γέννησης: ${date}`,
     levels: levels(["Μητρική γλώσσα", "Άπταιστα (C2)", "Προχωρημένο (C1)", "Ανώτερο μέσο (B2)", "Μέσο (B1)", "Βασικό (A2)", "Αρχάριο (A1)"]),
     hiringTeam: "Τμήμα προσλήψεων",
     greeting: () => "Αξιότιμες κυρίες και κύριοι,",
@@ -301,6 +317,7 @@ const WORDS: Record<string, Words> = {
     references: "Referanslar",
     present: "Günümüz",
     age: (years) => `${years} yaşında`,
+    born: (date) => `Doğum tarihi: ${date}`,
     levels: levels(["Anadil", "Akıcı (C2)", "İleri (C1)", "Orta üstü (B2)", "Orta (B1)", "Temel (A2)", "Başlangıç (A1)"]),
     hiringTeam: "İnsan Kaynakları",
     greeting: () => "Sayın Yetkili,",
@@ -318,6 +335,7 @@ const WORDS: Record<string, Words> = {
     references: "المراجع",
     present: "حتى الآن",
     age: (years) => `العمر: ${years}`,
+    born: (date) => `تاريخ الميلاد: ${date}`,
     levels: levels(["اللغة الأم", "طلاقة (C2)", "متقدم (C1)", "فوق المتوسط (B2)", "متوسط (B1)", "أساسي (A2)", "مبتدئ (A1)"]),
     hiringTeam: "فريق التوظيف",
     greeting: () => "السادة المحترمون،",
@@ -335,6 +353,7 @@ const WORDS: Record<string, Words> = {
     references: "معرف‌ها",
     present: "تاکنون",
     age: (years) => `${years} سال`,
+    born: (date) => `تاریخ تولد: ${date}`,
     levels: levels(["زبان مادری", "مسلط (C2)", "پیشرفته (C1)", "بالاتر از متوسط (B2)", "متوسط (B1)", "مقدماتی (A2)", "مبتدی (A1)"]),
     hiringTeam: "واحد منابع انسانی",
     greeting: () => "با سلام و احترام،",
@@ -352,6 +371,7 @@ const WORDS: Record<string, Words> = {
     references: "संदर्भ",
     present: "वर्तमान",
     age: (years) => `आयु ${years} वर्ष`,
+    born: (date) => `जन्म तिथि: ${date}`,
     levels: levels(["मातृभाषा", "धाराप्रवाह (C2)", "उन्नत (C1)", "उच्च-मध्यम (B2)", "मध्यम (B1)", "प्रारंभिक (A2)", "शुरुआती (A1)"]),
     hiringTeam: "भर्ती टीम",
     greeting: () => "आदरणीय महोदय/महोदया,",
@@ -369,6 +389,7 @@ const WORDS: Record<string, Words> = {
     references: "推荐人",
     present: "至今",
     age: (years) => `${years}岁`,
+    born: (date) => `出生日期：${date}`,
     levels: levels(["母语", "流利（C2）", "高级（C1）", "中高级（B2）", "中级（B1）", "初级（A2）", "入门（A1）"]),
     hiringTeam: "招聘团队",
     greeting: (company) => (company ? `尊敬的${company}招聘团队：` : "尊敬的招聘负责人："),
@@ -386,6 +407,7 @@ const WORDS: Record<string, Words> = {
     references: "推薦者",
     present: "現在",
     age: (years) => `${years}歳`,
+    born: (date) => `生年月日：${date}`,
     levels: levels(["ネイティブ", "流暢（C2）", "上級（C1）", "中上級（B2）", "中級（B1）", "初級（A2）", "入門（A1）"]),
     hiringTeam: "人事部",
     greeting: () => "採用ご担当者様",
@@ -403,6 +425,7 @@ const WORDS: Record<string, Words> = {
     references: "추천인",
     present: "현재",
     age: (years) => `${years}세`,
+    born: (date) => `생년월일: ${date}`,
     levels: levels(["원어민", "유창함 (C2)", "고급 (C1)", "중상급 (B2)", "중급 (B1)", "초급 (A2)", "입문 (A1)"]),
     hiringTeam: "채용 담당자",
     greeting: (company) => (company ? `${company} 채용 담당자님께` : "채용 담당자님께"),

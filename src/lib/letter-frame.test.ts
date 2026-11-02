@@ -27,7 +27,7 @@ describe("the letter's frame (E8-11)", () => {
   });
 
   it("draws the parts the AI didn't write in the letter's language", () => {
-    const frame = defaultFrame({ ...context, basics: { ...basics, showAge: true }, labels: documentLabels("German") });
+    const frame = defaultFrame({ ...context, basics: { ...basics, birthOnResumes: "age" }, labels: documentLabels("German") });
     expect(frame).toMatchObject({ recipient: "Ledgerly · Personalabteilung\nAmsterdam", greeting: "Sehr geehrte Damen und Herren," });
     expect(frame.sender).toMatch(/ · 34 Jahre$/);
     expect(defaultFrame({ ...context, company: "", labels: documentLabels("Spanish") })).toMatchObject({

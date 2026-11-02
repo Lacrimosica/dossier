@@ -85,26 +85,46 @@ export const isOptionalBasic = (field: BasicsField) => !(REQUIRED_BASICS as read
 // The profile as the editor works with it: plain values (dates of birth as
 // "YYYY-MM-DD"), loaded by loadProfile() in src/lib/profile-data.ts.
 
-export type Basics = Record<BasicsField, string> & { showAge: boolean };
+/**
+ * What resumes say about the date of birth: nothing (the default, as many
+ * places advise leaving it out), the age as of the day the document is made,
+ * or the date itself, which doesn't go stale on a resume kept for a while.
+ */
+export const BIRTH_ON_RESUMES = ["none", "age", "date"] as const;
+export type BirthOnResumes = (typeof BIRTH_ON_RESUMES)[number];
+
+export type Basics = Record<BasicsField, string> & { birthOnResumes: BirthOnResumes };
 
 // The basics are stored in the ProfileField table, one text row per filled-in
-// field: text as typed, the date of birth as "YYYY-MM-DD", showAge as "true".
+// field: text as typed, the date of birth as "YYYY-MM-DD", birthOnResumes as
+// "age" or "date". Profiles from before the choice have showAge "true" instead.
 
-/** The keys in the ProfileField table. */
-export const PROFILE_KEYS = [...BASICS_FIELDS, "showAge"] as const;
+/** The keys in the ProfileField table; showAge is only read, as "age". */
+export const PROFILE_KEYS = [...BASICS_FIELDS, "birthOnResumes", "showAge"] as const;
 export type ProfileKey = (typeof PROFILE_KEYS)[number];
+
+function birthOnResumes(values: Map<string, string>): BirthOnResumes {
+  const value = values.get("birthOnResumes");
+  if (value === "age" || value === "date") return value;
+  return values.get("showAge") === "true" ? "age" : "none";
+}
 
 /** The basics from ProfileField rows; a missing key is empty, and keys it doesn't know are ignored. */
 export function basicsFromFields(rows: readonly { key: string; value: string }[]): Basics {
   const values = new Map(rows.map((row) => [row.key, row.value]));
   const basics = Object.fromEntries(BASICS_FIELDS.map((field) => [field, values.get(field) ?? ""]));
-  return { ...(basics as Record<BasicsField, string>), showAge: values.get("showAge") === "true" };
+  return { ...(basics as Record<BasicsField, string>), birthOnResumes: birthOnResumes(values) };
 }
 
 /** The value to store for each key, or null for an empty one, whose row is removed. */
 export function fieldsFromBasics(basics: Basics): Record<ProfileKey, string | null> {
   const fields = Object.fromEntries(BASICS_FIELDS.map((field) => [field, basics[field] || null]));
-  return { ...(fields as Record<BasicsField, string | null>), showAge: basics.showAge ? "true" : null };
+  return {
+    ...(fields as Record<BasicsField, string | null>),
+    birthOnResumes: basics.birthOnResumes === "none" ? null : basics.birthOnResumes,
+    // Saving moves an old profile's showAge row over to birthOnResumes.
+    showAge: null,
+  };
 }
 
 export type SkillItem = { id: string; name: string };
@@ -200,6 +220,17 @@ export function ageOn(dob: string, today: Date): number | null {
     today.getMonth() + 1 < month || (today.getMonth() + 1 === month && today.getDate() < day);
   if (beforeBirthday) age -= 1;
   return age >= 0 && age < 150 ? age : null;
+}
+
+/** "18 April 1992" from a "YYYY-MM-DD" date of birth, in the locale's words and digits; "" without a valid one. */
+export function formatBirthDate(dob: string, locale = "en-US"): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dob);
+  if (!match) return "";
+  const [year, month, day] = match.slice(1).map(Number);
+  // Gregorian, like the other dates (formatMonthYear).
+  return new Intl.DateTimeFormat(`${locale}-u-ca-gregory`, { dateStyle: "long", timeZone: "UTC" }).format(
+    Date.UTC(year, month - 1, day),
+  );
 }
 
 /**

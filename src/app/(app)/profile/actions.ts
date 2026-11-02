@@ -10,7 +10,7 @@ import { companyKey } from "@/lib/companies";
 import { findSpokenLanguage } from "@/lib/language-data";
 import { LANGUAGE_CODES, languageName, spokenLanguage } from "@/lib/languages";
 import { prisma } from "@/lib/prisma";
-import { fieldsFromBasics, inEntryOrder } from "@/lib/profile";
+import { BIRTH_ON_RESUMES, fieldsFromBasics, inEntryOrder } from "@/lib/profile";
 import { findOrCreateSkill, firstSort, nextSort } from "@/lib/profile-entries";
 import { isAiConfigured } from "@/lib/ai/config";
 import { discardProfileImports, importProfileJob } from "@/lib/jobs/import-profile";
@@ -43,7 +43,7 @@ export const saveBasics = action(
     country: text(120),
     linkedin: text(500),
     summary: text(5000),
-    showAge: z.boolean(),
+    birthOnResumes: z.enum(BIRTH_ON_RESUMES),
   }),
   async (basics) => {
     const before = await loadProfileName();

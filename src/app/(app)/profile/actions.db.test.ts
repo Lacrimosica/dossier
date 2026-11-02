@@ -75,7 +75,7 @@ afterAll(() => prisma().$disconnect());
 
 const basics = {
   name: "Jane Doe", headline: "", email: "", phone: "", dob: "1992-04-18", website: "",
-  address: "", city: "", country: "", linkedin: "", summary: "", showAge: true,
+  address: "", city: "", country: "", linkedin: "", summary: "", birthOnResumes: "age" as const,
 };
 
 describe("profile actions", () => {
@@ -83,13 +83,13 @@ describe("profile actions", () => {
     const fields = () => prisma().profileField.findMany({ select: { key: true, value: true }, orderBy: { key: "asc" } });
     await expect(saveBasics(basics)).resolves.toEqual({ ok: true, data: null });
     expect(await fields()).toEqual([
+      { key: "birthOnResumes", value: "age" },
       { key: "dob", value: "1992-04-18" },
       { key: "name", value: "Jane Doe" },
-      { key: "showAge", value: "true" },
     ]);
     expect((await loadProfile()).basics).toEqual(basics);
 
-    await saveBasics({ ...basics, dob: "", showAge: false });
+    await saveBasics({ ...basics, dob: "", birthOnResumes: "none" });
     expect(await fields()).toEqual([{ key: "name", value: "Jane Doe" }]);
   });
 

@@ -3,12 +3,12 @@
 import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutosave } from "@/hooks/use-autosave";
 import type { ProfilePhoto } from "@/lib/photo";
-import { ageOn, isOptionalBasic, type Basics, type BasicsField } from "@/lib/profile";
+import { ageOn, formatBirthDate, isOptionalBasic, type Basics, type BasicsField, type BirthOnResumes } from "@/lib/profile";
 
 import { saveBasics } from "./actions";
 import { PhotoField } from "./photo-field";
@@ -110,21 +110,22 @@ export function BasicsSection({
         onChange={(event) => set("summary", event.target.value)}
         onBlur={() => leave("summary")}
       />
-      <Checkbox
-        className="col-span-2 pt-1"
-        label={
-          <>
-            Show my age on resumes{" "}
-            <span className="text-meta text-muted">
-              {age === null
-                ? "(add your date of birth first)"
-                : `(you're ${age}; off by default, as many places advise leaving it out)`}
-            </span>
-          </>
+      {/* An age is only true on the day the resume is made; a resume kept for months needs the date. */}
+      <Select
+        className="col-span-2"
+        label="Date of birth on resumes"
+        hint={
+          age === null
+            ? "Add your date of birth first."
+            : "Off by default, as many places advise leaving it out. An age goes stale on a resume you keep using; the date doesn't."
         }
-        checked={basics.showAge}
-        onChange={(event) => onChange({ ...basics, showAge: event.target.checked })}
-      />
+        value={basics.birthOnResumes}
+        onChange={(event) => onChange({ ...basics, birthOnResumes: event.target.value as BirthOnResumes })}
+      >
+        <option value="none">Leave it off</option>
+        <option value="age">{age === null ? "Show my age" : `Show my age (${age} today)`}</option>
+        <option value="date">{age === null ? "Show my date of birth" : `Show my date of birth (${formatBirthDate(basics.dob)})`}</option>
+      </Select>
     </Card>
   );
 }
