@@ -25,6 +25,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setShowLocations,
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
@@ -39,6 +40,7 @@ vi.mock("./actions", () => ({
   setApplicationTheme: vi.fn(async () => ({ ok: true, data: null })),
   setFollowThemeLayout: vi.fn(async () => ({ ok: true, data: null })),
   setShowPhoto: vi.fn(async () => ({ ok: true, data: null })),
+  setShowLocations: vi.fn(async () => ({ ok: true, data: null })),
   saveUnit: vi.fn(async ({ text }: { text: string }) => ({ ok: true, data: { text } })),
   startRegenerating: vi.fn(async () => ({ ok: true, data: "job-1" })),
   restoreUnit: vi.fn(async () => ({ ok: true, data: null })),
@@ -183,7 +185,7 @@ describe("the document tabs (E8-2)", () => {
     const resume = screen.getByRole("article", { name: "Resume" });
     expect(resume.querySelector('[data-unit="summary"]')).toHaveTextContent(summary.text);
     // Editorial is a single-column theme: nothing to switch.
-    expect(screen.queryByRole("switch")).not.toBeInTheDocument();
+    expect(screen.queryByRole("switch", { name: "Sidebar layout" })).not.toBeInTheDocument();
   });
 
   it("lets the headline be edited like any other part (.scratch/tailored-headline)", () => {
@@ -229,6 +231,21 @@ describe("the document tabs (E8-2)", () => {
 
     render(<ApplicationView {...props} />);
     expect(screen.queryByRole("switch", { name: "Photo" })).not.toBeInTheDocument();
+  });
+
+  it("has a Locations switch while a role has a location, starting from the application's choice", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} />);
+    const toggle = screen.getByRole("switch", { name: "Locations" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await user.click(toggle);
+    expect(setShowLocations).toHaveBeenCalledWith({ id: "app-1", show: true });
+  });
+
+  it("has no Locations switch when no role has a location", () => {
+    const profile = { ...props.profile, experience: props.profile.experience.map((role) => ({ ...role, location: "" })) };
+    render(<ApplicationView {...props} profile={profile} />);
+    expect(screen.queryByRole("switch", { name: "Locations" })).not.toBeInTheDocument();
   });
 
   it("changes the resume's and cover letter's theme together from the Theme menu (#226)", async () => {
