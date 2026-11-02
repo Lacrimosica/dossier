@@ -51,6 +51,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
   const content = resumeContent(profile, options, labels);
   const { lang, dir } = documentLanguage(language, sampleText(content));
   const { shape, position } = resolved.photo;
+  const heads = { timeline: resolved.timeline, stacked: resolved.stacked };
   const photo = (size: "header" | "sidebar", className?: string) =>
     content.photo && <ResumePhoto key="photo" src={content.photo} name={content.name} shape={shape} size={size} className={className} />;
 
@@ -93,11 +94,11 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
     content.experience.length > 0 && (
       <DocumentSection key="experience" title={labels.experience}>
         {content.experience.map((company) => {
-          const role = (entry: (typeof company.roles)[number], className: string, at: string) =>
+          const role = (entry: (typeof company.roles)[number], className: string, organisation: string, place: string, nested = false) =>
             renderUnit({
               id: `experience:${entry.id}`,
               className,
-              head: <EntryHead title={entry.role} at={at} dates={entry.dates} timeline={resolved.timeline} />,
+              head: <EntryHead title={entry.role} organisation={organisation} place={place} dates={entry.dates} nested={nested} {...heads} />,
               children: (
                 <>
                   {entry.bullets.length > 0 && (
@@ -116,17 +117,16 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
                 </>
               ),
             });
-          const place = (...parts: string[]) => parts.filter(Boolean).join(" · ");
           if (company.roles.length === 1) {
             const [only] = company.roles;
-            return <Fragment key={only.id}>{role(only, styles.entry, place(company.company, company.location))}</Fragment>;
+            return <Fragment key={only.id}>{role(only, styles.entry, company.company, company.location)}</Fragment>;
           }
           // A promotion: the company once, with its whole span, then each role (companyGroups).
           return (
             <div key={company.roles[0].id} className={styles.entry}>
-              <EntryHead title={company.company} at={company.location} dates={company.dates} timeline={resolved.timeline} />
+              <EntryHead title={company.company} place={company.location} dates={company.dates} {...heads} />
               {company.roles.map((entry) => (
-                <Fragment key={entry.id}>{role(entry, styles.companyRole, entry.location)}</Fragment>
+                <Fragment key={entry.id}>{role(entry, styles.companyRole, "", entry.location, true)}</Fragment>
               ))}
             </div>
           );
@@ -145,7 +145,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
                   title={project.name}
                   at={project.link && <Contact>{project.link}</Contact>}
                   dates={project.dates}
-                  timeline={resolved.timeline}
+                  {...heads}
                 />
               ),
               children: (
@@ -177,7 +177,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
             {renderUnit({
               id: `education:${entry.id}`,
               className: styles.entry,
-              head: <EntryHead title={entry.degree} at={entry.school} dates={entry.dates} timeline={resolved.timeline} />,
+              head: <EntryHead title={entry.degree} organisation={entry.school} dates={entry.dates} {...heads} />,
               children: entry.notes && <p className={styles.muted}>{entry.notes}</p>,
             })}
           </Fragment>
@@ -207,7 +207,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
                     )
                   }
                   dates={entry.dates}
-                  timeline={resolved.timeline}
+                  {...heads}
                 />
               ),
               children: (entry.notes || entry.link) && (
@@ -282,8 +282,9 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
   const title = (
     <>
       <h1 className={styles.name}>{content.name}</h1>
-      {content.headline && renderUnit({ id: HEADLINE_UNIT, children: <p className={styles.headline}>{content.headline}</p> })}
-      {!resolved.split && content.contacts.length > 0 && <ContactLine items={content.contacts} />}
+      {/* A bold header goes straight from the name to the contacts, as the resumes it comes from do. */}
+      {content.headline && !resolved.boldHeader && renderUnit({ id: HEADLINE_UNIT, children: <p className={styles.headline}>{content.headline}</p> })}
+      {!resolved.split && content.contacts.length > 0 && <ContactLine items={content.contacts} separator={resolved.contactSeparator} />}
     </>
   );
   // A photo beside the name puts the name, headline and contacts in a block of their own.
@@ -339,21 +340,71 @@ const breakAfterDash = (dates: string) =>
     .join(" – ");
 
 /**
- * "Senior Product Designer, Northwind Logistics" with the dates at the end of
- * the line, or before it in a timeline column (the dates come first then, so
- * they float into the column next to the title).
+ * "Senior Product Designer, Northwind Logistics · Rotterdam" with the dates
+ * at the end of the line, or before it in a timeline column (the dates come
+ * first then, so they float into the column next to the title). `at` is what
+ * follows the title, e.g. a project's link; `organisation` is a company or
+ * school, which a stacked head leads with.
+ *
+ * Stacked, the organisation (or else the title) and the dates make the first
+ * line, and the title (or `at`) and the place a second one in italics. A role
+ * under its company after a promotion is that second line alone, its dates
+ * after its title.
  */
-function EntryHead({ title, at, dates, timeline }: { title: string; at: ReactNode; dates: string; timeline: boolean }) {
+function EntryHead({
+  title,
+  organisation,
+  at = organisation,
+  place,
+  dates,
+  timeline,
+  stacked,
+  nested = false,
+}: {
+  title: string;
+  organisation?: string;
+  at?: ReactNode;
+  place?: string;
+  dates: string;
+  timeline: boolean;
+  stacked: boolean;
+  nested?: boolean;
+}) {
+  if (stacked) {
+    const placeSpan = place && <span className={styles.place}>{place}</span>;
+    if (nested) {
+      return (
+        <div className={styles.entryHead}>
+          <p className={styles.entrySubtitle}>
+            {title}
+            {dates && ` | ${dates}`}
+          </p>
+          {placeSpan}
+        </div>
+      );
+    }
+    const second = organisation ? title : at;
+    return (
+      <div className={styles.entryHead}>
+        <p className={styles.entryTitle}>{organisation || title}</p>
+        {/* Always there, empty or not, so the second line starts in the first column. */}
+        <span className={styles.dates}>{dates}</span>
+        {(second || placeSpan) && <p className={styles.entrySubtitle}>{second}</p>}
+        {placeSpan}
+      </div>
+    );
+  }
   const datesSpan = dates && <span className={styles.dates}>{timeline ? breakAfterDash(dates) : dates}</span>;
+  const where = at && place ? <>{at}{" · "}{place}</> : at || place;
   return (
     <div className={styles.entryHead}>
       {timeline && datesSpan}
       <p>
         <span className={styles.entryTitle}>{title}</span>
-        {at && (
+        {where && (
           <>
             {title && ", "}
-            {at}
+            {where}
           </>
         )}
       </p>

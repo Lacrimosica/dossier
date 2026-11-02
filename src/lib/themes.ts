@@ -11,6 +11,7 @@ import {
   ThemeFont,
   ThemeLayout,
 } from "@/generated/prisma/enums";
+import { CONTACT_SEPARATOR } from "@/lib/resume-content";
 
 // Resume themes (RES-2…RES-4) and the page geometry every document shares.
 // The numbers come from the prototype (`H`, `D` and `FONTS` in
@@ -63,6 +64,7 @@ export const BUILT_IN_THEMES: ThemeData[] = (
     { id: "folio", name: "Folio", headFont: "PLAYFAIR", bodyFont: "LORA", accent: "#1d1c1a", layout: "SIDE_HEADINGS", align: "LEFT", headingStyle: "PLAIN", density: "AIRY", photoShape: "ROUNDED", photoPosition: "HEADER_START" },
     { id: "console", name: "Console", headFont: "JETBRAINS_MONO", bodyFont: "WORK_SANS", accent: "#4a5563", layout: "SPLIT", align: "LEFT", headingStyle: "BAND", density: "COMPACT", sidebarStyle: "TINTED", photoShape: "SQUARE", photoPosition: "SIDEBAR" },
     { id: "atlas", name: "Atlas", headFont: "LIBRE_CASLON", bodyFont: "INTER", accent: "#a14a1f", layout: "SINGLE", align: "CENTER", headingStyle: "CAPS", density: "REGULAR", headerStyle: "BANNER", dateStyle: "TIMELINE", photoPosition: "ABOVE_NAME" },
+    { id: "brief", name: "Brief", headFont: "GARAMOND", bodyFont: "GARAMOND", accent: "#1d1c1a", layout: "SINGLE", align: "LEFT", headingStyle: "CAPS_RULE", density: "COMPACT", headerStyle: "BOLD", dateStyle: "STACKED" },
   ] satisfies (Omit<ThemeData, "builtIn" | StyleField> & Partial<Pick<ThemeData, StyleField>>)[]
 ).map((theme) => ({ ...THEME_STYLE_DEFAULTS, ...theme, builtIn: true }));
 
@@ -149,8 +151,9 @@ export function accentName(accent: string): string {
 }
 
 /**
- * Section titles: underlined, small caps or plain, or small caps after an
- * accent bar or on a pale band of the accent (document.module.css draws those two).
+ * Section titles: underlined, small caps or plain, small caps after an accent
+ * bar or on a pale band of the accent (document.module.css draws those two),
+ * or bold capitals underlined.
  */
 export const HEADING_STYLES: Record<
   HeadingStyle,
@@ -170,6 +173,7 @@ export const HEADING_STYLES: Record<
   [HeadingStyle.PLAIN]: { label: "Plain", size: 15, weight: 500, uppercase: false, tracking: "-.005em", rule: false, padding: 0 },
   [HeadingStyle.BAR]: { label: "Accent bar", size: 9.5, weight: 700, uppercase: true, tracking: ".14em", rule: false, padding: 0, marker: "bar" },
   [HeadingStyle.BAND]: { label: "Tinted band", size: 9.5, weight: 600, uppercase: true, tracking: ".14em", rule: false, padding: 0, marker: "band" },
+  [HeadingStyle.CAPS_RULE]: { label: "Capitals, underlined", size: 12, weight: 700, uppercase: true, tracking: ".02em", rule: true, padding: 2 },
 };
 
 /** Spacing: page padding, gaps between sections and items, body text size and line height. */
@@ -206,6 +210,7 @@ export const ALIGNMENTS: Record<ThemeAlign, { label: string }> = {
 export const HEADER_STYLES: Record<HeaderStyle, { label: string }> = {
   [HeaderStyle.PLAIN]: { label: "Plain" },
   [HeaderStyle.BANNER]: { label: "Banner" },
+  [HeaderStyle.BOLD]: { label: "Bold" },
 };
 
 export const SIDEBAR_STYLES: Record<SidebarStyle, { label: string }> = {
@@ -216,6 +221,7 @@ export const SIDEBAR_STYLES: Record<SidebarStyle, { label: string }> = {
 export const DATE_STYLES: Record<DateStyle, { label: string }> = {
   [DateStyle.INLINE]: { label: "Beside the title" },
   [DateStyle.TIMELINE]: { label: "Timeline" },
+  [DateStyle.STACKED]: { label: "Two lines" },
 };
 
 /**
@@ -256,6 +262,7 @@ function documentFamily(font: ThemeFont): string {
 export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layout) {
   const split = hasSidebar(layout);
   const serifHeading = THEME_FONTS[theme.headFont].serif;
+  const bold = theme.headerStyle === HeaderStyle.BOLD;
   return {
     /** A sidebar layout, the sidebar on either side. */
     split,
@@ -265,7 +272,12 @@ export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layou
     // Sidebar layouts always align the header left.
     centered: !split && theme.align === ThemeAlign.CENTER,
     banner: theme.headerStyle === HeaderStyle.BANNER,
+    /** The name in bold over the contacts, without the headline. */
+    boldHeader: bold,
+    /** Between contact details: a bold header separates them with bars. */
+    contactSeparator: bold ? " | " : CONTACT_SEPARATOR,
     timeline: theme.dateStyle === DateStyle.TIMELINE,
+    stacked: theme.dateStyle === DateStyle.STACKED,
     photo: {
       shape: theme.photoShape,
       // Only a sidebar layout has a sidebar to put it in.
@@ -278,7 +290,7 @@ export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layou
     onAccent: contrastRatio(theme.accent, "#ffffff") >= contrastRatio(theme.accent, INK) ? "#ffffff" : INK,
     heading: HEADING_STYLES[theme.headingStyle],
     density: DENSITIES[theme.density],
-    name: serifHeading ? { size: 30, weight: 500 } : { size: 25, weight: 600 },
+    name: { size: serifHeading ? 30 : 25, weight: bold ? 700 : serifHeading ? 500 : 600 },
   };
 }
 export type ResolvedTheme = ReturnType<typeof resolveTheme>;

@@ -69,6 +69,29 @@ describe("ResumeDocument", () => {
     expect(screen.getByRole("article", { name: "Resume" }).className).toMatch(/timeline/);
   });
 
+  it("leads a stacked head with the company or school and its dates, the title and place in italics under them", () => {
+    render(<ResumeDocument theme={theme("brief")} profile={profile} paper="A4" today={today} showLocations />);
+    const [northwind] = profile.experience;
+    const head = screen.getByText(northwind.company).parentElement!;
+    expect([...head.children].map((cell) => cell.textContent)).toEqual([northwind.company, "Mar 2021 – Present", northwind.role, northwind.location]);
+    expect(head.children[2].className).toMatch(/entrySubtitle/);
+    expect(screen.getByText("jane.doe@example.com").parentElement?.textContent).toMatch(/^jane\.doe@example\.com \| \+31/);
+    const page = screen.getByRole("article", { name: "Resume" });
+    expect(page.querySelector('[data-unit="headline"]')).toBeNull();
+    expect(page.className).toMatch(/boldHeader/);
+    expect(page.className).toMatch(/stacked/);
+  });
+
+  it("puts a promoted role's dates after its title in a stacked head", () => {
+    const [northwind, ...rest] = profile.experience;
+    const promoted = {
+      ...profile,
+      experience: [{ ...northwind, id: "lead", role: "Lead Product Designer", startYear: 2023, startMonth: 4 }, { ...northwind, current: false, endYear: 2023, endMonth: 3 }, ...rest],
+    };
+    render(<ResumeDocument theme={theme("brief")} profile={promoted} paper="A4" today={today} />);
+    expect(screen.getByText(/^Lead Product Designer/)).toHaveTextContent("Lead Product Designer | Apr 2023 – Present");
+  });
+
   it("marks the page with the theme's structure, and gives a banner its text colour", () => {
     render(<ResumeDocument theme={theme("atlas")} profile={profile} paper="A4" today={today} />);
     const page = screen.getByRole("article", { name: "Resume" });

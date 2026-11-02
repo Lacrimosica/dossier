@@ -32,7 +32,7 @@ It's for one person on a small server: one password, your data in your own Postg
 ## Features
 
 - **Profile:** basics, skills, languages and interests, experience, projects, education, courses and certificates, publications and references, in the order you choose, with a strength meter that counts only what a profile needs. Roles at the same company, after a promotion, show together under it, and Dossier offers to give “ACME” and “Acme Inc.” one name. A role’s city or country goes on resumes only if you want it: never, always, or when the posting cares where you’ve worked. Projects (side, open-source, course or thesis work) show what you can do where your job titles don't yet. Courses and certificates (workshops, short courses, bootcamps) sit apart from your degrees, and each tailored resume keeps only the ones that help with the job. Publications are cited in your own style, with bold and italics, and go on resumes word for word. Languages are picked from a list you can search in any language, so “English” and “Inglese” are one, and each resume names them in its own language. Hobbies and interests go last on a resume, and each tailored one keeps those that suit the job. Start it from an existing resume (PDF, Word or Markdown) if you like. **Review my profile** has the AI point out duplicates and contradictions (the same role imported twice, "JS" and "JavaScript", impossible dates) and fixes the ones you tick, using only what your profile already says.
-- **Base resume:** twelve themes and a theme builder, previewed live and printed to PDF on the server. Duplicate themes, or share them as files.
+- **Base resume:** thirteen themes and a theme builder, previewed live and printed to PDF on the server. Duplicate themes, or share them as files.
 - **Find jobs:** search postings near your city, or anywhere you choose, through JSearch (LinkedIn, Indeed and more) or Adzuna. Save the good ones, dismiss the rest, score any of them against your profile, and start an application from a posting with one click.
 - **Startups:** startups that are hiring, from YC startups' job posts and Hacker News' monthly “Who is hiring?” thread, kept to the ones that hire where you live or remotely from your country and ranked against your profile, with the address each one publishes for applications. Dossier reads their sites politely and follows their robots.txt. Start an application to one with a click; you decide whom to write to.
 - **Job agent (optional):** once a day it runs one search for you, skips what you've seen, scores the new postings against your profile and keeps the best on the Agent screen, with its reasons. It can prepare tailored drafts too, which wait for your review. It never sends or applies.
@@ -59,7 +59,7 @@ It's for one person on a small server: one password, your data in your own Postg
     <td><img src=".github/images/find-jobs.png" alt="Find jobs: postings near the profile's city, with one open"><br>Find jobs and start an application from a posting</td>
   </tr>
   <tr>
-    <td><img src=".github/images/resume.png" alt="The base resume next to its themes"><br>The base resume, with twelve themes and a theme builder</td>
+    <td><img src=".github/images/resume.png" alt="The base resume next to its themes"><br>The base resume, with thirteen themes and a theme builder</td>
     <td><img src=".github/images/profile.png" alt="The profile editor, with its sections and strength meter"><br>One profile that every resume and letter comes from</td>
   </tr>
   <tr>

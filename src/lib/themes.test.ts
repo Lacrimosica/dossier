@@ -37,6 +37,8 @@ describe("resolveTheme", () => {
     expect(resolveTheme(theme("atlas"))).toMatchObject({ banner: true, timeline: true, centered: true });
     expect(resolveTheme(theme("console")).heading.marker).toBe("band");
     expect(resolveTheme(theme("signal")).heading.marker).toBe("bar");
+    expect(resolveTheme(theme("brief"))).toMatchObject({ boldHeader: true, stacked: true, contactSeparator: " | ", name: { size: 30, weight: 700 } });
+    expect(resolveTheme(theme("brief")).heading).toMatchObject({ uppercase: true, rule: true, weight: 700 });
     // A tint only shows on a sidebar.
     expect(resolveTheme(theme("studio"), "SINGLE")).toMatchObject({ split: false, sidebarEnd: false, tintedSidebar: false });
   });

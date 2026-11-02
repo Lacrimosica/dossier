@@ -46,6 +46,7 @@ describe("ThemeBuilder", () => {
       "Plain",
       "Accent bar",
       "Tinted band",
+      "Capitals, underlined",
     ]);
     expect(within(group("Dates")).getByRole("radio", { name: "Beside the title" })).toBeChecked();
     expect(within(group("Spacing")).getByRole("radio", { name: "Regular" })).toBeChecked();

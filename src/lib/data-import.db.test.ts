@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { decryptApiKey, encryptApiKey } from "@/lib/ai/api-key";
 import { decryptSecret, encryptSecret, JOB_SOURCE_KEY } from "@/lib/secrets";
+import { BUILT_IN_THEMES } from "@/lib/themes";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import { seedBuiltIns } from "../../prisma/seed/built-ins";
@@ -56,7 +57,7 @@ describe("importExport (E10-6)", () => {
     await importExport(prisma(), file);
     expect(await snapshot()).toBe(before);
     expect(await prisma().documentVersion.count()).toBe(1);
-    expect(await prisma().theme.count({ where: { builtIn: true } })).toBe(12);
+    expect(await prisma().theme.count({ where: { builtIn: true } })).toBe(BUILT_IN_THEMES.length);
     expect(await prisma().projectSkill.count()).toBe(3);
     expect(await prisma().fact.count()).toBe(3);
   });

@@ -76,7 +76,7 @@ export function CoverLetterDocument({
         children: (
           <>
             <p className={styles.senderName}>{name.trim()}</p>
-            {contactLines.map((line, index) => contactsIn(line).length > 0 && <ContactLine key={index} items={contactsIn(line)} />)}
+            {contactLines.map((line, index) => contactsIn(line).length > 0 && <ContactLine key={index} items={contactsIn(line)} separator={resolved.contactSeparator} />)}
           </>
         ),
       })}

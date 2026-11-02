@@ -257,12 +257,16 @@ enum HeadingStyle {
   BAR
   /// Small caps on a pale band of the accent.
   BAND
+  /// Bold capitals, underlined.
+  CAPS_RULE
 }
 
 /// The name, headline and contact details: on the page, or on a block of the accent.
 enum HeaderStyle {
   PLAIN
   BANNER
+  /// The name in bold over the contacts in ink, split by bars, without the headline.
+  BOLD
 }
 
 /// The sidebar of sidebar layouts: on the page, or on a pale tint of the accent.
@@ -272,9 +276,12 @@ enum SidebarStyle {
 }
 
 /// A role's or degree's dates: on its title line, or in a column before it.
+/// STACKED puts the company or school and the dates on the first line, and
+/// the title and place under it in italics.
 enum DateStyle {
   INLINE
   TIMELINE
+  STACKED
 }
 
 /// The profile photo's shape on a resume (#224). The square shapes show the middle of its 3:4 crop.

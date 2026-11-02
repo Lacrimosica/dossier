@@ -376,6 +376,12 @@
   color: var(--on-accent);
 }
 
+/* Bold header: the name in bold (resolveTheme), and the contacts in ink, split by bars. */
+.boldHeader .contactLine {
+  margin-top: 0;
+  color: var(--doc-ink);
+}
+
 /* The sidebar at the end of the line: on the right, or on the left in right-to-left documents. */
 .sidebarEnd .columns {
   grid-template-columns: minmax(0, 1fr) calc(var(--u) * var(--sidebar-width));
@@ -459,6 +465,43 @@
   margin-inline-start: calc(var(--u) * var(--date-width) * -1);
   line-height: calc(var(--line-height) / 0.9);
   white-space: normal;
+}
+
+/*
+ * Stacked: a role's company or a degree's school and the dates in bold on the
+ * first line, and the title and place in italics under it, each line's end
+ * aligned to the end of the page.
+ */
+.stacked .entryHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  /* The two lines read as one head, without the gap .entryHead puts between its parts. */
+  gap: 0 calc(var(--u) * 12);
+  align-items: baseline;
+}
+
+/* A promoted role's line sits right under its company's. */
+.stacked .companyRole {
+  margin-top: calc(var(--u) * 2);
+}
+
+.stacked .entryHead > :nth-child(even) {
+  text-align: end;
+}
+
+.stacked .dates {
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--doc-ink);
+}
+
+.entrySubtitle,
+.place {
+  font-style: italic;
+}
+
+.place {
+  white-space: nowrap;
 }
 
 /* Section titles after a short accent bar. */

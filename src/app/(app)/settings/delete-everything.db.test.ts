@@ -6,6 +6,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildExport } from "@/lib/data-export";
 import { importExport, parseExport } from "@/lib/data-import";
+import { BUILT_IN_THEMES } from "@/lib/themes";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import { seedBuiltIns } from "../../../../prisma/seed/built-ins";
@@ -93,7 +94,7 @@ describe("deleteEverything (E10-8)", () => {
       prisma().theme.count({ where: { builtIn: false } }),
     ]);
     expect(counts).toEqual([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    expect(await prisma().theme.count({ where: { builtIn: true } })).toBe(12);
+    expect(await prisma().theme.count({ where: { builtIn: true } })).toBe(BUILT_IN_THEMES.length);
     expect(await readdir(dataDir.path)).toEqual([]);
   });
 

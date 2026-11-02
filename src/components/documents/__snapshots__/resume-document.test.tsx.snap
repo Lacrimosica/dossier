@@ -508,6 +508,513 @@ exports[`ResumeDocument > renders the demo profile in Atlas 1`] = `
 </article>
 `;
 
+exports[`ResumeDocument > renders the demo profile in Brief 1`] = `
+<article
+  aria-label="Resume"
+  class="_page_fa1ef7 _boldHeader_fa1ef7 _stacked_fa1ef7"
+  dir="ltr"
+  style="--page-height: 905; --paper-width: 210; --paper-height: 297; --pad-y: 38; --pad-x: 42; --gap: 14; --item-gap: 7; --font-size: 9.5; --line-height: 1.42; --head-font: var(--script-fonts), var(--typeface-greek-serif), var(--typeface-eb-garamond); --body-font: var(--script-fonts), var(--typeface-greek-serif), var(--typeface-eb-garamond); --accent: #1d1c1a; --name-size: 30; --name-weight: 700; --heading-size: 12; --heading-weight: 700; --heading-transform: uppercase; --heading-tracking: .02em; --heading-rule: 1; --heading-padding: 2; --sidebar-width: 150; --sidebar-gap: 28;"
+>
+  <header
+    class="_header_fa1ef7"
+  >
+    <h1
+      class="_name_fa1ef7"
+    >
+      Jane Doe
+    </h1>
+    <p
+      class="_contactLine_fa1ef7"
+    >
+      <bdi
+        dir="ltr"
+      >
+        jane.doe@example.com
+      </bdi>
+       | 
+      <bdi
+        dir="ltr"
+      >
+        +31 6 1234 5678
+      </bdi>
+       | 
+      <bdi
+        dir="ltr"
+      >
+        Rotterdam, Netherlands
+      </bdi>
+       | 
+      <bdi
+        dir="ltr"
+      >
+        example.com
+      </bdi>
+       | 
+      <bdi
+        dir="ltr"
+      >
+        linkedin.com/in/janedoe-example
+      </bdi>
+    </p>
+  </header>
+  <div
+    class="_columns_fa1ef7"
+  >
+    <div
+      class="_column_fa1ef7"
+    >
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Profile
+        </h2>
+        <div
+          data-unit="summary"
+        >
+          <p
+            class="_summary_fa1ef7"
+          >
+            Product designer with nine years of experience turning complicated operational tools into calm, usable software. I like working close to engineering and closer to the people who use what we build.
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Experience
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="experience:e1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Northwind Logistics
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2021 – Present
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              Senior Product Designer
+            </p>
+          </div>
+          <ul
+            class="_bullets_fa1ef7"
+          >
+            <li>
+              Led the redesign of the carrier portal used daily by 4,000+ dispatchers
+            </li>
+            <li>
+              Built and maintained the design system across six product teams
+            </li>
+            <li>
+              Mentored three junior designers through their first year
+            </li>
+          </ul>
+          <p
+            class="_entrySkills_fa1ef7"
+          >
+            <span
+              class="_accent_fa1ef7"
+            >
+              Skills · 
+            </span>
+            Interaction design, Design systems, User research, Workshop facilitation
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="experience:e2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Fieldnote
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Jun 2018 – Feb 2021
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              Product Designer
+            </p>
+          </div>
+          <ul
+            class="_bullets_fa1ef7"
+          >
+            <li>
+              Designed the mobile note-taking app from first prototype to 120k users
+            </li>
+            <li>
+              Ran monthly research sessions with field researchers
+            </li>
+          </ul>
+          <p
+            class="_entrySkills_fa1ef7"
+          >
+            <span
+              class="_accent_fa1ef7"
+            >
+              Skills · 
+            </span>
+            Prototyping, User research, Figma
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="experience:e3"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Studio Brik
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Sep 2015 – May 2018
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              UX Designer
+            </p>
+          </div>
+          <ul
+            class="_bullets_fa1ef7"
+          >
+            <li>
+              Delivered web projects for cultural institutions and municipalities
+            </li>
+          </ul>
+          <p
+            class="_entrySkills_fa1ef7"
+          >
+            <span
+              class="_accent_fa1ef7"
+            >
+              Skills · 
+            </span>
+            HTML & CSS, Interaction design
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Projects
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="project:p1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Tidewater design tokens
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Jan 2023 – Present
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              <bdi
+                dir="ltr"
+              >
+                github.com/janedoe/tidewater
+              </bdi>
+            </p>
+          </div>
+          <ul
+            class="_bullets_fa1ef7"
+          >
+            <li>
+              Built an open-source Figma plugin that turns design tokens into CSS variables
+            </li>
+            <li>
+              Maintain it with two contributors; used by design teams at several logistics startups
+            </li>
+          </ul>
+          <p
+            class="_entrySkills_fa1ef7"
+          >
+            <span
+              class="_accent_fa1ef7"
+            >
+              Skills · 
+            </span>
+            Design systems, Figma, HTML & CSS
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Education
+        </h2>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="education:d1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              TU Delft
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              2013 – 2015
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              MSc Design for Interaction
+            </p>
+          </div>
+          <p
+            class="_muted_fa1ef7"
+          >
+            Thesis on trust in automated scheduling tools
+          </p>
+        </div>
+        <div
+          class="_entry_fa1ef7"
+          data-unit="education:d2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Willem de Kooning Academy
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              2010 – 2013
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              BA Communication Design
+            </p>
+          </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Courses & certificates
+        </h2>
+        <div
+          class="_course_fa1ef7"
+          data-unit="course:c1"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              Accessibility for Designers
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Mar 2023 – May 2023
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              Deque University
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                6 weekend sessions
+              </span>
+            </p>
+          </div>
+          <p
+            class="_courseDetails_fa1ef7"
+          >
+            WCAG 2.2 audits of real product flows
+             · 
+            <bdi
+              dir="ltr"
+            >
+              example.com/certificates/jane-doe-a11y
+            </bdi>
+          </p>
+        </div>
+        <div
+          class="_course_fa1ef7"
+          data-unit="course:c2"
+        >
+          <div
+            class="_entryHead_fa1ef7"
+          >
+            <p
+              class="_entryTitle_fa1ef7"
+            >
+              UX Writing Workshop
+            </p>
+            <span
+              class="_dates_fa1ef7"
+            >
+              Oct 2021
+            </span>
+            <p
+              class="_entrySubtitle_fa1ef7"
+            >
+              Content Design London
+               · 
+              <span
+                class="_nowrap_fa1ef7"
+              >
+                2 days
+              </span>
+            </p>
+          </div>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Publications
+        </h2>
+        <div
+          class="_publication_fa1ef7"
+          data-unit="publication:u1"
+        >
+          <p>
+            <strong>
+              Doe, J.
+            </strong>
+            , & Vermeer, K. (2016). Trust in automated scheduling: A field study with dispatch planners. 
+            <em>
+              Proceedings of the Delft Design Conference
+            </em>
+            , 4, 112–121.
+             
+            <a
+              class="_link_fa1ef7"
+              href="https://doi.org/10.5555/12345678"
+              rel="noreferrer"
+              target="_blank"
+            >
+              <bdi
+                dir="ltr"
+              >
+                doi.org/10.5555/12345678
+              </bdi>
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
+    <div
+      class="_column_fa1ef7"
+    >
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Skills
+        </h2>
+        <div
+          data-unit="skills"
+        >
+          <p>
+            Interaction design · Design systems · Prototyping · User research · Figma · HTML & CSS · Workshop facilitation
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Languages
+        </h2>
+        <div
+          data-unit="languages"
+        >
+          <p>
+            Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)
+          </p>
+        </div>
+      </section>
+      <section
+        class="_section_fa1ef7"
+      >
+        <h2
+          class="_sectionTitle_fa1ef7"
+        >
+          Interests
+        </h2>
+        <div
+          data-unit="interests"
+        >
+          <p>
+            Long-distance cycling · Risograph printing · Community garden volunteer
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+</article>
+`;
+
 exports[`ResumeDocument > renders the demo profile in Chronicle 1`] = `
 <article
   aria-label="Resume"
