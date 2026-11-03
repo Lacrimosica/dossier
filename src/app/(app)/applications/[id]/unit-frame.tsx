@@ -26,6 +26,8 @@ export type UnitFrameProps = {
   /** The AI is rewriting it (E8-4). */
   busy: boolean;
   flashing: boolean;
+  /** Picked with Ask AI: the chat's next message is about it, so it stays highlighted until sent or dropped. */
+  asked?: boolean;
   onEdit: () => void;
   onCancel: () => void;
   /** `skills` only when they were changed. */
@@ -55,6 +57,7 @@ export function UnitFrame({
   saving,
   busy,
   flashing,
+  asked = false,
   onEdit,
   onCancel,
   onSave,
@@ -78,7 +81,7 @@ export function UnitFrame({
   return (
     <div
       ref={frame}
-      className={cn(className, styles.frame, flashing && styles.flash, busy && styles.busy, editing && styles.editing)}
+      className={cn(className, styles.frame, flashing && styles.flash, busy && styles.busy, editing && styles.editing, asked && styles.asked)}
       data-unit={id}
       role="group"
       aria-label={unit.label}
@@ -123,6 +126,43 @@ export function UnitFrame({
             )}
           </div>
         )
+      )}
+    </div>
+  );
+}
+
+/**
+ * An employer's roles under its one heading, in the preview: hovering the
+ * heading, or the space between roles, highlights them all and offers Ask
+ * AI, so the chat can take them on together.
+ */
+export function GroupFrame({
+  label,
+  className,
+  asked,
+  onAskAi,
+  children,
+}: {
+  label: string;
+  className?: string;
+  asked: boolean;
+  onAskAi?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className={cn(className, styles.frame, asked && styles.asked)} role="group" aria-label={label} tabIndex={0}>
+      <div className={styles.content}>{children}</div>
+      {onAskAi && (
+        <div
+          className={cn(
+            styles.toolbar,
+            "gap-0.5 rounded-control bg-inverse p-[3px] font-sans text-xs leading-[1.2] font-medium whitespace-nowrap shadow-toolbar",
+          )}
+        >
+          <button type="button" className={toolButton} onClick={onAskAi}>
+            Ask AI about all roles
+          </button>
+        </div>
       )}
     </div>
   );

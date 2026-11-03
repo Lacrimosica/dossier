@@ -29,7 +29,7 @@ const letter = [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text:
 const context = { id: "test-job", step: async () => {}, signal: new AbortController().signal };
 const reply = (answer: object) => new MockProvider({ reply: () => ({ edits: [], tone: null, declined: false, ...answer }) });
 
-async function ask(request: string, extra: { target?: { document: "RESUME" | "COVER_LETTER"; unitId: string } | null } = {}) {
+async function ask(request: string, extra: { target?: { document: "RESUME" | "COVER_LETTER"; unitIds: string[] } | null } = {}) {
   const message = await prisma().chatMessage.create({ data: { applicationId: "app-1", role: "USER", text: request } });
   return refineJob.run({ applicationId: "app-1", messageId: message.id, request, target: extra.target ?? null, viewing: "RESUME" }, context);
 }
@@ -65,7 +65,7 @@ describe("refineJob (E8-5)", () => {
     expect(saved).toMatchObject({
       role: "AI",
       text: "Trimmed your summary.",
-      writtenWith: "refine-chat@9",
+      writtenWith: "refine-chat@10",
       previousTone: null,
       edits: [{ document: "RESUME", unitId: "summary", text: "Designer of calm tools.", previousText: summary.text }],
     });
@@ -135,7 +135,7 @@ describe("refineJob (E8-5)", () => {
   it("sends the conversation so far and the picked unit", async () => {
     const mock = reply({ reply: "Done." });
     provider.current = mock;
-    await ask("Mention payments", { target: { document: "RESUME", unitId: "summary" } });
+    await ask("Mention payments", { target: { document: "RESUME", unitIds: ["summary"] } });
     const messages = mock.calls[0].messages;
     expect(messages.at(-2)).toEqual({ role: "assistant", content: "Here's what I tailored for Ledgerly." });
     expect(messages.at(-1)).toEqual({ role: "user", content: "About Summary (summary): Mention payments" });

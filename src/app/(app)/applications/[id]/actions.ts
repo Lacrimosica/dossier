@@ -23,7 +23,7 @@ import { letterJobKey, writeLetterJob } from "@/lib/jobs/write-letter";
 import { prisma } from "@/lib/prisma";
 import { loadProfile } from "@/lib/profile-data";
 import { findOrCreateSkill } from "@/lib/profile-entries";
-import { cleanSkills, cleanUnitText, isBulletUnit, isPublicationUnit, sameSkills, unitName, unitSkills } from "@/lib/unit-text";
+import { cleanSkills, cleanUnitText, isBulletUnit, isPublicationUnit, sameSkills, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 const GONE = "That application no longer exists.";
 const PART_GONE = "That part of the document no longer exists. Reload the page to see what's there now.";
@@ -235,8 +235,8 @@ export const sendMessage = action(
     text: z.string().trim().min(1, "Write what should change first.").max(2000),
     /** The document on screen; null on the Job posting and Notes tabs, and on the Email tab before there's an email. */
     viewing: z.enum(DocumentKind).nullable(),
-    /** The unit picked with "Ask AI". */
-    target: z.object({ document: z.enum(DocumentKind), unitId: z.string().min(1) }).nullable(),
+    /** The unit picked with "Ask AI", or an employer's roles picked together. */
+    target: z.object({ document: z.enum(DocumentKind), unitIds: z.array(z.string().min(1)).min(1).max(50) }).nullable(),
   }),
   async ({ id, text, viewing, target }) => {
     if (!(await prisma.application.count({ where: { id } }))) throw new ActionError(GONE);
@@ -260,9 +260,10 @@ export const sendMessage = action(
     let targetLabel: string | null = null;
     if (target) {
       const row = await prisma.document.findUnique({ where: { applicationId_kind: { applicationId: id, kind: target.document } } });
-      const unit = row && unitsSchema.parse(row.units).find((entry) => entry.id === target.unitId);
-      if (!unit) throw new ActionError(PART_GONE);
-      targetLabel = unit.label;
+      const units = row ? unitsSchema.parse(row.units) : [];
+      const picked = target.unitIds.flatMap((unitId) => units.find((entry) => entry.id === unitId) ?? []);
+      if (picked.length < target.unitIds.length) throw new ActionError(PART_GONE);
+      targetLabel = targetName(picked).label;
     }
 
     const message = await prisma.chatMessage.create({

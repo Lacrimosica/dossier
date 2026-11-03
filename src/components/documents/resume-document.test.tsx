@@ -190,6 +190,22 @@ describe("ResumeDocument", () => {
     rerender(<ResumeDocument theme={theme("editorial")} profile={promoted} paper="A4" today={today} showLocations />);
     expect(heads()[0]).toBe(`Northwind Logistics, ${northwind.location}`);
     expect(screen.getByText(new RegExp(`^${rest[0].role}$`)).parentElement).toHaveTextContent(`${rest[0].company} · ${rest[0].location}`);
+
+    // The roles go to the group renderer together, so the chat can take them on at once.
+    const groups: string[][] = [];
+    rerender(
+      <ResumeDocument
+        theme={theme("editorial")}
+        profile={promoted}
+        paper="A4"
+        today={today}
+        renderGroup={({ ids, className, children }) => {
+          groups.push(ids);
+          return <div className={className}>{children}</div>;
+        }}
+      />,
+    );
+    expect(groups).toEqual([["experience:lead", `experience:${northwind.id}`]]);
   });
 
   it("shows the skills used in each role and the education notes", () => {

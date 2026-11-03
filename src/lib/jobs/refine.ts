@@ -11,7 +11,7 @@ import { updateDocuments } from "@/lib/document-units";
 import { withoutPrivateParts } from "@/lib/letter-frame";
 import { prisma } from "@/lib/prisma";
 import { loadFactTexts, loadProfile } from "@/lib/profile-data";
-import { sameSkills, unitName, unitSkills } from "@/lib/unit-text";
+import { sameSkills, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 import { defineJob } from "./runner";
 
@@ -36,8 +36,8 @@ export const refineJob = defineJob({
     /** The user's message, saved before the job started. */
     messageId: z.string().min(1),
     request: z.string().min(1),
-    /** The unit picked with "Ask AI", if any. */
-    target: unitRef.nullable(),
+    /** The unit picked with "Ask AI", or an employer's roles picked together, if any. */
+    target: z.object({ document: z.enum(DocumentKind), unitIds: z.array(z.string().min(1)).min(1) }).nullable(),
     /** The document on screen. */
     viewing: z.enum(DocumentKind).nullable(),
   }),
@@ -67,7 +67,7 @@ export const refineJob = defineJob({
         ? { role: "user", text: message.targetUnit ? `About ${message.targetUnit}: ${message.text}` : message.text }
         : { role: "assistant", text: message.text },
     );
-    const targetUnit = target && unitsOf(target.document).find((unit) => unit.id === target.unitId);
+    const targetUnits = target ? target.unitIds.flatMap((unitId) => unitsOf(target.document).find((unit) => unit.id === unitId) ?? []) : [];
 
     const match = matchSchema.safeParse(application.match);
     const [provider, options, profile, facts] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile(), loadFactTexts(applicationId)]);
@@ -81,7 +81,7 @@ export const refineJob = defineJob({
       {
         request,
         history,
-        target: targetUnit ? `${targetUnit.label} (${targetUnit.id})` : null,
+        target: targetUnits.length > 0 ? `${targetName(targetUnits).label} (${targetUnits.map((unit) => unit.id).join(", ")})` : null,
         viewing,
         resume,
         letter,

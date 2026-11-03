@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bulletLines, cleanSkills, cleanUnitText, isBulletUnit, sameSkills, unitName, unitSkills } from "./unit-text";
+import { bulletLines, cleanSkills, cleanUnitText, isBulletUnit, sameSkills, targetName, unitName, unitSkills } from "./unit-text";
 
 describe("unit text", () => {
   it("keeps bullets one per line, without bullet characters or empty lines", () => {
@@ -33,6 +33,18 @@ describe("unitName", () => {
     expect(unitName({ id: "education:d1", label: "MSc Design for Interaction" })).toBe("MSc Design for Interaction");
     expect(unitName({ id: "course:c1", label: "UX Writing Workshop" })).toBe("UX Writing Workshop");
     expect(unitName({ id: "course:c2", label: "" })).toBe("entry");
+  });
+});
+
+describe("targetName", () => {
+  it("names one part, or an employer's roles together", () => {
+    expect(targetName([{ id: "summary", label: "Summary" }])).toEqual({ label: "Summary", name: "summary" });
+    const roles = ["e1", "e2", "e3"].map((id) => ({ id: `experience:${id}`, label: "Northwind Logistics role" }));
+    expect(targetName(roles)).toEqual({ label: "All 3 Northwind Logistics roles", name: "Northwind Logistics roles" });
+    expect(targetName([{ id: "summary", label: "Summary" }, roles[0]])).toEqual({
+      label: "Summary and Northwind Logistics role",
+      name: "Summary and Northwind Logistics role",
+    });
   });
 });
 

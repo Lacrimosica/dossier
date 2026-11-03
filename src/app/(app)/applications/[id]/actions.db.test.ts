@@ -315,7 +315,7 @@ describe("sendMessage (E8-5)", () => {
   const messages = () => prisma().chatMessage.findMany({ where: { applicationId: "app-1" }, orderBy: { createdAt: "asc" } });
 
   it("saves the message and starts the reply", async () => {
-    const result = await sendMessage({ id: "app-1", text: " Shorter, please ", viewing: "RESUME", target: { document: "RESUME", unitId: "summary" } });
+    const result = await sendMessage({ id: "app-1", text: " Shorter, please ", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary"] } });
     expect(result.ok).toBe(true);
     const [message] = await messages();
     expect(message).toMatchObject({ role: "USER", text: "Shorter, please", targetUnit: "Summary" });
@@ -324,8 +324,21 @@ describe("sendMessage (E8-5)", () => {
       type: "refine",
       key: "refine:app-1",
       applicationId: "app-1",
-      input: { applicationId: "app-1", messageId: message.id, request: "Shorter, please", viewing: "RESUME", target: { document: "RESUME", unitId: "summary" } },
+      input: { applicationId: "app-1", messageId: message.id, request: "Shorter, please", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary"] } },
     });
+  });
+
+  it("takes several parts picked together, named together", async () => {
+    const result = await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary", "experience:e1"] } });
+    expect(result.ok).toBe(true);
+    expect((await messages())[0]).toMatchObject({ targetUnit: "Summary and Northwind role" });
+  });
+
+  it("won't ask about a part that's gone", async () => {
+    expect(
+      await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary", "experience:gone"] } }),
+    ).toMatchObject({ ok: false });
+    expect(await messages()).toEqual([]);
   });
 
   it("answers on the Job posting tab at once, in order", async () => {

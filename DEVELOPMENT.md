@@ -143,6 +143,8 @@ A tailored resume has its own headline, written for the job in the resume's lang
 
 The skills under a role or project come from the profile entry until a resume has its own: the unit's optional `skills`, set from the Refine chat or the unit editor's Skills field, and read through `unitSkills()` (`src/lib/unit-text.ts`). The chat sends each role's current skills with its unit and answers a new list per edit (null leaves them). In strict mode it keeps only skills the profile or that list already has. The edit keeps `previousSkills` for Undo. Changing them never touches the profile.
 
+"Ask AI" points the next chat message at a part of a document, highlighted in the preview until it's sent. An employer with several roles is drawn through `renderGroup` (`GroupRenderer`, `src/components/documents/document-page.tsx`), and its frame offers "Ask AI about all roles": the message's target is then all their unit ids (`target.unitIds`), named with `targetName()`. The chat can rewrite any of them, but can't remove or merge roles; it points to Leave out instead.
+
 To try the AI features without a hosted provider, run a small model in Docker:
 
 ```bash

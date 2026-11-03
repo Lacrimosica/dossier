@@ -76,3 +76,16 @@ export function unitName(unit: { id: string; label: string }): string {
   }
   return label.toLowerCase() || "part";
 }
+
+/**
+ * What the chat calls the parts picked with Ask AI: `label` on its "About:"
+ * chip, `name` after "the". One part is its own label; an employer's roles
+ * together are "All 5 Northwind Logistics roles", "Northwind Logistics roles".
+ */
+export function targetName(units: { id: string; label: string }[]): { label: string; name: string } {
+  if (units.length === 1) return { label: units[0].label, name: unitName(units[0]) };
+  const labels = [...new Set(units.map((unit) => unit.label.trim()))];
+  if (labels.length === 1 && / role$/.test(labels[0])) return { label: `All ${units.length} ${labels[0]}s`, name: `${labels[0]}s` };
+  const listed = labels.length <= 1 ? labels.join("") : `${labels.slice(0, -1).join(", ")} and ${labels.at(-1)}`;
+  return { label: listed, name: listed };
+}

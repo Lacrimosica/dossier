@@ -27,7 +27,7 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const REFINE_CHAT_VERSION = "refine-chat@9";
+export const REFINE_CHAT_VERSION = "refine-chat@10";
 
 const answerSchema = z.object({
   reply: z.string(),
@@ -48,6 +48,7 @@ const answerSchema = z.object({
 const INSTRUCTIONS = `You help a candidate refine their tailored resume, cover letter and application email for one job, and answer as JSON.
 
 - Change only what the request asks for. Each edit replaces one unit's whole text: give its document (RESUME, COVER_LETTER or EMAIL), its unitId and the new text. For a role or project, write bullets one per line without bullet characters.
+- A request can be about several units at once, such as all of an employer's roles: edit any of them it needs. A role can't be removed or merged into another here, and its title, employer and dates come from the profile. To condense an employer's roles, give each role only its own work, without repeating a bullet across roles, and say in reply that they can use "Leave out" on a role they don't need.
 - A role's or project's unit lists the skills shown under it ("skills"). To change them, give skills: the whole new list, in the order to show them; otherwise null. Use only skills from the candidate's profile or already in that list. To change only the skills, give the unit's text unchanged.
 - Never edit a publication (a resume unit whose unitId starts with "publication:"): it's the candidate's citation, as they wrote it. If asked to, say they can edit it or leave it out themselves.
 - The email goes out with the resume and cover letter attached. Its "to" unit is the recipient ("Name <address>"), "subject" its subject line and "body" the whole message, from the greeting to the sign-off and the candidate's name.

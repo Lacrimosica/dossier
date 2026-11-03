@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Switch } from "radix-ui";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 
-import { plainUnit, type UnitRenderer } from "@/components/documents/document-page";
+import { plainGroup, plainUnit, type GroupRenderer, type UnitRenderer } from "@/components/documents/document-page";
 import { DocumentPreview } from "@/components/documents/document-preview";
 import { DownloadPdfButton } from "@/components/documents/download-pdf-button";
 import { TailoredLetter, TailoredResume } from "@/components/documents/tailored-documents";
@@ -34,7 +34,7 @@ import type { WriteLetterResult } from "@/lib/jobs/write-letter";
 import type { FactItem, ProfileData } from "@/lib/profile";
 import type { RefineSuggestions } from "@/lib/refine-suggestions";
 import { hasSidebar, type ThemeData } from "@/lib/themes";
-import { cleanUnitText, isPublicationUnit, unitName, unitSkills } from "@/lib/unit-text";
+import { cleanUnitText, isPublicationUnit, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 import {
   addMatchSkill,
@@ -71,7 +71,7 @@ import { ThemeMenu } from "./theme-menu";
 import { byPageLimit, TrimmedNotice } from "./trimmed-notice";
 
 import { aboutWords, type Tab } from "./tabs";
-import { UnitFrame } from "./unit-frame";
+import { GroupFrame, UnitFrame } from "./unit-frame";
 import { VersionHistory, type ViewedVersion } from "./version-history";
 import type { EmailView } from "@/lib/google/inbox-data";
 
@@ -92,10 +92,12 @@ type Rewrite = { jobId: string; revision: number };
 /** The tab each document is on. */
 const TAB_OF: Record<DocumentKind, Tab> = { RESUME: "resume", COVER_LETTER: "letter", EMAIL: "email" };
 
-/** The unit the next chat message is about ("Ask AI"). */
-type Target = { document: DocumentKind; unitId: string; label: string; name: string };
+/** The units the next chat message is about ("Ask AI"): one, or an employer's roles. */
+type Target = { document: DocumentKind; unitIds: string[]; label: string; name: string };
 
 const NO_MESSAGES: ChatEntry[] = [];
+
+const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id));
 
 const NO_AI = "That needs an AI provider. Choose one in Settings → AI provider.";
 
@@ -383,9 +385,9 @@ export function ApplicationView({
     });
   };
 
-  /** "Ask AI" (APP-5): the next message is about this unit. */
-  const askAbout = (kind: DocumentKind, unit: Unit) => {
-    setTarget({ document: kind, unitId: unit.id, label: unit.label, name: unitName(unit) });
+  /** "Ask AI" (APP-5): the next message is about this unit, or these roles of one employer. */
+  const askAbout = (kind: DocumentKind, units: Unit[]) => {
+    setTarget({ document: kind, unitIds: units.map((unit) => unit.id), ...targetName(units) });
     focusChat((count) => count + 1);
   };
 
@@ -403,7 +405,7 @@ export function ApplicationView({
           id: application.id,
           text,
           viewing,
-          target: target && { document: target.document, unitId: target.unitId },
+          target: target && { document: target.document, unitIds: target.unitIds },
         });
         if (!result.ok) {
           toast(result.error);
@@ -600,16 +602,32 @@ export function ApplicationView({
           saving={editing === key && saving[key] !== undefined}
           busy={key in rewrites}
           flashing={flashing.keys.has(key)}
+          asked={target?.document === kind && target.unitIds.length === 1 && target.unitIds[0] === id}
           onEdit={() => setEditing(key)}
           onCancel={() => setEditing(null)}
           onSave={(text, skills) => save(kind, unit, text, skills)}
           onRegenerate={written ? () => void regenerate(kind, unit, { stored: stored.has(id) }) : undefined}
           // The chat only edits parts the letter stores.
-          onAskAi={written && stored.has(id) ? () => askAbout(kind, unit) : undefined}
+          onAskAi={written && stored.has(id) ? () => askAbout(kind, [unit]) : undefined}
           onLeaveOut={kind === DocumentKind.RESUME ? () => leaveOut(unit) : undefined}
         >
           {children}
         </UnitFrame>
+      );
+    };
+
+  /** An employer's roles in the resume preview, which Ask AI can take on together. */
+  const groupsOf =
+    (units: Unit[]): GroupRenderer =>
+    function renderRoleGroup({ ids, className, children }) {
+      const roles = ids.flatMap((id) => units.find((unit) => unit.id === id) ?? []);
+      if (roles.length < 2) return plainGroup({ ids, className, children });
+      const { name } = targetName(roles);
+      const asked = target?.document === DocumentKind.RESUME && sameIds(target.unitIds, ids);
+      return (
+        <GroupFrame label={name} className={className} asked={asked} onAskAi={() => askAbout(DocumentKind.RESUME, roles)}>
+          {children}
+        </GroupFrame>
       );
     };
 
@@ -776,6 +794,7 @@ export function ApplicationView({
                 includeReferences={includeReferences}
                 privacyConsent={privacyConsent}
                 renderUnit={viewed(DocumentKind.RESUME) ? plainUnit : unitsOf(DocumentKind.RESUME, resumeUnits)}
+                renderGroup={viewed(DocumentKind.RESUME) ? plainGroup : groupsOf(resumeUnits)}
               />
             </DocumentPreview>
           ) : (

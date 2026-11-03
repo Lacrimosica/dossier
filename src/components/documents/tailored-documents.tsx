@@ -4,7 +4,7 @@ import type { ProfileData } from "@/lib/profile";
 import { withoutSidebar } from "@/lib/themes";
 
 import { CoverLetterDocument } from "./cover-letter-document";
-import type { UnitRenderer } from "./document-page";
+import type { GroupRenderer, UnitRenderer } from "./document-page";
 import { ResumeDocument } from "./resume-document";
 
 // An application's tailored documents, drawn the same way on its page and
@@ -22,6 +22,7 @@ export function TailoredResume({
   language,
   includeReferences,
   renderUnit,
+  renderGroup,
 }: {
   resume: DocumentData;
   profile: ProfileData;
@@ -39,6 +40,7 @@ export function TailoredResume({
   language: string;
   includeReferences: boolean;
   renderUnit?: UnitRenderer;
+  renderGroup?: GroupRenderer;
 }) {
   return (
     <ResumeDocument
@@ -54,6 +56,7 @@ export function TailoredResume({
       language={language}
       includeReferences={includeReferences}
       renderUnit={renderUnit}
+      renderGroup={renderGroup}
     />
   );
 }

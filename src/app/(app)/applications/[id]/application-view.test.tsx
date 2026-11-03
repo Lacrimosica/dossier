@@ -628,15 +628,38 @@ describe("the Refine with AI panel (E8-5)", () => {
     expect(input()).toHaveFocus();
     expect(input()).toHaveAttribute("placeholder", "What should change in the summary?");
     expect(within(panel()).getByText("About: Summary")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Summary" }).className).toMatch(/asked/);
 
     await user.type(input(), "Mention payments{Enter}");
     expect(sendMessage).toHaveBeenCalledWith({
       id: "app-1",
       text: "Mention payments",
       viewing: "RESUME",
-      target: { document: "RESUME", unitId: "summary" },
+      target: { document: "RESUME", unitIds: ["summary"] },
     });
     expect(within(panel()).queryByRole("button", { name: "Stop asking about the summary" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Summary" }).className).not.toMatch(/asked/);
+  });
+
+  it("asks about all of an employer's roles together", async () => {
+    const user = userEvent.setup();
+    const profile = demoProfile();
+    const [first, ...rest] = profile.experience;
+    const promoted = { ...profile, experience: [{ ...first, id: "lead", role: "Lead Product Designer" }, first, ...rest] };
+    const units = demoResumeUnits();
+    const role = units.find((unit) => unit.id === `experience:${first.id}`)!;
+    const resumeUnits = [...units.slice(0, units.indexOf(role)), { ...role, id: "experience:lead", text: "Led the team" }, ...units.slice(units.indexOf(role))];
+    render(<ApplicationView {...props} profile={promoted} resume={{ ...props.resume!, units: resumeUnits }} />);
+
+    const group = screen.getByRole("group", { name: `${role.label}s` });
+    await user.click(within(group).getByRole("button", { name: "Ask AI about all roles" }));
+    expect(within(panel()).getByText(`About: All 2 ${role.label}s`)).toBeInTheDocument();
+    expect(group.className).toMatch(/asked/);
+
+    await user.type(input(), "Condense them{Enter}");
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ target: { document: "RESUME", unitIds: ["experience:lead", `experience:${first.id}`] } }),
+    );
   });
 
   it("drops the picked unit with ×", async () => {
@@ -645,6 +668,7 @@ describe("the Refine with AI panel (E8-5)", () => {
     await user.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: "Ask AI" }));
     await user.click(screen.getByRole("button", { name: "Stop asking about the summary" }));
     expect(input()).toHaveAttribute("placeholder", "Ask for a change, e.g. “sound more confident”");
+    expect(screen.getByRole("group", { name: "Summary" }).className).not.toMatch(/asked/);
   });
 
   it("shows the reply's edits, switching to the document they're on", async () => {

@@ -10,7 +10,16 @@ import type { ProfileData } from "@/lib/profile";
 import { resumeContent, type ResumeContent, type ResumeOptions } from "@/lib/resume-content";
 import { PHOTO_SHAPES, resolveTheme, type ThemeData } from "@/lib/themes";
 
-import { Contact, ContactLine, DocumentPage, DocumentSection, plainUnit, type UnitRenderer } from "./document-page";
+import {
+  Contact,
+  ContactLine,
+  DocumentPage,
+  DocumentSection,
+  plainGroup,
+  plainUnit,
+  type GroupRenderer,
+  type UnitRenderer,
+} from "./document-page";
 import styles from "./document.module.css";
 
 type ResumeDocumentProps = ResumeOptions & {
@@ -23,6 +32,8 @@ type ResumeDocumentProps = ResumeOptions & {
   language?: string | null;
   /** Draws each tailored part; the preview's adds editing (E8-3). */
   renderUnit?: UnitRenderer;
+  /** Draws an employer's roles together; the preview's lets the chat take them on at once. */
+  renderGroup?: GroupRenderer;
   /** Settings → "Privacy consent line", printed at the very end (privacyConsentLine); null leaves it off. */
   privacyConsent?: string | null;
 };
@@ -45,7 +56,17 @@ const sampleText = (content: ResumeContent) =>
  * Sections without content are left out. Each tailored part is drawn by
  * `renderUnit` with its unit id, for editing it in place (E8-3).
  */
-export function ResumeDocument({ theme, profile, paper, layout, language, renderUnit = plainUnit, privacyConsent, ...options }: ResumeDocumentProps) {
+export function ResumeDocument({
+  theme,
+  profile,
+  paper,
+  layout,
+  language,
+  renderUnit = plainUnit,
+  renderGroup = plainGroup,
+  privacyConsent,
+  ...options
+}: ResumeDocumentProps) {
   const resolved = resolveTheme(theme, layout);
   const labels = documentLabels(language);
   const content = resumeContent(profile, options, labels);
@@ -124,12 +145,20 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
           }
           // A promotion: the company once, with its whole span, then each role (companyGroups).
           return (
-            <div key={company.roles[0].id} className={styles.entry}>
-              <EntryHead title={company.company} place={company.location} dates={company.dates} {...heads} />
-              {company.roles.map((entry) => (
-                <Fragment key={entry.id}>{role(entry, styles.companyRole, "", entry.location, true)}</Fragment>
-              ))}
-            </div>
+            <Fragment key={company.roles[0].id}>
+              {renderGroup({
+                ids: company.roles.map((entry) => `experience:${entry.id}`),
+                className: styles.entry,
+                children: (
+                  <>
+                    <EntryHead title={company.company} place={company.location} dates={company.dates} {...heads} />
+                    {company.roles.map((entry) => (
+                      <Fragment key={entry.id}>{role(entry, styles.companyRole, "", entry.location, true)}</Fragment>
+                    ))}
+                  </>
+                ),
+              })}
+            </Fragment>
           );
         })}
       </DocumentSection>

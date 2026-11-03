@@ -109,6 +109,15 @@ export const plainUnit: UnitRenderer = ({ id, className, head, children }) => (
   </div>
 );
 
+/**
+ * Draws an employer's roles under its one heading (companyGroups): `ids` are
+ * its roles' units. The preview's lets the chat take them on together.
+ */
+export type GroupRenderer = (group: { ids: string[]; className?: string; children: ReactNode }) => ReactNode;
+
+/** An employer's roles as printed. */
+export const plainGroup: GroupRenderer = ({ className, children }) => <div className={className}>{children}</div>;
+
 /** A section with a themed title. */
 export function DocumentSection({ title, children }: { title: string; children: ReactNode }) {
   return (
