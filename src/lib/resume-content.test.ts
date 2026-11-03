@@ -112,8 +112,11 @@ describe("resumeContent", () => {
     expect(companies(content)[0].roles[0].bullets[0]).toBe(
       "Led the redesign of the carrier portal used daily by 4,000+ dispatchers: a dense, high-stakes workflow",
     );
-    // Role skills still come from the profile (RES-6).
+    // Role skills still come from the profile (RES-6), unless the resume has its own.
     expect(companies(content)[0].roles[0].skills).toContain("Design systems");
+    const role = demoResumeUnits().find((unit) => unit.id.startsWith("experience:"))!;
+    const own = resumeContent(profile, { units: demoResumeUnits().map((unit) => (unit.id === role.id ? { ...unit, skills: ["Figma", "Kotlin"] } : unit)) });
+    expect(companies(own)[0].roles[0].skills).toEqual(["Figma", "Kotlin"]);
     expect(content.skills).toMatch(/^Design systems · User research · Figma · /);
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
     expect(content.interests).toBe("Long-distance cycling · Risograph printing · Community garden volunteer");
@@ -147,6 +150,8 @@ describe("resumeContent", () => {
     // A tailored resume takes a project's bullets from its unit, and leaves out one without a unit.
     const tailored = resumeContent(profile, { units: [{ id: "project:p1", label: "Tidewater project", text: "Shipped a token pipeline" }] });
     expect(tailored.projects.map((project) => project.bullets)).toEqual([["Shipped a token pipeline"]]);
+    const ownSkills = resumeContent(profile, { units: [{ id: "project:p1", label: "Tidewater project", text: "Shipped it", skills: [] }] });
+    expect(ownSkills.projects[0].skills).toEqual([]);
     expect(resumeContent(profile, { units: [] }).projects).toEqual([]);
   });
 

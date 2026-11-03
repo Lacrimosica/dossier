@@ -34,7 +34,7 @@ import type { WriteLetterResult } from "@/lib/jobs/write-letter";
 import type { FactItem, ProfileData } from "@/lib/profile";
 import type { RefineSuggestions } from "@/lib/refine-suggestions";
 import { hasSidebar, type ThemeData } from "@/lib/themes";
-import { cleanUnitText, isPublicationUnit, unitName } from "@/lib/unit-text";
+import { cleanUnitText, isPublicationUnit, unitName, unitSkills } from "@/lib/unit-text";
 
 import {
   addMatchSkill,
@@ -297,11 +297,11 @@ export function ApplicationView({
       toastResult(await setProfileGroupOrder({ id: application.id, follow }));
     });
 
-  const save = (kind: DocumentKind, unit: Unit, text: string) => {
+  const save = (kind: DocumentKind, unit: Unit, text: string, skills?: string[]) => {
     const key = keyOf(kind, unit.id);
     startTransition(async () => {
       showSaving({ key, text: cleanUnitText(unit.id, text) });
-      const result = await saveUnit({ id: application.id, document: kind, unitId: unit.id, text, expected: unit.text });
+      const result = await saveUnit({ id: application.id, document: kind, unitId: unit.id, text, expected: unit.text, skills });
       if (!result.ok) {
         // The editor stays open with what was typed.
         toast(result.error);
@@ -595,13 +595,14 @@ export function ApplicationView({
           className={className}
           head={head}
           unit={unit}
+          skills={kind === DocumentKind.RESUME ? unitSkills(unit, profile) : null}
           editing={editing === key}
           saving={editing === key && saving[key] !== undefined}
           busy={key in rewrites}
           flashing={flashing.keys.has(key)}
           onEdit={() => setEditing(key)}
           onCancel={() => setEditing(null)}
-          onSave={(text) => save(kind, unit, text)}
+          onSave={(text, skills) => save(kind, unit, text, skills)}
           onRegenerate={written ? () => void regenerate(kind, unit, { stored: stored.has(id) }) : undefined}
           // The chat only edits parts the letter stores.
           onAskAi={written && stored.has(id) ? () => askAbout(kind, unit) : undefined}

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { Extracted, Match } from "@/lib/application-data";
 import { demoLetterUnits, demoProfile, demoResumeUnits } from "@/lib/demo-profile";
 import { experienceMonths } from "@/lib/profile";
+import { unitSkills } from "@/lib/unit-text";
 
 import sample from "../../../../prisma/seed/prototype-sample.json";
 import type { ChatCall } from "../provider";
@@ -639,7 +640,7 @@ describe("refineChat", () => {
       declined: false,
     };
     const { data, promptVersion } = await refineChat(model(answer), input, options);
-    expect(promptVersion).toBe("refine-chat@8");
+    expect(promptVersion).toBe("refine-chat@9");
     expect(data).toEqual({
       reply: "I made the letter more formal.",
       tone: "FORMAL",
@@ -710,6 +711,25 @@ describe("refineChat", () => {
     const provider = model({ reply: "Done.", edits: [], tone: null, declined: false });
     await refineChat(provider, { ...input, request: "Make it shorter", viewing: "COVER_LETTER" }, options);
     expect(sent(provider).messages.at(-1)).toEqual({ role: "user", content: "(I'm looking at the cover letter.) Make it shorter" });
+  });
+
+  it("changes a role's skills, in strict mode only to ones the profile has", async () => {
+    const role = resume.find((unit) => unit.id.startsWith("experience:"))!;
+    const before = unitSkills(role, profile)!;
+    const answer = (skills: string[]) => ({ reply: "Done.", edits: [{ document: "RESUME", unitId: role.id, text: role.text, skills }], tone: null, declined: false });
+    const reordered = [before[1], "Kubernetes", before[0].toLowerCase()];
+
+    const { data } = await refineChat(model(answer(reordered)), input, options);
+    expect(data.edits).toEqual([
+      expect.objectContaining({ unitId: role.id, text: role.text, previousText: role.text, skills: [before[1], before[0]], previousSkills: before }),
+    ]);
+    const { data: relaxed } = await refineChat(model(answer(reordered)), input, { ...options, strict: false });
+    expect(relaxed.edits[0].skills).toEqual([before[1], "Kubernetes", before[0]]);
+    // The same skills are no edit.
+    const provider = model(answer(before));
+    const { data: same } = await refineChat(provider, input, options);
+    expect(same.edits).toEqual([]);
+    expect(sent(provider).system).toMatch(/To change only the skills, give the unit's text unchanged/);
   });
 
   it("keeps the fact guard's hints on the replaced text, for Undo", async () => {

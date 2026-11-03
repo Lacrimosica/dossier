@@ -153,9 +153,19 @@ export function resumeContent(
   const dates = { locale: labels.locale, present: labels.present };
 
   type Role = ProfileData["experience"][number];
-  const companies = (roles: { entry: Role; text: string }[]): ExperienceSection["companies"] =>
+  const namesOf = (skillIds: string[]) => skillIds.flatMap((id) => skillNames.get(id) ?? []);
+  /** A role and what the resume says about it: its bullets, and its skills when a tailored resume has its own. */
+  type RoleText = { entry: Role; text: string; skills?: string[] };
+  const companies = (roles: RoleText[]): ExperienceSection["companies"] =>
     // A career break has no company or place, whatever was typed before it was marked one.
-    companyGroups(roles.map(({ entry, text }) => ({ ...entry, ...(entry.careerBreak ? { company: "", location: "" } : {}), text }))).map((group) => {
+    companyGroups(
+      roles.map(({ entry, text, skills }) => ({
+        ...entry,
+        ...(entry.careerBreak ? { company: "", location: "" } : {}),
+        text,
+        skills: skills ?? namesOf(entry.skillIds),
+      })),
+    ).map((group) => {
       // One place for the whole company goes on its line; a move between offices shows on each role.
       const places = [...new Set(group.map((entry) => entry.location.trim()).filter(Boolean))];
       const onePlace = !showLocations ? "" : places.length === 1 ? places[0] : "";
@@ -169,7 +179,7 @@ export function resumeContent(
           location: showLocations && places.length > 1 ? entry.location.trim() : "",
           dates: formatDateRange(entry, dates),
           bullets: lines(entry.text),
-          skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
+          skills: entry.skills,
         })),
       };
     });
@@ -178,7 +188,7 @@ export function resumeContent(
   const groupOf = (role: Role) => (role.groupId !== null && groups.has(role.groupId) ? role.groupId : null);
   const profileOrder = [...profile.experienceGroups.map((group) => group.id), null];
   /** Roles under their headings, in the order `headings` gives; a heading without roles is left out. */
-  const experience = (roles: { entry: Role; text: string }[], headings: (string | null)[]): ExperienceSection[] =>
+  const experience = (roles: RoleText[], headings: (string | null)[]): ExperienceSection[] =>
     headings.flatMap((groupId) => {
       const under = roles.filter(({ entry }) => groupOf(entry) === groupId);
       if (under.length === 0) return [];
@@ -189,13 +199,13 @@ export function resumeContent(
         groupId !== null ? groups.get(groupId)!.name.trim() || labels.experience : groups.size > 0 ? labels.otherExperience : labels.experience;
       return [{ groupId, title, companies: companies(under) }];
     });
-  const project = (entry: ProfileData["projects"][number], bullets: string) => ({
+  const project = (entry: ProfileData["projects"][number], bullets: string, skills = namesOf(entry.skillIds)) => ({
     id: entry.id,
     name: entry.name.trim(),
     link: displayLink(entry.link),
     dates: formatDateRange(entry, dates),
     bullets: lines(bullets),
-    skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
+    skills,
   });
   const publication = (entry: ProfileData["publications"][number], citation: string) => ({
     id: entry.id,
@@ -257,7 +267,7 @@ export function resumeContent(
       units.flatMap((unit) => {
         if (!unit.id.startsWith(prefix)) return [];
         const entry = entries.find(({ id }) => `${prefix}${id}` === unit.id);
-        return entry ? [{ entry, text: unit.text }] : [];
+        return entry ? [{ entry, text: unit.text, skills: unit.skills }] : [];
       });
 
     // A version saved before resumes had their own headline shows the profile's.
@@ -271,7 +281,7 @@ export function resumeContent(
     // The Group order switch puts them back in the profile's, as the base resume has them.
     const roles = withUnit("experience:", profile.experience);
     content.experience = experience(roles, profileGroupOrder ? profileOrder : [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
-    content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
+    content.projects = withUnit("project:", profile.projects).map(({ entry, text, skills }) => project(entry, text, skills));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),
     );

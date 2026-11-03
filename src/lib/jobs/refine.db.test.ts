@@ -1,7 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MockProvider } from "@/lib/ai/providers/mock";
-import { demoLetterUnits, demoResumeUnits } from "@/lib/demo-profile";
+import { demoLetterUnits, demoProfile, demoResumeUnits } from "@/lib/demo-profile";
+import { unitSkills } from "@/lib/unit-text";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import { refineJob } from "./refine";
@@ -64,11 +65,23 @@ describe("refineJob (E8-5)", () => {
     expect(saved).toMatchObject({
       role: "AI",
       text: "Trimmed your summary.",
-      writtenWith: "refine-chat@8",
+      writtenWith: "refine-chat@9",
       previousTone: null,
       edits: [{ document: "RESUME", unitId: "summary", text: "Designer of calm tools.", previousText: summary.text }],
     });
     expect((await units("RESUME")).find((unit) => unit.id === "summary")?.text).toBe("Designer of calm tools.");
+  });
+
+  it("changes a role's skills, which the model sees, and keeps them for Undo", async () => {
+    const role = resume.find((unit) => unit.id.startsWith("experience:"))!;
+    const before = unitSkills(role, demoProfile())!;
+    const mock = reply({ reply: "Put Figma first.", edits: [{ document: "RESUME", unitId: role.id, text: role.text, skills: [...before].reverse() }] });
+    provider.current = mock;
+    await ask("Reorder the skills on my first role");
+
+    expect(mock.calls[0].messages[0].content).toContain(`"skills": [\n      "${before[0]}"`);
+    expect((await units("RESUME")).find((unit) => unit.id === role.id)).toMatchObject({ text: role.text, skills: [...before].reverse() });
+    expect((await lastMessage()).edits).toEqual([expect.objectContaining({ unitId: role.id, skills: [...before].reverse(), previousSkills: before })]);
   });
 
   it("edits the email, which the model sees once there is one", async () => {

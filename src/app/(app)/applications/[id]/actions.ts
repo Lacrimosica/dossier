@@ -21,8 +21,9 @@ import { findUnfinishedJobs, startJob } from "@/lib/jobs/runner";
 import { emailJobKey, writeEmailJob } from "@/lib/jobs/write-email";
 import { letterJobKey, writeLetterJob } from "@/lib/jobs/write-letter";
 import { prisma } from "@/lib/prisma";
+import { loadProfile } from "@/lib/profile-data";
 import { findOrCreateSkill } from "@/lib/profile-entries";
-import { cleanUnitText, isPublicationUnit, unitName } from "@/lib/unit-text";
+import { cleanSkills, cleanUnitText, isBulletUnit, isPublicationUnit, sameSkills, unitName, unitSkills } from "@/lib/unit-text";
 
 const GONE = "That application no longer exists.";
 const PART_GONE = "That part of the document no longer exists. Reload the page to see what's there now.";
@@ -113,7 +114,9 @@ export const setInterviewDate = action(
  * Saves a unit edited by hand (APP-6). `expected` is the text the editor
  * started from: if the unit changed since (an AI rewrite that finished
  * meanwhile), nothing is saved, so neither version is lost unseen. The
- * text is the user's own, so the fact guard's hints go.
+ * text is the user's own, so the fact guard's hints go. A role's or
+ * project's skills come along when they were changed, and from then on
+ * this resume keeps its own.
  */
 export const saveUnit = action(
   z.object({
@@ -122,8 +125,9 @@ export const saveUnit = action(
     unitId: z.string().min(1),
     text: z.string().max(10_000),
     expected: z.string(),
+    skills: z.array(z.string().max(100)).max(100).optional(),
   }),
-  async ({ id, document, unitId, text, expected }) => {
+  async ({ id, document, unitId, text, expected, skills }) => {
     const clean = cleanUnitText(unitId, text);
     // The email's recipient may be left empty, for the mail app to fill in.
     if (!clean && !(document === DocumentKind.EMAIL && unitId === "to")) {
@@ -144,6 +148,7 @@ export const saveUnit = action(
       }
       unit.text = clean;
       delete unit.unverified;
+      if (skills && document === DocumentKind.RESUME && isBulletUnit(unitId)) unit.skills = cleanSkills(skills);
     });
     refresh(id);
     return { text: clean };
@@ -284,10 +289,12 @@ export const undoMessage = action(z.object({ id: z.string().min(1), messageId: z
   if (!message || !edits?.success || edits.data.length === 0) throw new ActionError("There's nothing to undo in that message.");
   if (message.undone) throw new ActionError("That's already undone.");
 
+  const profile = await loadProfile();
   await updateDocuments(id, async (documents, tx) => {
     const changed = edits.data.flatMap((edit) => {
       const unit = documents[edit.document]?.find((entry) => entry.id === edit.unitId);
-      return unit?.text === edit.text ? [] : [`the ${unitName(unit ?? { id: edit.unitId, label: "" })}`];
+      const same = unit?.text === edit.text && (!edit.skills || sameSkills(unitSkills(unit, profile) ?? [], edit.skills));
+      return same ? [] : [`the ${unitName(unit ?? { id: edit.unitId, label: "" })}`];
     });
     if (changed.length > 0) {
       throw new ActionError(
@@ -299,6 +306,7 @@ export const undoMessage = action(z.object({ id: z.string().min(1), messageId: z
       unit.text = edit.previousText;
       if (edit.previousUnverified?.length) unit.unverified = edit.previousUnverified;
       else delete unit.unverified;
+      if (edit.previousSkills) unit.skills = edit.previousSkills;
     }
     if (message.previousTone) await tx.application.update({ where: { id }, data: { tone: message.previousTone } });
     // Only once, even when two clicks race.

@@ -6,6 +6,7 @@ import { toast } from "@/components/toast";
 import { copyText } from "@/lib/copy-text";
 import { demoLetterUnits, demoProfile, demoResumeUnits } from "@/lib/demo-profile";
 import { BUILT_IN_THEMES } from "@/lib/themes";
+import { unitSkills } from "@/lib/unit-text";
 
 import { retry } from "@/lib/jobs/actions";
 import type { JobView } from "@/lib/jobs/runner";
@@ -372,6 +373,25 @@ describe("editing a unit (E8-3)", () => {
     expect(screen.queryByRole("button", { name: "Leave out" })).not.toBeInTheDocument();
   });
 
+  it("edits a role's skills with its bullets, sending them only when they changed", async () => {
+    const user = userEvent.setup();
+    const role = demoResumeUnits().find((unit) => unit.id.startsWith("experience:"))!;
+    const before = unitSkills(role, props.profile)!;
+    render(<ApplicationView {...props} />);
+    await user.click(within(screen.getByRole("group", { name: role.label })).getByRole("button", { name: "Edit" }));
+    const skills = screen.getByRole("textbox", { name: "Skills, separated by commas" });
+    expect(skills).toHaveValue(before.join(", "));
+    await user.clear(skills);
+    await user.type(skills, "Figma, Kotlin");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saveUnit).toHaveBeenLastCalledWith(expect.objectContaining({ unitId: role.id, text: role.text, skills: ["Figma", " Kotlin"] }));
+
+    await user.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: "Edit" }));
+    expect(screen.queryByRole("textbox", { name: "Skills, separated by commas" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(vi.mocked(saveUnit).mock.lastCall?.[0].skills).toBeUndefined();
+  });
+
   it("swaps in a text box and saves what was written", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<ApplicationView {...props} />);
@@ -405,7 +425,7 @@ describe("editing a unit (E8-3)", () => {
     const role = screen.getByRole("group", { name: "Studio Brik role" });
     await user.click(within(role).getByRole("button", { name: "Edit" }));
     expect(role).toHaveTextContent(/^UX Designer, Studio Brik/);
-    expect(within(role).getByRole("textbox")).toHaveAccessibleDescription("One bullet per line");
+    expect(within(role).getByRole("textbox", { name: "Edit Studio Brik role" })).toHaveAccessibleDescription("One bullet per line");
   });
 
   it("cancels with Escape and keeps the text", async () => {

@@ -141,6 +141,8 @@ Long AI tasks run as background jobs (`src/lib/jobs`): the page follows their na
 
 A tailored resume has its own headline, written for the job in the resume's language from titles the candidate has held (the `headline` unit; a resume version without one shows the profile's, so leaving it out keeps it as an empty unit). It keeps every role, project and degree, giving recent and relevant roles the most bullets and older unrelated ones one or two, but only the courses and certificates the model picks for the job, most relevant first (`course:` units, `resumeUnits()` in `tailor-resume.ts`). When a resume runs over its page limit, those courses are cut first, from the last, before any role (`src/lib/page-limit.ts`).
 
+The skills under a role or project come from the profile entry until a resume has its own: the unit's optional `skills`, set from the Refine chat or the unit editor's Skills field, and read through `unitSkills()` (`src/lib/unit-text.ts`). The chat sends each role's current skills with its unit and answers a new list per edit (null leaves them). In strict mode it keeps only skills the profile or that list already has. The edit keeps `previousSkills` for Undo. Changing them never touches the profile.
+
 To try the AI features without a hosted provider, run a small model in Docker:
 
 ```bash

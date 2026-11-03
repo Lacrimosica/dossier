@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bulletLines, cleanUnitText, isBulletUnit, unitName } from "./unit-text";
+import { bulletLines, cleanSkills, cleanUnitText, isBulletUnit, sameSkills, unitName, unitSkills } from "./unit-text";
 
 describe("unit text", () => {
   it("keeps bullets one per line, without bullet characters or empty lines", () => {
@@ -33,5 +33,30 @@ describe("unitName", () => {
     expect(unitName({ id: "education:d1", label: "MSc Design for Interaction" })).toBe("MSc Design for Interaction");
     expect(unitName({ id: "course:c1", label: "UX Writing Workshop" })).toBe("UX Writing Workshop");
     expect(unitName({ id: "course:c2", label: "" })).toBe("entry");
+  });
+});
+
+describe("unitSkills", () => {
+  const profile = {
+    skills: [
+      { id: "s1", name: "Figma" },
+      { id: "s2", name: "Kotlin" },
+    ],
+    experience: [{ id: "e1", skillIds: ["s2", "s1"] }],
+    projects: [{ id: "p1", skillIds: ["s1"] }],
+  } as unknown as Parameters<typeof unitSkills>[1];
+
+  it("follows the profile entry until the resume has its own", () => {
+    expect(unitSkills({ id: "experience:e1" }, profile)).toEqual(["Kotlin", "Figma"]);
+    expect(unitSkills({ id: "project:p1" }, profile)).toEqual(["Figma"]);
+    expect(unitSkills({ id: "experience:e1", skills: [] }, profile)).toEqual([]);
+    expect(unitSkills({ id: "experience:gone" }, profile)).toEqual([]);
+    expect(unitSkills({ id: "summary" }, profile)).toBeNull();
+  });
+
+  it("cleans and compares lists", () => {
+    expect(cleanSkills([" Figma ", "", "figma", "Kotlin"])).toEqual(["Figma", "Kotlin"]);
+    expect(sameSkills(["A", "B"], ["A", "B"])).toBe(true);
+    expect(sameSkills(["A", "B"], ["B", "A"])).toBe(false);
   });
 });

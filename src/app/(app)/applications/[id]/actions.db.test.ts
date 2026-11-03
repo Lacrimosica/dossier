@@ -204,6 +204,13 @@ describe("saveUnit (E8-3)", () => {
     expect(result).toEqual({ ok: true, data: { text: "Led the portal\nBuilt the design system" } });
   });
 
+  it("keeps a role's own skills on this resume, cleaned up, and only on a role or project", async () => {
+    await saveUnit({ ...edit, unitId: "experience:e1", expected: resume[1].text, text: resume[1].text, skills: [" Figma", "", "figma", "Kotlin "] });
+    expect((await units())[1]).toEqual({ ...resume[1], skills: ["Figma", "Kotlin"] });
+    await saveUnit({ ...edit, text: "Calm.", skills: ["Figma"] });
+    expect((await units())[0]).not.toHaveProperty("skills");
+  });
+
   it("refuses to overwrite a change made while editing", async () => {
     const result = await saveUnit({ ...edit, expected: "What the editor started from", text: "Mine" });
     expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/^This part changed while you were editing it/) });
@@ -386,6 +393,27 @@ describe("undoMessage (E8-6)", () => {
     // Nothing was put back, not even the summary.
     expect((await units())[0].text).toBe("Short.");
     expect(await prisma().chatMessage.findUniqueOrThrow({ where: { id: "m1" } })).toMatchObject({ undone: false });
+  });
+
+  it("puts a role's skills back", async () => {
+    await prisma().document.update({
+      where: { applicationId_kind: { applicationId: "app-1", kind: "RESUME" } },
+      data: { units: [resume[0], { ...resume[1], skills: ["Kotlin"] }] },
+    });
+    const skillEdit = [{ document: "RESUME", unitId: "experience:e1", text: resume[1].text, previousText: resume[1].text, skills: ["Kotlin"], previousSkills: ["Figma", "Sketch"] }];
+    await prisma().chatMessage.create({ data: { id: "m3", applicationId: "app-1", role: "AI", text: "Done.", edits: skillEdit } });
+    expect(await undoMessage({ id: "app-1", messageId: "m3" })).toMatchObject({ ok: true });
+    expect((await units())[1]).toEqual({ ...resume[1], skills: ["Figma", "Sketch"] });
+  });
+
+  it("never overwrites skills changed since", async () => {
+    await prisma().document.update({
+      where: { applicationId_kind: { applicationId: "app-1", kind: "RESUME" } },
+      data: { units: [resume[0], { ...resume[1], skills: ["Mine"] }] },
+    });
+    const skillEdit = [{ document: "RESUME", unitId: "experience:e1", text: resume[1].text, previousText: resume[1].text, skills: ["Kotlin"], previousSkills: [] }];
+    await prisma().chatMessage.create({ data: { id: "m3", applicationId: "app-1", role: "AI", text: "Done.", edits: skillEdit } });
+    expect(await undoMessage({ id: "app-1", messageId: "m3" })).toMatchObject({ ok: false, error: expect.stringMatching(/^You've changed the Northwind role since/) });
   });
 
   it("has nothing to undo in a reply without edits", async () => {

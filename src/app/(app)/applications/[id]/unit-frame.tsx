@@ -1,7 +1,7 @@
 "use client";
 
 import { Popover } from "radix-ui";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { Unit } from "@/lib/application-data";
@@ -18,6 +18,8 @@ export type UnitFrameProps = {
   head?: ReactNode;
   children: ReactNode;
   unit: Unit;
+  /** A role's or project's skills on this resume, edited with its bullets; null for any other unit. */
+  skills?: string[] | null;
   editing: boolean;
   /** Saving an edit; the editor stays until it's done. */
   saving: boolean;
@@ -26,7 +28,8 @@ export type UnitFrameProps = {
   flashing: boolean;
   onEdit: () => void;
   onCancel: () => void;
-  onSave: (text: string) => void;
+  /** `skills` only when they were changed. */
+  onSave: (text: string, skills?: string[]) => void;
   onRegenerate?: () => void;
   onAskAi?: () => void;
   /** Takes it off a tailored resume (#217). */
@@ -47,6 +50,7 @@ export function UnitFrame({
   head,
   children,
   unit,
+  skills = null,
   editing,
   saving,
   busy,
@@ -85,7 +89,7 @@ export function UnitFrame({
         {head}
         {!editing && children}
       </div>
-      {editing && <UnitEditor unit={unit} saving={saving} onCancel={onCancel} onSave={onSave} />}
+      {editing && <UnitEditor unit={unit} skills={skills} saving={saving} onCancel={onCancel} onSave={onSave} />}
       {flagged && <CheckThis facts={unit.unverified!} />}
       {busy ? (
         <span className={cn(styles.status, "rounded-[6px] border border-line-popover bg-card px-2 py-1 font-sans text-[11.5px] leading-[1.2] text-muted")}>
@@ -124,19 +128,33 @@ export function UnitFrame({
   );
 }
 
-/** The text box that replaces a unit while it's edited: a role's bullets one per line. */
+/** The text box that replaces a unit while it's edited: a role's bullets one per line, and its skills below. */
 function UnitEditor({
   unit,
+  skills,
   saving,
   onCancel,
   onSave,
 }: {
   unit: Unit;
+  skills: string[] | null;
   saving: boolean;
   onCancel: () => void;
-  onSave: (text: string) => void;
+  onSave: (text: string, skills?: string[]) => void;
 }) {
   const [value, setValue] = useState(unit.text);
+  const startingSkills = skills?.join(", ") ?? "";
+  const [skillsValue, setSkillsValue] = useState(startingSkills);
+  const save = () => onSave(value, skills && skillsValue !== startingSkills ? skillsValue.split(",") : undefined);
+  const keys = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel();
+    } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault();
+      save();
+    }
+  };
   // Grows with the text where the browser can (field-sizing); elsewhere, about a row per 70 characters.
   const rows = Math.max(3, value.split("\n").reduce((total, line) => total + Math.max(1, Math.ceil(line.length / 70)), 1));
   return (
@@ -150,17 +168,21 @@ function UnitEditor({
         rows={rows}
         disabled={saving}
         onChange={(event) => setValue(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") {
-            event.preventDefault();
-            onCancel();
-          } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
-            event.preventDefault();
-            onSave(value);
-          }
-        }}
+        onKeyDown={keys}
         className="max-h-[calc(60vh/var(--preview-scale,1))] w-full resize-y rounded-control border border-primary bg-input px-3 py-2.5 text-control leading-[1.55] text-ink [field-sizing:content] focus-visible:outline-offset-0 disabled:opacity-60"
       />
+      {skills && (
+        <label className="flex flex-col gap-1 text-xs text-muted">
+          Skills, separated by commas
+          <input
+            value={skillsValue}
+            disabled={saving}
+            onChange={(event) => setSkillsValue(event.target.value)}
+            onKeyDown={keys}
+            className="w-full rounded-control border border-line-input bg-input px-3 py-2 text-control text-ink focus-visible:border-primary focus-visible:outline-offset-0 disabled:opacity-60"
+          />
+        </label>
+      )}
       <div className="flex items-center justify-end gap-1.5">
         {isBulletUnit(unit.id) && (
           <span id={`${unit.id}-hint`} className="mr-auto text-xs text-muted">
@@ -170,7 +192,7 @@ function UnitEditor({
         <Button variant="secondary" size="sm" className="min-h-[calc(var(--px)*30)] bg-input" onClick={onCancel} disabled={saving}>
           Cancel
         </Button>
-        <Button size="sm" className="min-h-[calc(var(--px)*30)]" onClick={() => onSave(value)} disabled={saving}>
+        <Button size="sm" className="min-h-[calc(var(--px)*30)]" onClick={save} disabled={saving}>
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
