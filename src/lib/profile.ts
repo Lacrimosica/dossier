@@ -51,6 +51,34 @@ export function formatMonthYear(
   }).format(Date.UTC(year, (month ?? 1) - 1, 1));
 }
 
+/**
+ * A course length's unit words, as people type them in the languages the
+ * profile is most often written in, by the unit Intl knows them as.
+ */
+const DURATION_UNITS: Record<string, string[]> = {
+  minute: ["min", "mins", "minute", "minutes", "minuten", "minuut", "minutos", "minuti"],
+  hour: ["h", "hr", "hrs", "hour", "hours", "std", "stunde", "stunden", "uur", "uren", "heure", "heures", "hora", "horas", "ora", "ore"],
+  day: ["d", "day", "days", "tag", "tage", "dag", "dagen", "jour", "jours", "día", "días", "dia", "dias", "giorno", "giorni"],
+  week: ["wk", "wks", "week", "weeks", "woche", "wochen", "weken", "semaine", "semaines", "semana", "semanas", "settimana", "settimane"],
+  month: ["mo", "month", "months", "monat", "monate", "maand", "maanden", "mois", "mes", "meses", "mese", "mesi"],
+  year: ["yr", "yrs", "year", "years", "jahr", "jahre", "jaar", "jaren", "an", "ans", "año", "años", "anno", "anni"],
+};
+const DURATION_UNIT = new Map(Object.entries(DURATION_UNITS).flatMap(([unit, words]) => words.map((word) => [word, unit])));
+
+/**
+ * A course's length in the document's language: "6 hours" or "6h" is
+ * "6 Stunden" on a German resume. Anything that isn't a number and a unit
+ * ("3 weekend sessions") stays as typed, since there's no knowing what
+ * language it's in.
+ */
+export function formatDuration(duration: string, { locale = "en-US" }: Pick<DateFormatOptions, "locale"> = {}): string {
+  const typed = duration.trim();
+  const match = /^(\d+(?:[.,]\d+)?)\s*(\p{L}+)\.?$/u.exec(typed);
+  const unit = match && DURATION_UNIT.get(match[2].toLowerCase());
+  if (!match || !unit) return typed;
+  return new Intl.NumberFormat(locale, { style: "unit", unit, unitDisplay: "long" }).format(Number(match[1].replace(",", ".")));
+}
+
 /** "Mar 2021 – Present", "2013 – 2015", "Sep 2015 – May 2018", or a single date. */
 export function formatDateRange(span: DateSpan, options: DateFormatOptions = {}): string {
   const start = formatMonthYear(span.startYear, span.startMonth, options);

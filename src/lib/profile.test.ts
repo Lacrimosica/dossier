@@ -12,6 +12,7 @@ import {
   interestsFromValue,
   filledBasics,
   formatDateRange,
+  formatDuration,
   formatMonthYear,
   LANGUAGE_LEVELS,
   languageLevelLabel,
@@ -68,6 +69,21 @@ describe("dates", () => {
     expect(formatDateRange(span({ startYear: 2021, endYear: 2022, current: true }))).toBe(
       "2021 – Present",
     );
+  });
+
+  it("puts a course's length in the document's language", () => {
+    expect(formatDuration(" 16 hours ")).toBe("16 hours");
+    expect(formatDuration("6 hours", { locale: "de" })).toBe("6 Stunden");
+    expect(formatDuration("6h", { locale: "nl" })).toBe("6 uur");
+    expect(formatDuration("1,5 Tage", { locale: "en" })).toBe("1.5 days");
+    expect(formatDuration("3 Wochen", { locale: "fr" })).toBe("3 semaines");
+    expect(formatDuration("1 hrs.", { locale: "en" })).toBe("1 hour");
+  });
+
+  it("leaves a course's length as typed when it isn't a number and a unit", () => {
+    expect(formatDuration("6 weekend sessions", { locale: "de" })).toBe("6 weekend sessions");
+    expect(formatDuration("Two days", { locale: "de" })).toBe("Two days");
+    expect(formatDuration("")).toBe("");
   });
 
   it("formats month names and 'Present' in the document's language", () => {

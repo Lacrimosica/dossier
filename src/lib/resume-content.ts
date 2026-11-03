@@ -2,7 +2,7 @@ import { HEADLINE_UNIT, type Unit } from "@/lib/application-data";
 import { ageLabel, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { publicationHref, publicationLink } from "@/lib/citation";
 import { companyGroups, companySpan } from "@/lib/companies";
-import { ageOn, formatBirthDate, formatDateRange, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
+import { ageOn, formatBirthDate, formatDateRange, formatDuration, resumeCourses, resumePublications, type Basics, type ProfileData } from "@/lib/profile";
 
 // What a resume shows, worked out from the profile (the base resume) or from
 // a tailored document's units, so the renderer only has to lay it out.
@@ -39,7 +39,7 @@ export type ResumeContent = {
     name: string;
     provider: string;
     dates: string;
-    /** "3 weekend sessions", as typed. */
+    /** "16 Stunden" for "16 hours" on a German resume; "3 weekend sessions" as typed. */
     duration: string;
     /** "example.com/certificate", without "https://". */
     link: string;
@@ -213,7 +213,7 @@ export function resumeContent(
     name: entry.name.trim(),
     provider: entry.provider.trim(),
     dates: formatDateRange({ ...entry, current: false }, dates),
-    duration: entry.duration.trim(),
+    duration: formatDuration(entry.duration, dates),
     link: displayLink(entry.link),
     notes: notes.trim(),
   });
