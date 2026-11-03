@@ -5,6 +5,7 @@ import { createTestClient, resetDatabase } from "@/test/db";
 import {
   addMatchSkill,
   addNote,
+  clearChat,
   deleteNote,
   leaveOutUnit,
   listVersions,
@@ -390,6 +391,32 @@ describe("undoMessage (E8-6)", () => {
   it("has nothing to undo in a reply without edits", async () => {
     await prisma().chatMessage.create({ data: { id: "m2", applicationId: "app-1", role: "AI", text: "I left it out." } });
     expect(await undoMessage({ id: "app-1", messageId: "m2" })).toEqual({ ok: false, error: "There's nothing to undo in that message." });
+  });
+});
+
+describe("clearChat", () => {
+  const messages = () => prisma().chatMessage.findMany({ where: { applicationId: "app-1" } });
+
+  it("deletes the conversation and keeps the documents", async () => {
+    await prisma().chatMessage.createMany({
+      data: [
+        { applicationId: "app-1", role: "USER", text: "Shorter" },
+        { applicationId: "app-1", role: "AI", text: "Done.", edits: [{ document: "RESUME", unitId: "summary", text: resume[0].text, previousText: "Long." }] },
+      ],
+    });
+    expect(await clearChat({ id: "app-1" })).toEqual({ ok: true, data: null });
+    expect(await messages()).toEqual([]);
+    expect(await units()).toEqual(resume);
+  });
+
+  it("waits for the reply that's on its way", async () => {
+    await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: null });
+    expect(await clearChat({ id: "app-1" })).toEqual({ ok: false, error: "I'm still working on your last message. Clear the chat when I'm done." });
+    expect(await messages()).toHaveLength(1);
+  });
+
+  it("says when the application is gone", async () => {
+    expect(await clearChat({ id: "nope" })).toEqual({ ok: false, error: "That application no longer exists." });
   });
 });
 

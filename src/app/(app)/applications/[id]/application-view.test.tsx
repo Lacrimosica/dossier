@@ -13,6 +13,7 @@ import type { JobView } from "@/lib/jobs/runner";
 import {
   addMatchSkill,
   addNote,
+  clearChat,
   deleteNote,
   leaveOutUnit,
   listVersions,
@@ -48,6 +49,7 @@ vi.mock("./actions", () => ({
   restoreUnit: vi.fn(async () => ({ ok: true, data: null })),
   sendMessage: vi.fn(async () => ({ ok: true, data: { jobId: "reply-1" } })),
   undoMessage: vi.fn(async () => ({ ok: true, data: { edited: [{ document: "RESUME", unitId: "summary" }] } })),
+  clearChat: vi.fn(async () => ({ ok: true, data: null })),
   addMatchSkill: vi.fn(async () => ({ ok: true, data: { name: "Kubernetes" } })),
   addNote: vi.fn(async () => ({ ok: true, data: null })),
   updateNote: vi.fn(async () => ({ ok: true, data: null })),
@@ -146,6 +148,7 @@ beforeEach(() => {
   vi.mocked(restoreUnit).mockClear();
   vi.mocked(sendMessage).mockClear();
   vi.mocked(undoMessage).mockClear();
+  vi.mocked(clearChat).mockClear();
   vi.mocked(startWritingEmail).mockClear();
   vi.mocked(undoEmailRewrite).mockClear();
   vi.mocked(toast).mockClear();
@@ -724,6 +727,46 @@ describe("undoing an AI change (E8-6)", () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith(why));
     // Back once the action has finished.
     expect(await within(log()).findByRole("button", { name: "Undo" })).toBeInTheDocument();
+  });
+});
+
+describe("clearing the chat", () => {
+  const reply = { id: "m3", role: "AI" as const, text: "Trimmed your summary.", targetUnit: null, opening: false, canUndo: true, undone: false };
+  const log = () => screen.getByRole("log", { name: "Conversation" });
+
+  it("asks first, then empties the conversation", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Clear the chat?" });
+    await user.click(within(dialog).getByRole("button", { name: "Clear chat" }));
+    expect(clearChat).toHaveBeenCalledWith({ id: "app-1" });
+    expect(within(log()).queryByText("Trimmed your summary.")).not.toBeInTheDocument();
+  });
+
+  it("keeps the conversation on Cancel", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(clearChat).not.toHaveBeenCalled();
+    expect(within(log()).getByText("Trimmed your summary.")).toBeInTheDocument();
+  });
+
+  it("has nothing to clear in an empty chat", () => {
+    render(<ApplicationView {...props} messages={[]} />);
+    expect(screen.queryByRole("button", { name: "Clear chat" })).not.toBeInTheDocument();
+  });
+
+  it("brings the conversation back when it can't clear it", async () => {
+    const user = userEvent.setup();
+    const why = "I'm still working on your last message. Clear the chat when I'm done.";
+    vi.mocked(clearChat).mockResolvedValueOnce({ ok: false, error: why });
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Clear chat" }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(why));
+    expect(await within(log()).findByText("Trimmed your summary.")).toBeInTheDocument();
   });
 });
 

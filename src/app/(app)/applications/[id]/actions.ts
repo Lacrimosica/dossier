@@ -310,6 +310,22 @@ export const undoMessage = action(z.object({ id: z.string().min(1), messageId: z
 });
 
 /**
+ * "Clear" in the Refine with AI panel: deletes the conversation, so it starts
+ * over. The documents keep every change the chat made; only the messages,
+ * and with them their Undo, go. Not while a reply is being written, whose
+ * answer would land in the cleared chat.
+ */
+export const clearChat = action(z.object({ id: z.string().min(1) }), async ({ id }) => {
+  if (!(await prisma.application.count({ where: { id } }))) throw new ActionError(GONE);
+  if ((await findUnfinishedJobs(refineJobKey(id))).length > 0) {
+    throw new ActionError("I'm still working on your last message. Clear the chat when I'm done.");
+  }
+  await prisma.chatMessage.deleteMany({ where: { applicationId: id } });
+  refresh(id);
+  return null;
+});
+
+/**
  * "+ Add to profile" on the Job posting tab (E8-7, NEW-5): adds a missing
  * skill to the profile, and the requirement becomes partly covered.
  */

@@ -38,6 +38,7 @@ import { cleanUnitText, isPublicationUnit, unitName } from "@/lib/unit-text";
 
 import {
   addMatchSkill,
+  clearChat,
   leaveOutUnit,
   putBackTrimmed,
   restoreUnit,
@@ -241,6 +242,7 @@ export function ApplicationView({
   const [sending, showSending] = useOptimistic(NO_MESSAGES, (current, message: ChatEntry) => [...current, message]);
   // Replies being undone, shown as undone until the page has it.
   const [undoing, showUndoing] = useOptimistic<readonly string[], string>([], (current, id) => [...current, id]);
+  const [cleared, showCleared] = useOptimistic(false);
   const [chatFocus, focusChat] = useState(0);
   const [rewrites, setRewrites] = useState<Readonly<Record<string, Rewrite>>>(() =>
     Object.fromEntries(rewritingAtLoad.map(({ jobId, document, unitId }) => [keyOf(document, unitId), { jobId, revision: 0 }])),
@@ -555,6 +557,14 @@ export function ApplicationView({
       flashing.start(result.data.edited.map(({ document, unitId }) => keyOf(document, unitId)));
     });
 
+  /** "Clear chat": the conversation goes at once, and comes back if that fails. */
+  const clear = () =>
+    startTransition(async () => {
+      showCleared(true);
+      const result = await clearChat({ id: application.id });
+      if (!result.ok) toast(result.error);
+    });
+
   /** The document's units, with texts being saved in place. */
   const shown = (kind: DocumentKind, units: Unit[]) =>
     units.map((unit) => {
@@ -849,12 +859,13 @@ export function ApplicationView({
         />
         <RefinePanel
           tab={tab}
-          messages={[...messages, ...sending]}
+          messages={cleared ? [] : [...messages, ...sending]}
           thinking={reply !== null}
           suggestions={tab === "resume" ? suggestions.resume : tab === "letter" ? suggestions.letter : tab === "email" && email ? suggestions.email : []}
           target={target}
           onClearTarget={() => setTarget(null)}
           onSend={send}
+          onClear={clear}
           aiReady={aiReady}
           focusRequest={chatFocus}
         >
