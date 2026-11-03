@@ -255,6 +255,8 @@ const application = z.object({
   showPhoto: z.boolean().nullable().optional(),
   /** Absent in older files, which follow the setting. */
   showLocations: z.boolean().nullable().optional(),
+  /** Absent in older files, which follow tailoring's group order. */
+  profileGroupOrder: z.boolean().optional(),
   /** The job agent's (E16); absent in older files, which hold only the user's own. */
   origin: z.enum(ApplicationOrigin).optional(),
   agentScore: int.nullable().optional(),

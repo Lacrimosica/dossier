@@ -57,6 +57,17 @@ export const setShowLocations = action(z.object({ id: z.string().min(1), show: z
 });
 
 /**
+ * The Resume tab's Group order switch: the experience groups in the profile's
+ * order on this resume, rather than the order tailoring chose for the posting.
+ */
+export const setProfileGroupOrder = action(z.object({ id: z.string().min(1), follow: z.boolean() }), async ({ id, follow }) => {
+  const { count } = await prisma.application.updateMany({ where: { id }, data: { profileGroupOrder: follow } });
+  if (count === 0) throw new ActionError(GONE);
+  refresh(id);
+  return null;
+});
+
+/**
  * The Theme menu on the Resume and Cover letter tabs (#226, public issue 10):
  * gives the application's resume and cover letter another theme, together.
  * Only their look changes, so nothing is written again.

@@ -357,5 +357,21 @@ describe("resumeContent", () => {
         ["Esperienze nel terzo settore", ["Fieldnote"]],
       ]);
     });
+
+    it("keeps the profile's group order on a tailored resume with the Group order switch on", () => {
+      const units = [
+        { id: `experience:${brik.id}`, label: "Studio Brik", text: "Built sites" },
+        { id: `experience:${northwind.id}`, label: "Northwind", text: "Led the team" },
+        { id: `experience:${fieldnote.id}`, label: "Fieldnote", text: "Ran research" },
+      ];
+      const content = resumeContent(grouped, { units, profileGroupOrder: true });
+      expect(headings(content)).toEqual([
+        ["Esperienze nel terzo settore", ["Fieldnote"]],
+        ["Esperienze professionali", ["Northwind Logistics"]],
+        ["Other experience", ["Studio Brik"]],
+      ]);
+      // The tailored text stays.
+      expect(content.experience[0].companies[0].roles[0].bullets).toEqual(["Ran research"]);
+    });
   });
 });

@@ -18,6 +18,7 @@ import {
   setApplicationTheme,
   setFollowThemeLayout,
   setInterviewDate,
+  setProfileGroupOrder,
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
@@ -90,6 +91,17 @@ describe("setFollowThemeLayout (E8-2)", () => {
 
   it("says so when the application is gone", async () => {
     expect(await setFollowThemeLayout({ id: "gone", follow: true })).toEqual({ ok: false, error: "That application no longer exists." });
+  });
+});
+
+describe("setProfileGroupOrder", () => {
+  it("saves the group order switch on the application", async () => {
+    expect(await setProfileGroupOrder({ id: "app-1", follow: true })).toEqual({ ok: true, data: null });
+    expect(await prisma().application.findUniqueOrThrow({ where: { id: "app-1" } })).toMatchObject({ profileGroupOrder: true });
+  });
+
+  it("says so when the application is gone", async () => {
+    expect(await setProfileGroupOrder({ id: "gone", follow: true })).toEqual({ ok: false, error: "That application no longer exists." });
   });
 });
 

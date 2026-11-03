@@ -46,6 +46,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setProfileGroupOrder,
   setShowLocations,
   setShowPhoto,
   startRegenerating,
@@ -114,6 +115,8 @@ export type ApplicationViewProps = {
     showPhoto: boolean | null;
     /** Whether the resume shows each role's location: the Locations switch, what tailoring decided, or the setting. */
     showLocations: boolean;
+    /** The Group order switch: the profile's group order instead of tailoring's. */
+    profileGroupOrder: boolean;
     archived: boolean;
     /** A job agent draft not approved yet (#195): it isn't in Applications. */
     awaitingReview?: boolean;
@@ -215,6 +218,7 @@ export function ApplicationView({
   const [photoChoice, showPhotoChoice] = useOptimistic(application.showPhoto);
   const showPhoto = photoChoice ?? profile.photo?.onResumes ?? false;
   const [showLocations, showLocationsChoice] = useOptimistic(application.showLocations);
+  const [profileGroupOrder, showProfileGroupOrder] = useOptimistic(application.profileGroupOrder);
   // A theme just picked from the Theme menu, until the page has it (#226).
   const [themeChoice, showThemeChoice] = useOptimistic<ThemeData | null>(null);
   const resumeTheme = themeChoice ?? resume?.theme;
@@ -283,6 +287,12 @@ export function ApplicationView({
     startTransition(async () => {
       showLocationsChoice(show);
       toastResult(await setShowLocations({ id: application.id, show }));
+    });
+
+  const changeGroupOrder = (follow: boolean) =>
+    startTransition(async () => {
+      showProfileGroupOrder(follow);
+      toastResult(await setProfileGroupOrder({ id: application.id, follow }));
     });
 
   const save = (kind: DocumentKind, unit: Unit, text: string) => {
@@ -735,6 +745,10 @@ export function ApplicationView({
                   {[...profile.experience, ...profile.education].some((entry) => entry.location.trim()) && (
                     <PreviewSwitch label="Locations" checked={showLocations} onCheckedChange={changeLocations} />
                   )}
+                  {/* Without groups, there's one heading and no order to choose. */}
+                  {profile.experienceGroups.length > 0 && (
+                    <PreviewSwitch label="Profile's group order" checked={profileGroupOrder} onCheckedChange={changeGroupOrder} />
+                  )}
                   {historyButton(DocumentKind.RESUME)}
                 </span>
               }
@@ -746,6 +760,7 @@ export function ApplicationView({
                 followThemeLayout={followLayout}
                 showPhoto={photoChoice}
                 showLocations={showLocations}
+                profileGroupOrder={profileGroupOrder}
                 language={application.language}
                 includeReferences={includeReferences}
                 privacyConsent={privacyConsent}

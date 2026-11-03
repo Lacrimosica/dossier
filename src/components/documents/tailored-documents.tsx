@@ -17,6 +17,7 @@ export function TailoredResume({
   followThemeLayout,
   showPhoto,
   showLocations,
+  profileGroupOrder,
   privacyConsent,
   language,
   includeReferences,
@@ -31,6 +32,8 @@ export function TailoredResume({
   showPhoto: boolean | null;
   /** Each role's and degree's location (Settings → "Locations on resumes", or the Locations switch). */
   showLocations: boolean;
+  /** The Group order switch: the experience groups in the profile's order, not the units'. */
+  profileGroupOrder: boolean;
   /** Settings → "Privacy consent line", for this resume's language; null leaves it off. */
   privacyConsent: string | null;
   language: string;
@@ -46,6 +49,7 @@ export function TailoredResume({
       layout={followThemeLayout ? undefined : withoutSidebar(resume.theme.layout)}
       showPhoto={showPhoto}
       showLocations={showLocations}
+      profileGroupOrder={profileGroupOrder}
       privacyConsent={privacyConsent}
       language={language}
       includeReferences={includeReferences}

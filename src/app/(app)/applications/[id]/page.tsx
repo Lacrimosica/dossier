@@ -69,7 +69,7 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
     }))
     // Settings → "Show what changed" off hides the list of what was tailored (SET-5).
     .filter((message) => settings.showDiff || !message.opening);
-  const { title, company, location, status, tone, language, followThemeLayout, showPhoto, nextInterviewAt } = application;
+  const { title, company, location, status, tone, language, followThemeLayout, showPhoto, profileGroupOrder, nextInterviewAt } = application;
   // Units still being rewritten, so a reload keeps showing it.
   const rewriting = unitJobs.flatMap((job) => {
     const input = regenerateUnitJob.input.safeParse(job.input);
@@ -92,6 +92,7 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
         followThemeLayout,
         showPhoto,
         showLocations,
+        profileGroupOrder,
         archived: application.archivedAt !== null,
         awaitingReview: application.awaitingReview,
         nextInterviewAt,

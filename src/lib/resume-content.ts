@@ -102,6 +102,8 @@ export type ResumeOptions = {
   showPhoto?: boolean | null;
   /** Each role's and degree's location next to its company or school: Settings → "Locations on resumes", or the application's choice. */
   showLocations?: boolean;
+  /** A tailored resume's groups in the profile's order, whatever the order of its units. */
+  profileGroupOrder?: boolean;
   /** For "Age N"; defaults to now. */
   today?: Date;
 };
@@ -143,7 +145,7 @@ const lines = (text: string) =>
 /** What the resume shows, with its dates and levels in the words of `labels`. */
 export function resumeContent(
   profile: ProfileData,
-  { units, includeReferences = false, showPhoto, showLocations = false, today = new Date() }: ResumeOptions = {},
+  { units, includeReferences = false, showPhoto, showLocations = false, profileGroupOrder = false, today = new Date() }: ResumeOptions = {},
   labels: DocumentLabels = ENGLISH_LABELS,
 ): ResumeContent {
   const { basics } = profile;
@@ -174,6 +176,7 @@ export function resumeContent(
   // A role's group, or null without one or when the group is gone.
   const groups = new Map(profile.experienceGroups.map((group) => [group.id, group]));
   const groupOf = (role: Role) => (role.groupId !== null && groups.has(role.groupId) ? role.groupId : null);
+  const profileOrder = [...profile.experienceGroups.map((group) => group.id), null];
   /** Roles under their headings, in the order `headings` gives; a heading without roles is left out. */
   const experience = (roles: { entry: Role; text: string }[], headings: (string | null)[]): ExperienceSection[] =>
     headings.flatMap((groupId) => {
@@ -227,7 +230,7 @@ export function resumeContent(
     // The groups in the profile's order, then the roles without one.
     experience: experience(
       profile.experience.map((entry) => ({ entry, text: entry.bullets })),
-      [...profile.experienceGroups.map((group) => group.id), null],
+      profileOrder,
     ),
     projects: profile.projects.map((entry) => project(entry, entry.bullets)),
     education: profile.education.map((entry) => education(entry, entry.notes)),
@@ -265,8 +268,9 @@ export function resumeContent(
     content.languages = text("languages").trim();
     content.interests = text("interests").trim();
     // Each heading where its first role is: tailoring and the editor decide the groups' order by the units'.
+    // The Group order switch puts them back in the profile's, as the base resume has them.
     const roles = withUnit("experience:", profile.experience);
-    content.experience = experience(roles, [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
+    content.experience = experience(roles, profileGroupOrder ? profileOrder : [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
     content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),

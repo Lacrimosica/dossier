@@ -25,6 +25,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setProfileGroupOrder,
   setShowLocations,
   setShowPhoto,
   startRegenerating,
@@ -41,6 +42,7 @@ vi.mock("./actions", () => ({
   setFollowThemeLayout: vi.fn(async () => ({ ok: true, data: null })),
   setShowPhoto: vi.fn(async () => ({ ok: true, data: null })),
   setShowLocations: vi.fn(async () => ({ ok: true, data: null })),
+  setProfileGroupOrder: vi.fn(async () => ({ ok: true, data: null })),
   saveUnit: vi.fn(async ({ text }: { text: string }) => ({ ok: true, data: { text } })),
   startRegenerating: vi.fn(async () => ({ ok: true, data: "job-1" })),
   restoreUnit: vi.fn(async () => ({ ok: true, data: null })),
@@ -102,6 +104,7 @@ const props: ApplicationViewProps = {
     followThemeLayout: false,
     showPhoto: null,
     showLocations: false,
+    profileGroupOrder: false,
     archived: false,
     nextInterviewAt: null,
   },
@@ -252,6 +255,19 @@ describe("the document tabs (E8-2)", () => {
     // A degree's place is enough (.scratch/education-locations).
     render(<ApplicationView {...props} profile={{ ...props.profile, experience, education: education.map((entry, index) => (index === 0 ? { ...entry, location: "Delft" } : entry)) }} />);
     expect(screen.getByRole("switch", { name: "Locations" })).toBeInTheDocument();
+  });
+
+  it("has a group order switch only while the profile has experience groups", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<ApplicationView {...props} />);
+    expect(screen.queryByRole("switch", { name: "Profile's group order" })).not.toBeInTheDocument();
+    unmount();
+
+    render(<ApplicationView {...props} profile={{ ...props.profile, experienceGroups: [{ id: "g1", name: "Design" }] }} />);
+    const toggle = screen.getByRole("switch", { name: "Profile's group order" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await user.click(toggle);
+    expect(setProfileGroupOrder).toHaveBeenCalledWith({ id: "app-1", follow: true });
   });
 
   it("changes the resume's and cover letter's theme together from the Theme menu (#226)", async () => {
