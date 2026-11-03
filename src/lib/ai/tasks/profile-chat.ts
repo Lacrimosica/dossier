@@ -10,13 +10,17 @@ import type { ChatTurn } from "./refine-chat";
 import { BULLET_RULES, localDate, NO_EM_DASHES, PLAIN_WORDING, system, truthfulness, type Task } from "./prompt-parts";
 import { profileForReview } from "./review-profile";
 
-export const PROFILE_CHAT_VERSION = "profile-chat@1";
+export const PROFILE_CHAT_VERSION = "profile-chat@2";
 
 // The profile chat (.scratch/profile-chat): the candidate says what to add to
 // their profile, and the model turns it into profile changes. Plain lists
 // rather than one union, which small local models and strict JSON-schema
 // modes handle best; changesFromAnswer() makes them changes, and
 // checkProfileChanges() decides which can apply. Nothing is saved here.
+//
+// New entries share one object with every section's fields: a list per
+// section made a schema Anthropic refuses ("The compiled grammar is too
+// large"), as the end-to-end tests' fake model can't tell.
 
 const span = {
   startYear: z.number().int().nullable(),
@@ -35,10 +39,26 @@ export const profileChatAnswerSchema = z.object({
   question: z.boolean(),
   /** The message isn't about the profile. */
   declined: z.boolean(),
-  addExperience: z.array(z.object({ role: z.string(), company: z.string(), location: z.string(), bullets: z.array(z.string()), skills: z.array(z.string()), ...span, current: z.boolean() })),
-  addProjects: z.array(z.object({ name: z.string(), link: z.string(), bullets: z.array(z.string()), skills: z.array(z.string()), ...span, current: z.boolean() })),
-  addEducation: z.array(z.object({ degree: z.string(), school: z.string(), location: z.string(), notes: z.string(), ...span, current: z.boolean() })),
-  addCourses: z.array(z.object({ name: z.string(), provider: z.string(), duration: z.string(), link: z.string(), notes: z.string(), ...span })),
+  /** New entries; each takes the fields its section has, and the rest are left empty. */
+  entries: z.array(
+    z.object({
+      section: z.enum(["experience", "projects", "education", "courses"]),
+      role: z.string(),
+      company: z.string(),
+      name: z.string(),
+      provider: z.string(),
+      degree: z.string(),
+      school: z.string(),
+      location: z.string(),
+      link: z.string(),
+      duration: z.string(),
+      notes: z.string(),
+      bullets: z.array(z.string()),
+      skills: z.array(z.string()),
+      ...span,
+      current: z.boolean(),
+    }),
+  ),
   edits: z.array(z.object({ section: z.enum(["experience", "projects", "education", "courses"]), id: z.string(), field: z.enum(EDIT_FIELDS), value: z.string() })),
   addBullets: z.array(z.object({ section: z.enum(["experience", "projects"]), id: z.string(), bullets: z.array(z.string()) })),
   skills: z.array(z.string()),
@@ -56,7 +76,8 @@ const INSTRUCTIONS = `You help a job seeker add to their profile in a job search
 - Read the profile first. When they talk about an entry that's already there, change it (edits, addBullets) by its id rather than adding it again.
 - edits: one item per field to change: section, the entry's id, the field and its new value as text. Years and months are numbers as text ("2024", "6"; months are 1 to 12), current is "true" or "false", bullets are the entry's whole list, one per line. An empty value clears the field.
 - addBullets: new points for a role or project, after the ones it has.
-- Certificates, licences, courses, workshops and trainings go in addCourses: provider is who issued it. Degrees and diplomas go in addEducation.
+- entries: new roles (experience: role, company, location), projects (name, link), degrees (education: degree, school, location, notes) and courses (name, provider, duration, link, notes), with their dates; roles and projects also take bullets and skills. Leave the fields a section doesn't have empty. Years and months are numbers (months 1 to 12), null when unknown; current is true when it's ongoing.
+- Certificates, licences, courses, workshops and trainings are courses: provider is who issued it. Degrees and diplomas are education.
 - facts: things about the candidate that don't belong in a section, such as when they can start, a driving licence, work permits or what they're looking for, each as a short sentence in their words.
 - skills: skills and tools they say they have. A role's or project's skills are also linked to it.
 - basics: only the headline, the summary, city or country, and only when they ask to change them.
@@ -103,12 +124,8 @@ export function profileForChat(profile: ProfileData): string {
 /** The answer's lists as changes; one the schema can't take (a year that's not a number) is left out. */
 export function changesFromAnswer(answer: ProfileChatAnswer): ProfileChange[] {
   const lines = (value: string) => value.split("\n");
-  const raw: unknown[] = [
-    ...answer.addExperience.map((entry) => ({ kind: "add", section: "experience", entry })),
-    ...answer.addProjects.map((entry) => ({ kind: "add", section: "projects", entry })),
-    ...answer.addEducation.map((entry) => ({ kind: "add", section: "education", entry })),
-    ...answer.addCourses.map((entry) => ({ kind: "add", section: "courses", entry })),
-  ];
+  // An added entry's schema keeps its section's fields and drops the others.
+  const raw: unknown[] = answer.entries.map(({ section, ...entry }) => ({ kind: "add", section, entry }));
   // One edit per entry, from its fields.
   const edits = new Map<string, { kind: "edit"; section: string; id: string; entry: Record<string, unknown> }>();
   for (const { section, id, field, value } of answer.edits) {

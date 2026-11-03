@@ -157,12 +157,12 @@ const answers: Record<string, (messages: Message[]) => unknown> = {
 
   profile_chat: (messages) => {
     const said = messages.at(-1)!.content;
-    const empty = { question: false, declined: false, addExperience: [], addProjects: [], addEducation: [], addCourses: [], edits: [], addBullets: [], skills: [], languages: [], interests: [], facts: [], basics: [] };
+    const empty = { question: false, declined: false, entries: [], edits: [], addBullets: [], skills: [], languages: [], interests: [], facts: [], basics: [] };
     if (/certificate/i.test(said)) {
       return {
         ...empty,
         reply: "Here's your certificate. Add it if it looks right.",
-        addCourses: [{ name: "AWS Solutions Architect", provider: "Amazon", duration: "", link: "", notes: "", startYear: 2025, startMonth: 3, endYear: null, endMonth: null }],
+        entries: [{ section: "courses", role: "", company: "", name: "AWS Solutions Architect", provider: "Amazon", degree: "", school: "", location: "", link: "", duration: "", notes: "", bullets: [], skills: [], startYear: 2025, startMonth: 3, endYear: null, endMonth: null, current: false }],
       };
     }
     if (/\bwhen\b/i.test(said)) return { ...empty, reply: "When did you start there?", question: true };

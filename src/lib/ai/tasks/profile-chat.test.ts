@@ -13,14 +13,18 @@ const base = demoProfile();
 const profile = { ...base, courses: [...base.courses, { ...base.courses[0], id: "hidden", name: "Hidden course", onResumes: false }] };
 const [first] = profile.experience;
 
+/** An added entry as the model writes it: every section's fields, the unused ones empty. */
+const entry = (fields: Partial<ProfileChatAnswer["entries"][number]> & Pick<ProfileChatAnswer["entries"][number], "section">): ProfileChatAnswer["entries"][number] => ({
+  role: "", company: "", name: "", provider: "", degree: "", school: "", location: "", link: "", duration: "", notes: "", bullets: [], skills: [],
+  startYear: null, startMonth: null, endYear: null, endMonth: null, current: false,
+  ...fields,
+});
+
 const empty: ProfileChatAnswer = {
   reply: "",
   question: false,
   declined: false,
-  addExperience: [],
-  addProjects: [],
-  addEducation: [],
-  addCourses: [],
+  entries: [],
   edits: [],
   addBullets: [],
   skills: [],
@@ -56,7 +60,7 @@ describe("profileChat", () => {
       reply: () => ({
         ...empty,
         reply: "Here's your certificate.",
-        addCourses: [{ name: "AWS Solutions Architect", provider: "Amazon Web Services", duration: "", link: "", notes: "", startYear: 2025, startMonth: 3, endYear: null, endMonth: null }],
+        entries: [entry({ section: "courses", name: "AWS Solutions Architect", provider: "Amazon Web Services", startYear: 2025, startMonth: 3 })],
         edits: [
           { section: "experience", id: first.id, field: "endYear", value: "2026" },
           { section: "experience", id: first.id, field: "current", value: "false" },
@@ -69,7 +73,11 @@ describe("profileChat", () => {
     });
     const { data } = await profileChat(provider, { turns: said("I got my AWS Solutions Architect cert from Amazon in March 2025, and I left in 2026."), profile }, options);
     expect(data.changes.map(({ change }) => change.kind)).toEqual(["add", "edit", "addSkills", "addLanguages"]);
-    expect(data.changes[0]).toEqual({ change: expect.objectContaining({ section: "courses" }), unverified: expect.arrayContaining(["Services"]) });
+    // The other sections' fields, empty in the answer, don't come along.
+    expect(data.changes[0]).toEqual({
+      change: { kind: "add", section: "courses", entry: { name: "AWS Solutions Architect", provider: "Amazon Web Services", duration: "", link: "", notes: "", startYear: 2025, startMonth: 3, endYear: null, endMonth: null } },
+      unverified: expect.arrayContaining(["Services"]),
+    });
     expect(data.changes[1]).toEqual({ change: { kind: "edit", section: "experience", id: first.id, entry: { endYear: 2026, current: false } }, unverified: [] });
     expect(data.refused).toEqual([{ change: expect.objectContaining({ id: "gone" }), reason: "That role isn't in your profile any more." }]);
   });
