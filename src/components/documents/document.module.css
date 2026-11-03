@@ -247,6 +247,8 @@
   color: var(--doc-muted);
   break-inside: avoid;
   text-wrap: pretty;
+  /* Keep the line breaks typed in Settings, e.g. "Torino, [data]" and "Firma" on lines of their own. */
+  white-space: pre-line;
 }
 
 /* Courses and certificates: short, so closer together than roles. */
