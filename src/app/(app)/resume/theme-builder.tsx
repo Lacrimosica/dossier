@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import {
   ACCENTS,
   ALIGNMENTS,
+  COURSE_COLUMNS,
   DATE_STYLES,
   DENSITIES,
   HEADER_STYLES,
@@ -131,6 +132,13 @@ export function ThemeBuilder({ draft, onChange, onSave, onCancel, saving }: Them
       />
       <Choices label="Section titles" value={draft.headingStyle} options={options(HEADING_STYLES)} onChange={set("headingStyle")} />
       <Choices label="Dates" value={draft.dateStyle} options={options(DATE_STYLES)} onChange={set("dateStyle")} />
+      <Choices
+        label="Courses"
+        value={draft.courseColumns}
+        options={options(COURSE_COLUMNS)}
+        onChange={set("courseColumns")}
+        hint="Courses & certificates, one under another or side by side."
+      />
       <Choices label="Spacing" value={draft.density} options={options(DENSITIES)} onChange={set("density")} />
       <div className="flex gap-2 pt-1.5">
         <Button type="submit" className="flex-1" disabled={saving}>

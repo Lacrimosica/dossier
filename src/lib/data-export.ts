@@ -7,6 +7,7 @@ import {
   AgentCandidateStatus,
   ApplicationOrigin,
   ApplicationStatus,
+  CourseColumns,
   ChatRole,
   DateStyle,
   Density,
@@ -187,6 +188,8 @@ const theme = z.object({
   /** Absent before 1.9.0 (#224). */
   photoShape: z.enum(PhotoShape).optional(),
   photoPosition: z.enum(PhotoPosition).optional(),
+  /** Absent in files before courses could go in two columns. */
+  courseColumns: z.enum(CourseColumns).optional(),
   createdAt: date,
   updatedAt: date,
 });

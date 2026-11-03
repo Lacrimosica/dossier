@@ -1,4 +1,5 @@
 import {
+  CourseColumns,
   DateStyle,
   Density,
   HeaderStyle,
@@ -37,6 +38,8 @@ export type ThemeData = {
   /** The profile photo's shape and place (#224). */
   photoShape: PhotoShape;
   photoPosition: PhotoPosition;
+  /** Courses & certificates in one column, or two side by side. */
+  courseColumns: CourseColumns;
 };
 
 /** What a theme that doesn't say otherwise has: the look of the first six built-ins. */
@@ -46,6 +49,7 @@ export const THEME_STYLE_DEFAULTS = {
   dateStyle: DateStyle.INLINE,
   photoShape: PhotoShape.CIRCLE,
   photoPosition: PhotoPosition.HEADER_END,
+  courseColumns: CourseColumns.ONE,
 } satisfies Partial<ThemeData>;
 type StyleField = keyof typeof THEME_STYLE_DEFAULTS;
 
@@ -224,6 +228,11 @@ export const DATE_STYLES: Record<DateStyle, { label: string }> = {
   [DateStyle.STACKED]: { label: "Two lines" },
 };
 
+export const COURSE_COLUMNS: Record<CourseColumns, { label: string }> = {
+  [CourseColumns.ONE]: { label: "One column" },
+  [CourseColumns.TWO]: { label: "Two columns" },
+};
+
 /**
  * Photo shapes (#224), with their size in page units in the header and in the
  * sidebar. The photo is cropped 3:4; the square shapes show its middle.
@@ -278,6 +287,8 @@ export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layou
     contactSeparator: bold ? " | " : CONTACT_SEPARATOR,
     timeline: theme.dateStyle === DateStyle.TIMELINE,
     stacked: theme.dateStyle === DateStyle.STACKED,
+    /** Courses side by side; each then has its dates on its own line, whatever the date style. */
+    courseColumns: theme.courseColumns === CourseColumns.TWO,
     photo: {
       shape: theme.photoShape,
       // Only a sidebar layout has a sidebar to put it in.

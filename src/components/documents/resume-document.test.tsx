@@ -69,6 +69,19 @@ describe("ResumeDocument", () => {
     expect(screen.getByRole("article", { name: "Resume" }).className).toMatch(/timeline/);
   });
 
+  it("puts courses in two columns when the theme says so, each with its dates after its name, even in a timeline", () => {
+    const courses = () => screen.getByRole("heading", { name: "Courses & certificates" }).closest("section")!;
+    const { unmount } = render(<ResumeDocument theme={theme("chronicle")} profile={profile} paper="A4" today={today} />);
+    expect(courses().innerHTML).not.toMatch(/courseColumns/);
+    expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Mar 2023 – May 2023Accessibility for Designers/);
+    unmount();
+
+    render(<ResumeDocument theme={{ ...theme("chronicle"), courseColumns: "TWO" }} profile={profile} paper="A4" today={today} />);
+    const grid = courses().querySelector("[class*=courseColumns]")!;
+    expect([...grid.children].map((child) => child.getAttribute("data-unit"))).toEqual(profile.courses.map((entry) => `course:${entry.id}`));
+    expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Accessibility for Designers.*Mar 2023 – May 2023/);
+  });
+
   it("leads a stacked head with the company or school and its dates, the title and place in italics under them", () => {
     render(<ResumeDocument theme={theme("brief")} profile={profile} paper="A4" today={today} showLocations />);
     const [northwind] = profile.experience;

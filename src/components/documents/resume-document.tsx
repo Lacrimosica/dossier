@@ -187,6 +187,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
     ),
     content.courses.length > 0 && (
       <DocumentSection key="courses" title={labels.courses}>
+        <CourseList columns={resolved.courseColumns}>
         {content.courses.map((entry) => (
           <Fragment key={entry.id}>
             {renderUnit({
@@ -208,7 +209,8 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
                     )
                   }
                   dates={entry.dates}
-                  {...heads}
+                  // In two columns the dates go under the name, whatever the date style.
+                  {...(resolved.courseColumns ? { timeline: false, stacked: false } : heads)}
                 />
               ),
               children: (entry.notes || entry.link) && (
@@ -221,6 +223,7 @@ export function ResumeDocument({ theme, profile, paper, layout, language, render
             })}
           </Fragment>
         ))}
+        </CourseList>
       </DocumentSection>
     ),
     content.publications.length > 0 && (
@@ -357,6 +360,11 @@ const breakAfterDash = (dates: string) =>
  * there are: the organisation stands in for a missing title, and nothing
  * empty is drawn, no stray separator, blank line or half-empty second line.
  */
+/** Courses one under another, as the section lays them out, or in two columns (the theme's Courses). */
+function CourseList({ columns, children }: { columns: boolean; children: ReactNode }) {
+  return columns ? <div className={styles.courseColumns}>{children}</div> : children;
+}
+
 function EntryHead({
   title,
   organisation,

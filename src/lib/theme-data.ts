@@ -20,6 +20,7 @@ export const THEME_FIELDS = {
   dateStyle: true,
   photoShape: true,
   photoPosition: true,
+  courseColumns: true,
 } as const;
 
 const builtInOrder = new Map(BUILT_IN_THEMES.map((theme, index) => [theme.id, index]));
