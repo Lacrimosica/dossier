@@ -1,6 +1,10 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+
 import type { Trimmed } from "@/lib/application-data";
+import { cn } from "@/lib/cn";
 import type { OffResumeItem } from "@/lib/off-resume";
 
 /** "Studio Brik role" or "1 bullet from the Fieldnote role" */
@@ -21,7 +25,9 @@ const ACTION = "text-muted underline underline-offset-2 hover:text-ink";
  * "Put back": to fit its page limit (E10-10) or by hand (#217). When it's both,
  * the page limit's say so. Then what's in the profile but not on the resume,
  * passed over by tailoring or added since, each with "Add". Skills and the like
- * can be many and are short, so they're small buttons rather than rows.
+ * can be many and are short, so they're small buttons rather than rows. Tailoring
+ * can pass over a lot of skills, so they stay closed behind their count until
+ * asked for, and the resume stays in view.
  */
 export function TrimmedNotice({
   items,
@@ -34,6 +40,7 @@ export function TrimmedNotice({
   offResume: OffResumeItem[];
   onAdd: (item: OffResumeItem) => void;
 }) {
+  const [skillsOpen, setSkillsOpen] = useState(false);
   const allByPageLimit = items.every(byPageLimit);
   const entries = offResume.filter((item) => item.kind === "entry");
   const lines = (Object.keys(LINE_HEADINGS) as (keyof typeof LINE_HEADINGS)[]).flatMap((unitId) => {
@@ -80,22 +87,41 @@ export function TrimmedNotice({
               ))}
             </ul>
           )}
-          {lines.map(({ unitId, under }) => (
-            <div key={unitId} className="flex flex-wrap items-center gap-1.5">
-              <span className="text-ink">{LINE_HEADINGS[unitId]}</span>
-              {under.map((item) => (
+          {lines.map(({ unitId, under }) => {
+            const chips = under.map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                aria-label={`Add ${item.name} to this resume`}
+                onClick={() => onAdd(item)}
+                className="min-h-6 rounded-full border border-line-card px-2 text-muted hover:text-ink"
+              >
+                + {item.name}
+              </button>
+            ));
+            if (unitId !== "skills") {
+              return (
+                <div key={unitId} className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-ink">{LINE_HEADINGS[unitId]}</span>
+                  {chips}
+                </div>
+              );
+            }
+            return (
+              <div key={unitId} className="flex flex-col gap-1.5">
                 <button
-                  key={item.key}
                   type="button"
-                  aria-label={`Add ${item.name} to this resume`}
-                  onClick={() => onAdd(item)}
-                  className="min-h-6 rounded-full border border-line-card px-2 text-muted hover:text-ink"
+                  aria-expanded={skillsOpen}
+                  onClick={() => setSkillsOpen(!skillsOpen)}
+                  className="flex min-h-6 w-fit items-center gap-1 text-ink"
                 >
-                  + {item.name}
+                  <ChevronRight aria-hidden className={cn("size-3.5 text-muted transition-transform", skillsOpen && "rotate-90")} />
+                  {LINE_HEADINGS.skills} · {under.length}
                 </button>
-              ))}
-            </div>
-          ))}
+                {skillsOpen && <div className="flex flex-wrap items-center gap-1.5">{chips}</div>}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

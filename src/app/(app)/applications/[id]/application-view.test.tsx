@@ -1016,10 +1016,33 @@ describe("what's in the profile but not on the resume", () => {
     const user = userEvent.setup();
     render(<ApplicationView {...props} profile={withAdded} />);
     const note = screen.getByRole("note");
-    expect(note).toHaveTextContent("Skills+ Kubernetes");
+    const skills = within(note).getByRole("button", { name: "Skills · 1" });
+    await user.click(skills);
     await user.click(within(note).getByRole("button", { name: "Add Kubernetes to this resume" }));
     expect(addFromProfile).toHaveBeenCalledWith({ id: "app-1", key: "skill:skill-new" });
     expect(toast).toHaveBeenLastCalledWith("Added Kubernetes.");
+  });
+
+  it("keeps skills closed behind their count until asked for", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} profile={withAdded} />);
+    const note = screen.getByRole("note");
+    const skills = within(note).getByRole("button", { name: "Skills · 1" });
+    expect(skills).toHaveAttribute("aria-expanded", "false");
+    expect(within(note).queryByRole("button", { name: "Add Kubernetes to this resume" })).not.toBeInTheDocument();
+
+    await user.click(skills);
+    expect(skills).toHaveAttribute("aria-expanded", "true");
+    expect(within(note).getByRole("button", { name: "Add Kubernetes to this resume" })).toBeInTheDocument();
+
+    await user.click(skills);
+    expect(skills).toHaveAttribute("aria-expanded", "false");
+    expect(within(note).queryByRole("button", { name: "Add Kubernetes to this resume" })).not.toBeInTheDocument();
+  });
+
+  it("leaves languages and interests open", () => {
+    render(<ApplicationView {...props} profile={{ ...props.profile, courses: props.profile.courses.slice(0, 1), interests: [...props.profile.interests, "Bouldering"] }} />);
+    expect(screen.getByRole("note")).toHaveTextContent("Interests+ Bouldering");
   });
 
   it("lists it after what was left out, in the same note", () => {

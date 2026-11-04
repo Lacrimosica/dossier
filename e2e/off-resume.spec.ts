@@ -23,6 +23,7 @@ test("lists a course tailoring passed over and a skill added since, and adds the
 
   await note.getByRole("button", { name: "Add UX Writing Workshop to this resume" }).click();
   await expect(resume).toContainText("UX Writing Workshop");
+  await note.getByRole("button", { name: "Skills · 1" }).click();
   await note.getByRole("button", { name: "Add Kubernetes to this resume" }).click();
   await expect(resume).toContainText("Kubernetes");
   await expect(note).toHaveCount(0);
