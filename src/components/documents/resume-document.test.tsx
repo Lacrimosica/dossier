@@ -72,12 +72,12 @@ describe("ResumeDocument", () => {
   it("puts courses in two columns when the theme says so, each with its dates after its name, even in a timeline", () => {
     const courses = () => screen.getByRole("heading", { name: "Courses & certificates" }).closest("section")!;
     const { unmount } = render(<ResumeDocument theme={theme("chronicle")} profile={profile} paper="A4" today={today} />);
-    expect(courses().innerHTML).not.toMatch(/courseColumns/);
+    expect(courses().innerHTML).not.toMatch(/entryColumns/);
     expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Mar 2023 – May 2023Accessibility for Designers/);
     unmount();
 
     render(<ResumeDocument theme={{ ...theme("chronicle"), courseColumns: "TWO" }} profile={profile} paper="A4" today={today} />);
-    const grid = courses().querySelector("[class*=courseColumns]")!;
+    const grid = courses().querySelector("[class*=entryColumns]")!;
     expect([...grid.children].map((child) => child.getAttribute("data-unit"))).toEqual(profile.courses.map((entry) => `course:${entry.id}`));
     expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Accessibility for Designers.*Mar 2023 – May 2023/);
   });
@@ -112,6 +112,32 @@ describe("ResumeDocument", () => {
     expect(page().className).toMatch(/markSections/);
     expect(blocks("marked")).toBe(0);
     view.unmount();
+  });
+
+  it("puts degrees in two columns when the theme says so, each with its name before its dates, even in a timeline", () => {
+    const education = () => screen.getByRole("heading", { name: "Education" }).closest("section")!;
+    const [degree] = profile.education;
+    const unit = () => screen.getByText(degree.degree).closest("[data-unit]")!;
+    const { unmount } = render(<ResumeDocument theme={theme("chronicle")} profile={profile} paper="A4" today={today} />);
+    expect(education().innerHTML).not.toMatch(/entryColumns/);
+    expect(unit().textContent!.startsWith(degree.degree)).toBe(false);
+    unmount();
+
+    render(<ResumeDocument theme={{ ...theme("chronicle"), educationColumns: "TWO" }} profile={profile} paper="A4" today={today} />);
+    const grid = education().querySelector("[class*=entryColumns]")!;
+    expect([...grid.children].map((child) => child.getAttribute("data-unit"))).toEqual(profile.education.map((entry) => `education:${entry.id}`));
+    expect(unit().textContent!.startsWith(degree.degree)).toBe(true);
+  });
+
+  it("keeps a degree's note on a line of its own, but on the dates' line in two columns", () => {
+    const [degree, ...rest] = profile.education;
+    const noted = { ...profile, education: [{ ...degree, notes: "Voto finale: 97/110" }, ...rest] };
+    const { unmount } = render(<ResumeDocument theme={theme("editorial")} profile={noted} paper="A4" today={today} />);
+    expect(screen.getByText("Voto finale: 97/110").tagName).toBe("P");
+    unmount();
+
+    render(<ResumeDocument theme={{ ...theme("editorial"), educationColumns: "TWO" }} profile={noted} paper="A4" today={today} />);
+    expect(screen.getByText(/ · Voto finale: 97\/110$/).className).toMatch(/dates/);
   });
 
   it("leads a stacked head with the company or school and its dates, the title and place in italics under them", () => {

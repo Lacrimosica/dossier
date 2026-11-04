@@ -320,6 +320,12 @@ enum CourseColumns {
   TWO
 }
 
+/// Degrees on a resume: one under another, or side by side in two columns.
+enum EducationColumns {
+  ONE
+  TWO
+}
+
 /// How a resume shows where a block of content starts and ends: not at all,
 /// with a thin line down its side, or on a pale tint of the accent.
 enum MarkerStyle {
@@ -363,28 +369,29 @@ enum Density {
 /// ("editorial") and are read-only: the app never edits them, the seed keeps
 /// them in sync, and a trigger stops them from being deleted.
 model Theme {
-  id            String        @id @default(cuid())
-  builtIn       Boolean       @default(false)
-  name          String
-  headFont      ThemeFont
-  bodyFont      ThemeFont
+  id               String           @id @default(cuid())
+  builtIn          Boolean          @default(false)
+  name             String
+  headFont         ThemeFont
+  bodyFont         ThemeFont
   /// "#rrggbb"
-  accent        String
-  layout        ThemeLayout   @default(SINGLE)
-  align         ThemeAlign    @default(LEFT)
-  headingStyle  HeadingStyle  @default(PLAIN)
-  density       Density       @default(REGULAR)
-  headerStyle   HeaderStyle   @default(PLAIN)
-  sidebarStyle  SidebarStyle  @default(PLAIN)
-  dateStyle     DateStyle     @default(INLINE)
-  photoShape    PhotoShape    @default(CIRCLE)
-  photoPosition PhotoPosition @default(HEADER_END)
-  courseColumns CourseColumns @default(ONE)
-  markerStyle   MarkerStyle   @default(NONE)
-  markerScope   MarkerScope   @default(SECTIONS)
-  documents     Document[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  accent           String
+  layout           ThemeLayout      @default(SINGLE)
+  align            ThemeAlign       @default(LEFT)
+  headingStyle     HeadingStyle     @default(PLAIN)
+  density          Density          @default(REGULAR)
+  headerStyle      HeaderStyle      @default(PLAIN)
+  sidebarStyle     SidebarStyle     @default(PLAIN)
+  dateStyle        DateStyle        @default(INLINE)
+  photoShape       PhotoShape       @default(CIRCLE)
+  photoPosition    PhotoPosition    @default(HEADER_END)
+  courseColumns    CourseColumns    @default(ONE)
+  educationColumns EducationColumns @default(ONE)
+  markerStyle      MarkerStyle      @default(NONE)
+  markerScope      MarkerScope      @default(SECTIONS)
+  documents        Document[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 enum AiProvider {

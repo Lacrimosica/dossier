@@ -60,6 +60,7 @@ describe("saveTheme", () => {
     photoShape: "PORTRAIT",
     photoPosition: "SIDEBAR",
     courseColumns: "TWO",
+    educationColumns: "TWO",
     markerStyle: "LINE",
     markerScope: "COMPANIES",
   } as const;
@@ -68,7 +69,7 @@ describe("saveTheme", () => {
     const result = await saveTheme(draft);
     expect(result).toMatchObject({
       ok: true,
-      data: { name: "Green mono", accent: "#2d6a4f", builtIn: false, headerStyle: "BANNER", sidebarStyle: "TINTED", dateStyle: "TIMELINE", photoShape: "PORTRAIT", photoPosition: "SIDEBAR", courseColumns: "TWO", markerStyle: "LINE", markerScope: "COMPANIES" },
+      data: { name: "Green mono", accent: "#2d6a4f", builtIn: false, headerStyle: "BANNER", sidebarStyle: "TINTED", dateStyle: "TIMELINE", photoShape: "PORTRAIT", photoPosition: "SIDEBAR", courseColumns: "TWO", educationColumns: "TWO", markerStyle: "LINE", markerScope: "COMPANIES" },
       toast: "Saved “Green mono”. It's now your base resume theme.",
     });
     const id = result.ok ? result.data.id : "";

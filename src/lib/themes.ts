@@ -2,6 +2,7 @@ import {
   CourseColumns,
   DateStyle,
   Density,
+  EducationColumns,
   HeaderStyle,
   HeadingStyle,
   MarkerScope,
@@ -42,6 +43,8 @@ export type ThemeData = {
   photoPosition: PhotoPosition;
   /** Courses & certificates in one column, or two side by side. */
   courseColumns: CourseColumns;
+  /** Degrees in one column, or two side by side. */
+  educationColumns: EducationColumns;
   /** How blocks of content show where they start and end, and which blocks. */
   markerStyle: MarkerStyle;
   markerScope: MarkerScope;
@@ -55,6 +58,7 @@ export const THEME_STYLE_DEFAULTS = {
   photoShape: PhotoShape.CIRCLE,
   photoPosition: PhotoPosition.HEADER_END,
   courseColumns: CourseColumns.ONE,
+  educationColumns: EducationColumns.ONE,
   markerStyle: MarkerStyle.NONE,
   markerScope: MarkerScope.SECTIONS,
 } satisfies Partial<ThemeData>;
@@ -240,6 +244,11 @@ export const COURSE_COLUMNS: Record<CourseColumns, { label: string }> = {
   [CourseColumns.TWO]: { label: "Two columns" },
 };
 
+export const EDUCATION_COLUMNS: Record<EducationColumns, { label: string }> = {
+  [EducationColumns.ONE]: { label: "One column" },
+  [EducationColumns.TWO]: { label: "Two columns" },
+};
+
 export const MARKER_STYLES: Record<MarkerStyle, { label: string }> = {
   [MarkerStyle.NONE]: { label: "None" },
   [MarkerStyle.LINE]: { label: "Line" },
@@ -308,6 +317,8 @@ export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layou
     stacked: theme.dateStyle === DateStyle.STACKED,
     /** Courses side by side; each then has its dates on its own line, whatever the date style. */
     courseColumns: theme.courseColumns === CourseColumns.TWO,
+    /** Degrees side by side, laid out as courses are. */
+    educationColumns: theme.educationColumns === EducationColumns.TWO,
     /** The line or tint on a block of content; null without one. */
     marker: theme.markerStyle === MarkerStyle.NONE ? null : theme.markerStyle,
     markerScope: theme.markerScope,

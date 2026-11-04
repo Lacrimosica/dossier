@@ -21,6 +21,7 @@ export const THEME_FIELDS = {
   photoShape: true,
   photoPosition: true,
   courseColumns: true,
+  educationColumns: true,
   markerStyle: true,
   markerScope: true,
 } as const;

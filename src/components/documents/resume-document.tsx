@@ -209,21 +209,35 @@ export function ResumeDocument({
     ),
     content.education.length > 0 && (
       <DocumentSection key="education" title={labels.education}>
+        <EntryColumns columns={resolved.educationColumns}>
         {content.education.map((entry) => (
           <Fragment key={entry.id}>
             {renderUnit({
               id: `education:${entry.id}`,
               className: styles.entry,
-              head: <EntryHead title={entry.degree} organisation={entry.school} place={entry.location} dates={entry.dates} {...heads} />,
-              children: entry.notes && <p className={styles.muted}>{entry.notes}</p>,
+              head: (
+                <EntryHead
+                  title={entry.degree}
+                  organisation={entry.school}
+                  place={entry.location}
+                  // In two columns a note joins the dates' line: on a line of its own, a
+                  // degree with one would run a line past one without, and the short
+                  // column would look like a bigger gap before the next section.
+                  dates={resolved.educationColumns ? [entry.dates, entry.notes].filter(Boolean).join(" · ") : entry.dates}
+                  // As with courses: no timeline or stacked head in a column this narrow.
+                  {...(resolved.educationColumns ? { timeline: false, stacked: false } : heads)}
+                />
+              ),
+              children: !resolved.educationColumns && entry.notes && <p className={styles.muted}>{entry.notes}</p>,
             })}
           </Fragment>
         ))}
+        </EntryColumns>
       </DocumentSection>
     ),
     content.courses.length > 0 && (
       <DocumentSection key="courses" title={labels.courses}>
-        <CourseList columns={resolved.courseColumns}>
+        <EntryColumns columns={resolved.courseColumns}>
         {content.courses.map((entry) => (
           <Fragment key={entry.id}>
             {renderUnit({
@@ -259,7 +273,7 @@ export function ResumeDocument({
             })}
           </Fragment>
         ))}
-        </CourseList>
+        </EntryColumns>
       </DocumentSection>
     ),
     content.publications.length > 0 && (
@@ -396,9 +410,9 @@ const breakAfterDash = (dates: string) =>
  * there are: the organisation stands in for a missing title, and nothing
  * empty is drawn, no stray separator, blank line or half-empty second line.
  */
-/** Courses one under another, as the section lays them out, or in two columns (the theme's Courses). */
-function CourseList({ columns, children }: { columns: boolean; children: ReactNode }) {
-  return columns ? <div className={styles.courseColumns}>{children}</div> : children;
+/** Degrees or courses one under another, as the section lays them out, or in two columns (the theme's Education and Courses). */
+function EntryColumns({ columns, children }: { columns: boolean; children: ReactNode }) {
+  return columns ? <div className={styles.entryColumns}>{children}</div> : children;
 }
 
 function EntryHead({

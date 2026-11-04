@@ -13,6 +13,7 @@ import {
   COURSE_COLUMNS,
   DATE_STYLES,
   DENSITIES,
+  EDUCATION_COLUMNS,
   HEADER_STYLES,
   HEADING_STYLES,
   LAYOUTS,
@@ -134,6 +135,13 @@ export function ThemeBuilder({ draft, onChange, onSave, onCancel, saving }: Them
       />
       <Choices label="Section titles" value={draft.headingStyle} options={options(HEADING_STYLES)} onChange={set("headingStyle")} />
       <Choices label="Dates" value={draft.dateStyle} options={options(DATE_STYLES)} onChange={set("dateStyle")} />
+      <Choices
+        label="Education"
+        value={draft.educationColumns}
+        options={options(EDUCATION_COLUMNS)}
+        onChange={set("educationColumns")}
+        hint="Degrees, one under another or side by side."
+      />
       <Choices
         label="Courses"
         value={draft.courseColumns}

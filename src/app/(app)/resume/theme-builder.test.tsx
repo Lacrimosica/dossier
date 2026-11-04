@@ -49,6 +49,7 @@ describe("ThemeBuilder", () => {
       "Capitals, underlined",
     ]);
     expect(within(group("Dates")).getByRole("radio", { name: "Beside the title" })).toBeChecked();
+    expect(within(group("Education")).getByRole("radio", { name: "One column" })).toBeChecked();
     expect(within(group("Courses")).getByRole("radio", { name: "One column" })).toBeChecked();
     expect(within(group("Spacing")).getByRole("radio", { name: "Regular" })).toBeChecked();
   });
@@ -137,6 +138,8 @@ describe("ThemeBuilder", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ accent: "#6b4f8a", name: "My theme" }));
     await userEvent.click(within(group("Spacing")).getByRole("radio", { name: "Airy" }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ density: "AIRY" }));
+    await userEvent.click(within(group("Education")).getByRole("radio", { name: "Two columns" }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ educationColumns: "TWO" }));
     await userEvent.click(within(group("Courses")).getByRole("radio", { name: "Two columns" }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ courseColumns: "TWO" }));
     await userEvent.click(within(group("Block markers")).getByRole("radio", { name: "Line" }));

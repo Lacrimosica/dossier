@@ -265,39 +265,65 @@
 }
 
 /*
- * Courses in two columns (the theme's Courses): side by side, each with its
- * dates on a line of their own under the name, since a column is too narrow
- * to put them beside it. Rows keep the gap single-column courses have.
+ * Courses or degrees in two columns (the theme's Courses and Education): side
+ * by side, each with its dates on a line of their own under the name, since a
+ * column is too narrow to put them beside it. Rows keep the gap each has in
+ * a single column, and a degree isn't split across pages, as a course isn't.
  */
-.courseColumns {
+.entryColumns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: calc(var(--u) * 5) calc(var(--u) * 20);
 }
 
-.courseColumns > .course + .course {
+.entryColumns:has(> .entry) {
+  row-gap: calc(var(--u) * var(--item-gap));
+}
+
+.entryColumns > .entry {
+  break-inside: avoid;
+}
+
+.entryColumns > :is(.entry, .course) + :is(.entry, .course) {
   margin-top: 0;
 }
 
-.courseColumns .entryHead {
+.entryColumns .entryHead {
   display: block;
 }
 
-.courseColumns .dates {
+.entryColumns .dates {
   display: block;
   font-size: 0.9em;
+  /* A degree's note shares this line, and can be longer than the column. */
+  white-space: normal;
 }
 
 /* A timeline's date column doesn't fit in a column of its own. */
-.timeline .courseColumns .course {
+.timeline .entryColumns > :is(.entry, .course) {
   padding-inline-start: 0;
 }
 
-.timeline .courseColumns .dates {
+.timeline .entryColumns .dates {
   float: none;
   width: auto;
   margin-inline-start: 0;
   line-height: inherit;
+}
+
+/* Nor does a stacked head's two-sided line, nor its bold dates at the end of it. */
+.stacked .entryColumns .entryHead {
+  display: block;
+}
+
+.stacked .entryColumns .entryHead > :nth-child(even) {
+  text-align: start;
+}
+
+.stacked .entryColumns .dates {
+  font-size: 0.9em;
+  font-weight: inherit;
+  color: var(--doc-muted);
 }
 
 .courseDetails {

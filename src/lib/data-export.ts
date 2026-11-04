@@ -12,6 +12,7 @@ import {
   DateStyle,
   Density,
   DocumentKind,
+  EducationColumns,
   FunnelStage,
   GroupSection,
   HeaderStyle,
@@ -192,6 +193,8 @@ const theme = z.object({
   photoPosition: z.enum(PhotoPosition).optional(),
   /** Absent in files before courses could go in two columns. */
   courseColumns: z.enum(CourseColumns).optional(),
+  /** Absent in files before degrees could go in two columns. */
+  educationColumns: z.enum(EducationColumns).optional(),
   /** Absent in files before themes could mark blocks with a line or tint. */
   markerStyle: z.enum(MarkerStyle).optional(),
   markerScope: z.enum(MarkerScope).optional(),

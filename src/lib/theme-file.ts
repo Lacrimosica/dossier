@@ -4,6 +4,7 @@ import {
   CourseColumns,
   DateStyle,
   Density,
+  EducationColumns,
   HeaderStyle,
   HeadingStyle,
   MarkerScope,
@@ -25,10 +26,10 @@ export const THEME_FILE_FORMAT = "dossier-theme";
 /**
  * Bump when the file's shape changes; imports refuse versions they don't
  * know. Version 2 added the header, sidebar and date styles, 3 the photo's
- * shape and position (#224), 4 courses in two columns, 5 the block markers;
- * older files read with the defaults.
+ * shape and position (#224), 4 courses in two columns, 5 the block markers,
+ * 6 degrees in two columns; older files read with the defaults.
  */
-export const THEME_FILE_VERSION = 5;
+export const THEME_FILE_VERSION = 6;
 
 const font = z.enum(ThemeFont, { error: (issue) => `That theme uses a font Dossier doesn't have (${String(issue.input)}).` });
 
@@ -55,6 +56,7 @@ export const themeFieldsSchema = z.object({
   photoShape: z.enum(PhotoShape),
   photoPosition: z.enum(PhotoPosition),
   courseColumns: z.enum(CourseColumns),
+  educationColumns: z.enum(EducationColumns),
   markerStyle: z.enum(MarkerStyle),
   markerScope: z.enum(MarkerScope),
 });
@@ -63,7 +65,7 @@ export type ThemeFields = z.output<typeof themeFieldsSchema>;
 export const themeFileSchema = z.object({
   format: z.literal(THEME_FILE_FORMAT),
   version: z.number(),
-  // Version 1 files have no header, sidebar or date style, versions 1 and 2 no photo, 1 to 3 no course columns, and 1 to 4 no block markers.
+  // Version 1 files have no header, sidebar or date style, versions 1 and 2 no photo, 1 to 3 no course columns, 1 to 4 no block markers, and 1 to 5 no education columns.
   theme: themeFieldsSchema.extend({
     headerStyle: z.enum(HeaderStyle).default(THEME_STYLE_DEFAULTS.headerStyle),
     sidebarStyle: z.enum(SidebarStyle).default(THEME_STYLE_DEFAULTS.sidebarStyle),
@@ -71,6 +73,7 @@ export const themeFileSchema = z.object({
     photoShape: z.enum(PhotoShape).default(THEME_STYLE_DEFAULTS.photoShape),
     photoPosition: z.enum(PhotoPosition).default(THEME_STYLE_DEFAULTS.photoPosition),
     courseColumns: z.enum(CourseColumns).default(THEME_STYLE_DEFAULTS.courseColumns),
+    educationColumns: z.enum(EducationColumns).default(THEME_STYLE_DEFAULTS.educationColumns),
     markerStyle: z.enum(MarkerStyle).default(THEME_STYLE_DEFAULTS.markerStyle),
     markerScope: z.enum(MarkerScope).default(THEME_STYLE_DEFAULTS.markerScope),
   }),
@@ -78,11 +81,11 @@ export const themeFileSchema = z.object({
 
 /** What an exported theme file holds. */
 export function themeFile(theme: ThemeData) {
-  const { name, headFont, bodyFont, accent, layout, align, headingStyle, density, headerStyle, sidebarStyle, dateStyle, photoShape, photoPosition, courseColumns, markerStyle, markerScope } = theme;
+  const { name, headFont, bodyFont, accent, layout, align, headingStyle, density, headerStyle, sidebarStyle, dateStyle, photoShape, photoPosition, courseColumns, educationColumns, markerStyle, markerScope } = theme;
   return {
     format: THEME_FILE_FORMAT,
     version: THEME_FILE_VERSION,
-    theme: { name, headFont, bodyFont, accent, layout, align, headingStyle, density, headerStyle, sidebarStyle, dateStyle, photoShape, photoPosition, courseColumns, markerStyle, markerScope },
+    theme: { name, headFont, bodyFont, accent, layout, align, headingStyle, density, headerStyle, sidebarStyle, dateStyle, photoShape, photoPosition, courseColumns, educationColumns, markerStyle, markerScope },
   };
 }
 
