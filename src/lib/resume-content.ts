@@ -260,7 +260,7 @@ export function resumeContent(
   };
 
   if (units) {
-    // A tailored resume holds exactly what its units hold, in their order:
+    // A tailored resume holds exactly what its units hold, in their order (courses aside, below):
     // a role, project, degree, course or publication without a unit was left out on purpose.
     const text = (id: string) => units.find((unit) => unit.id === id)?.text ?? "";
     const withUnit = <T extends { id: string }>(prefix: string, entries: T[]) =>
@@ -285,7 +285,13 @@ export function resumeContent(
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),
     );
-    content.courses = withUnit("course:", resumeCourses(profile.courses)).map(({ entry, text }) => course(entry, text));
+    // Tailoring decides which courses stay and, for page-limit.ts to trim the
+    // least relevant first, keeps their units by relevance. The resume itself
+    // lists them in the profile's order, so they don't read out of date order.
+    content.courses = resumeCourses(profile.courses).flatMap((entry) => {
+      const unit = units.find(({ id }) => id === `course:${entry.id}`);
+      return unit ? [course(entry, unit.text)] : [];
+    });
     content.publications = withUnit("publication:", profile.publications).flatMap(({ entry, text }) =>
       text.trim() ? [publication(entry, text)] : [],
     );

@@ -191,14 +191,15 @@ describe("resumeContent", () => {
     expect(resumeContent(hidden).courses).toEqual([]);
   });
 
-  it("gives a tailored resume only the courses it has units for, in their order, never a hidden one", () => {
+  it("gives a tailored resume only the courses it has units for, in the profile's order, never a hidden one", () => {
+    // The units are in order of relevance, which page-limit.ts trims by; the resume reads in the profile's order.
     const units = [
       { id: "course:c2", label: "UX Writing Workshop", text: "Microcopy for forms" },
       { id: "course:c1", label: "Accessibility for Designers", text: "" },
     ];
     expect(resumeContent(profile, { units }).courses.map((entry) => [entry.id, entry.notes])).toEqual([
-      ["c2", "Microcopy for forms"],
       ["c1", ""],
+      ["c2", "Microcopy for forms"],
     ]);
     const hidden = { ...profile, courses: profile.courses.map((entry) => ({ ...entry, onResumes: entry.id !== "c2" })) };
     expect(resumeContent(hidden, { units }).courses.map((entry) => entry.id)).toEqual(["c1"]);
