@@ -7,6 +7,7 @@ import {
   AgentCandidateStatus,
   ApplicationOrigin,
   ApplicationStatus,
+  CourseColumns,
   ChatRole,
   DateStyle,
   Density,
@@ -187,6 +188,8 @@ const theme = z.object({
   /** Absent before 1.9.0 (#224). */
   photoShape: z.enum(PhotoShape).optional(),
   photoPosition: z.enum(PhotoPosition).optional(),
+  /** Absent in files before courses could go in two columns. */
+  courseColumns: z.enum(CourseColumns).optional(),
   createdAt: date,
   updatedAt: date,
 });
@@ -255,6 +258,8 @@ const application = z.object({
   showPhoto: z.boolean().nullable().optional(),
   /** Absent in older files, which follow the setting. */
   showLocations: z.boolean().nullable().optional(),
+  /** Absent in older files, which follow tailoring's group order. */
+  profileGroupOrder: z.boolean().optional(),
   /** The job agent's (E16); absent in older files, which hold only the user's own. */
   origin: z.enum(ApplicationOrigin).optional(),
   agentScore: int.nullable().optional(),

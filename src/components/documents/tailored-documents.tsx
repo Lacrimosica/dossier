@@ -4,7 +4,7 @@ import type { ProfileData } from "@/lib/profile";
 import { withoutSidebar } from "@/lib/themes";
 
 import { CoverLetterDocument } from "./cover-letter-document";
-import type { UnitRenderer } from "./document-page";
+import type { GroupRenderer, UnitRenderer } from "./document-page";
 import { ResumeDocument } from "./resume-document";
 
 // An application's tailored documents, drawn the same way on its page and
@@ -17,10 +17,12 @@ export function TailoredResume({
   followThemeLayout,
   showPhoto,
   showLocations,
+  profileGroupOrder,
   privacyConsent,
   language,
   includeReferences,
   renderUnit,
+  renderGroup,
 }: {
   resume: DocumentData;
   profile: ProfileData;
@@ -31,11 +33,14 @@ export function TailoredResume({
   showPhoto: boolean | null;
   /** Each role's and degree's location (Settings → "Locations on resumes", or the Locations switch). */
   showLocations: boolean;
+  /** The Group order switch: the experience groups in the profile's order, not the units'. */
+  profileGroupOrder: boolean;
   /** Settings → "Privacy consent line", for this resume's language; null leaves it off. */
   privacyConsent: string | null;
   language: string;
   includeReferences: boolean;
   renderUnit?: UnitRenderer;
+  renderGroup?: GroupRenderer;
 }) {
   return (
     <ResumeDocument
@@ -46,10 +51,12 @@ export function TailoredResume({
       layout={followThemeLayout ? undefined : withoutSidebar(resume.theme.layout)}
       showPhoto={showPhoto}
       showLocations={showLocations}
+      profileGroupOrder={profileGroupOrder}
       privacyConsent={privacyConsent}
       language={language}
       includeReferences={includeReferences}
       renderUnit={renderUnit}
+      renderGroup={renderGroup}
     />
   );
 }

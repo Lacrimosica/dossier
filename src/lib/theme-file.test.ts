@@ -10,7 +10,7 @@ describe("theme files (E5-7)", () => {
     const file = themeFile({ ...editorial, name: "Quiet green", accent: "#1F6F5C" });
     expect(file).toEqual({
       format: "dossier-theme",
-      version: 3,
+      version: 4,
       theme: expect.not.objectContaining({ id: expect.anything() }),
     });
     const read = parseThemeFile(JSON.parse(JSON.stringify(file)));
@@ -30,7 +30,7 @@ describe("theme files (E5-7)", () => {
     const look = { name, headFont, bodyFont, accent, layout, align, headingStyle, density };
     expect(parseThemeFile({ format: "dossier-theme", version: 1, theme: look })).toEqual({
       ok: true,
-      theme: { ...look, headerStyle: "PLAIN", sidebarStyle: "PLAIN", dateStyle: "INLINE", photoShape: "CIRCLE", photoPosition: "HEADER_END" },
+      theme: { ...look, headerStyle: "PLAIN", sidebarStyle: "PLAIN", dateStyle: "INLINE", photoShape: "CIRCLE", photoPosition: "HEADER_END", courseColumns: "ONE" },
     });
   });
 
@@ -48,11 +48,18 @@ describe("theme files (E5-7)", () => {
     });
   });
 
+  it("keeps courses in two columns, and reads version 3 files without the setting as one column", () => {
+    expect(parseThemeFile(themeFile({ ...editorial, courseColumns: "TWO" }))).toMatchObject({ ok: true, theme: { courseColumns: "TWO" } });
+    const { courseColumns, ...look } = themeFile(editorial).theme;
+    expect(courseColumns).toBe("ONE");
+    expect(parseThemeFile({ format: "dossier-theme", version: 3, theme: look })).toEqual({ ok: true, theme: { ...look, courseColumns: "ONE" } });
+  });
+
   it("refuses other files, newer versions, unknown fonts and bad colors, in plain words", () => {
     const file = themeFile(editorial);
     expect(parseThemeFile({ hello: "world" })).toEqual({ ok: false, error: "That file isn't a Dossier theme." });
     expect(parseThemeFile(null)).toEqual({ ok: false, error: "That file isn't a Dossier theme." });
-    expect(parseThemeFile({ ...file, version: 4 })).toEqual({ ok: false, error: "That theme comes from a newer version of Dossier. Update this server first." });
+    expect(parseThemeFile({ ...file, version: 5 })).toEqual({ ok: false, error: "That theme comes from a newer version of Dossier. Update this server first." });
     expect(parseThemeFile({ ...file, theme: { ...file.theme, headFont: "COMIC_SANS" } })).toEqual({
       ok: false,
       error: "That theme uses a font Dossier doesn't have (COMIC_SANS).",

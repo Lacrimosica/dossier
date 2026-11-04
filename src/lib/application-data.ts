@@ -22,6 +22,11 @@ export const unitSchema = z.object({
    * profile or the posting, shown as "check this" (E8-3). Absent when fine.
    */
   unverified: z.array(z.string()).optional(),
+  /**
+   * A role's or project's skills on this resume, changed from the chat or by
+   * hand. Absent, the resume shows the profile entry's skills (`unitSkills`).
+   */
+  skills: z.array(z.string()).optional(),
 });
 export type Unit = z.infer<typeof unitSchema>;
 
@@ -154,6 +159,9 @@ export const unitEditSchema = z.object({
   unverified: z.array(z.string()).optional(),
   /** The fact guard's hints on the text it replaced, which Undo brings back. */
   previousUnverified: z.array(z.string()).optional(),
+  /** A role's or project's new skills, when the edit changed them, and the ones they replaced. */
+  skills: z.array(z.string()).optional(),
+  previousSkills: z.array(z.string()).optional(),
 });
 
 /**

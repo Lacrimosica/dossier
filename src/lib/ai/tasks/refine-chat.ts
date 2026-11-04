@@ -6,7 +6,7 @@ import { emailParts } from "@/lib/application-email";
 import { isFrameUnit } from "@/lib/letter-frame";
 import type { ProfileData } from "@/lib/profile";
 import { TONES } from "@/lib/tones";
-import { isPublicationUnit } from "@/lib/unit-text";
+import { cleanSkills, isPublicationUnit, sameSkills, unitSkills } from "@/lib/unit-text";
 
 import { claimSources, guardSources, unverifiedFacts } from "../fact-guard";
 
@@ -27,11 +27,19 @@ import {
   type Task,
 } from "./prompt-parts";
 
-export const REFINE_CHAT_VERSION = "refine-chat@8";
+export const REFINE_CHAT_VERSION = "refine-chat@10";
 
 const answerSchema = z.object({
   reply: z.string(),
-  edits: z.array(z.object({ document: z.enum(DocumentKind), unitId: z.string(), text: z.string() })),
+  edits: z.array(
+    z.object({
+      document: z.enum(DocumentKind),
+      unitId: z.string(),
+      text: z.string(),
+      /** A role's or project's new skills; null leaves them. */
+      skills: z.array(z.string()).nullable().default(null),
+    }),
+  ),
   /** A different cover letter tone, only when asked for one. */
   tone: z.enum(Tone).nullable(),
   declined: z.boolean(),
@@ -40,6 +48,8 @@ const answerSchema = z.object({
 const INSTRUCTIONS = `You help a candidate refine their tailored resume, cover letter and application email for one job, and answer as JSON.
 
 - Change only what the request asks for. Each edit replaces one unit's whole text: give its document (RESUME, COVER_LETTER or EMAIL), its unitId and the new text. For a role or project, write bullets one per line without bullet characters.
+- A request can be about several units at once, such as all of an employer's roles: edit any of them it needs. A role can't be removed or merged into another here, and its title, employer and dates come from the profile. To condense an employer's roles, give each role only its own work, without repeating a bullet across roles, and say in reply that they can use "Leave out" on a role they don't need.
+- A role's or project's unit lists the skills shown under it ("skills"). To change them, give skills: the whole new list, in the order to show them; otherwise null. Use only skills from the candidate's profile or already in that list. To change only the skills, give the unit's text unchanged.
 - Never edit a publication (a resume unit whose unitId starts with "publication:"): it's the candidate's citation, as they wrote it. If asked to, say they can edit it or leave it out themselves.
 - The email goes out with the resume and cover letter attached. Its "to" unit is the recipient ("Name <address>"), "subject" its subject line and "body" the whole message, from the greeting to the sign-off and the candidate's name.
 - tone: set it (WARM, DIRECT or FORMAL) only when the request asks for a different tone for the letter; otherwise null. When you change the tone, rewrite the letter's paragraphs to match. A different tone for the email is an edit to the email, not a new tone.
@@ -135,26 +145,44 @@ export const refineChat: Task<RefineInput, Refinement> = async (provider, input,
       }
     : null;
   const documents = { [DocumentKind.RESUME]: resume, [DocumentKind.COVER_LETTER]: letter, [DocumentKind.EMAIL]: email };
-  // Only units that exist, each once; the text they replace is kept for Undo (APP-8).
+  // A role's skills come from the profile, or the list it has: in strict mode a
+  // skill the candidate never named is left out, like any invented fact (E6-6).
+  const skillsAs = (names: string[], current: string[]) => {
+    const known = new Map([...profile.skills.map((skill) => skill.name), ...current].map((name) => [name.toLowerCase(), name]));
+    return cleanSkills(names).flatMap((name) => {
+      const spelled = known.get(name.toLowerCase());
+      return spelled ? [spelled] : options.strict ? [] : [name];
+    });
+  };
+  // Only units that exist, each once; the text and skills they replace are kept for Undo (APP-8).
   const edits = new Map<string, UnitEdit>();
   if (!answer.declined) {
     for (const edit of answer.edits) {
       const unit = documents[edit.document].find((entry) => entry.id === edit.unitId);
-      const text = edit.text.trim();
       // A publication stays as the candidate wrote it (#218).
-      if (unit && text && text !== unit.text && !isPublicationUnit(unit.id)) {
-        // E6-6: in strict mode, note what the profile and posting don't back.
-        const checked = edit.document === DocumentKind.EMAIL ? unit.id !== "to" : unit.id !== SIGN_OFF_UNIT && !isFrameUnit(unit.id);
-        const unverified = sources && checked ? unverifiedFacts(text, edit.document === DocumentKind.RESUME ? sources.resume : sources.other) : [];
-        edits.set(`${edit.document} ${unit.id}`, {
-          document: edit.document,
-          unitId: unit.id,
-          text,
-          previousText: unit.text,
-          ...(unverified.length > 0 ? { unverified } : {}),
-          ...(unit.unverified?.length ? { previousUnverified: unit.unverified } : {}),
-        });
-      }
+      if (!unit || isPublicationUnit(unit.id)) continue;
+      const text = edit.text.trim();
+      const newText = Boolean(text) && text !== unit.text;
+      const before = edit.document === DocumentKind.RESUME ? unitSkills(unit, profile) : null;
+      const skills = before && edit.skills ? skillsAs(edit.skills, before) : null;
+      const newSkills = before !== null && skills !== null && !sameSkills(skills, before);
+      if (!newText && !newSkills) continue;
+      // E6-6: in strict mode, note what the profile and posting don't back. Text kept as it was keeps its hints.
+      const checked = edit.document === DocumentKind.EMAIL ? unit.id !== "to" : unit.id !== SIGN_OFF_UNIT && !isFrameUnit(unit.id);
+      const unverified = !newText
+        ? (unit.unverified ?? [])
+        : sources && checked
+          ? unverifiedFacts(text, edit.document === DocumentKind.RESUME ? sources.resume : sources.other)
+          : [];
+      edits.set(`${edit.document} ${unit.id}`, {
+        document: edit.document,
+        unitId: unit.id,
+        text: newText ? text : unit.text,
+        previousText: unit.text,
+        ...(unverified.length > 0 ? { unverified } : {}),
+        ...(unit.unverified?.length ? { previousUnverified: unit.unverified } : {}),
+        ...(newSkills ? { skills, previousSkills: before } : {}),
+      });
     }
     // A new tone brings its own sign-off in English letters (APP-10).
     const signOff = letter.find((unit) => unit.id === SIGN_OFF_UNIT);

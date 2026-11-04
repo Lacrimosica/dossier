@@ -102,6 +102,8 @@ export type ResumeOptions = {
   showPhoto?: boolean | null;
   /** Each role's and degree's location next to its company or school: Settings → "Locations on resumes", or the application's choice. */
   showLocations?: boolean;
+  /** A tailored resume's groups in the profile's order, whatever the order of its units. */
+  profileGroupOrder?: boolean;
   /** For "Age N"; defaults to now. */
   today?: Date;
 };
@@ -143,7 +145,7 @@ const lines = (text: string) =>
 /** What the resume shows, with its dates and levels in the words of `labels`. */
 export function resumeContent(
   profile: ProfileData,
-  { units, includeReferences = false, showPhoto, showLocations = false, today = new Date() }: ResumeOptions = {},
+  { units, includeReferences = false, showPhoto, showLocations = false, profileGroupOrder = false, today = new Date() }: ResumeOptions = {},
   labels: DocumentLabels = ENGLISH_LABELS,
 ): ResumeContent {
   const { basics } = profile;
@@ -151,9 +153,19 @@ export function resumeContent(
   const dates = { locale: labels.locale, present: labels.present };
 
   type Role = ProfileData["experience"][number];
-  const companies = (roles: { entry: Role; text: string }[]): ExperienceSection["companies"] =>
+  const namesOf = (skillIds: string[]) => skillIds.flatMap((id) => skillNames.get(id) ?? []);
+  /** A role and what the resume says about it: its bullets, and its skills when a tailored resume has its own. */
+  type RoleText = { entry: Role; text: string; skills?: string[] };
+  const companies = (roles: RoleText[]): ExperienceSection["companies"] =>
     // A career break has no company or place, whatever was typed before it was marked one.
-    companyGroups(roles.map(({ entry, text }) => ({ ...entry, ...(entry.careerBreak ? { company: "", location: "" } : {}), text }))).map((group) => {
+    companyGroups(
+      roles.map(({ entry, text, skills }) => ({
+        ...entry,
+        ...(entry.careerBreak ? { company: "", location: "" } : {}),
+        text,
+        skills: skills ?? namesOf(entry.skillIds),
+      })),
+    ).map((group) => {
       // One place for the whole company goes on its line; a move between offices shows on each role.
       const places = [...new Set(group.map((entry) => entry.location.trim()).filter(Boolean))];
       const onePlace = !showLocations ? "" : places.length === 1 ? places[0] : "";
@@ -167,15 +179,16 @@ export function resumeContent(
           location: showLocations && places.length > 1 ? entry.location.trim() : "",
           dates: formatDateRange(entry, dates),
           bullets: lines(entry.text),
-          skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
+          skills: entry.skills,
         })),
       };
     });
   // A role's group, or null without one or when the group is gone.
   const groups = new Map(profile.experienceGroups.map((group) => [group.id, group]));
   const groupOf = (role: Role) => (role.groupId !== null && groups.has(role.groupId) ? role.groupId : null);
+  const profileOrder = [...profile.experienceGroups.map((group) => group.id), null];
   /** Roles under their headings, in the order `headings` gives; a heading without roles is left out. */
-  const experience = (roles: { entry: Role; text: string }[], headings: (string | null)[]): ExperienceSection[] =>
+  const experience = (roles: RoleText[], headings: (string | null)[]): ExperienceSection[] =>
     headings.flatMap((groupId) => {
       const under = roles.filter(({ entry }) => groupOf(entry) === groupId);
       if (under.length === 0) return [];
@@ -186,13 +199,13 @@ export function resumeContent(
         groupId !== null ? groups.get(groupId)!.name.trim() || labels.experience : groups.size > 0 ? labels.otherExperience : labels.experience;
       return [{ groupId, title, companies: companies(under) }];
     });
-  const project = (entry: ProfileData["projects"][number], bullets: string) => ({
+  const project = (entry: ProfileData["projects"][number], bullets: string, skills = namesOf(entry.skillIds)) => ({
     id: entry.id,
     name: entry.name.trim(),
     link: displayLink(entry.link),
     dates: formatDateRange(entry, dates),
     bullets: lines(bullets),
-    skills: entry.skillIds.flatMap((id) => skillNames.get(id) ?? []),
+    skills,
   });
   const publication = (entry: ProfileData["publications"][number], citation: string) => ({
     id: entry.id,
@@ -227,7 +240,7 @@ export function resumeContent(
     // The groups in the profile's order, then the roles without one.
     experience: experience(
       profile.experience.map((entry) => ({ entry, text: entry.bullets })),
-      [...profile.experienceGroups.map((group) => group.id), null],
+      profileOrder,
     ),
     projects: profile.projects.map((entry) => project(entry, entry.bullets)),
     education: profile.education.map((entry) => education(entry, entry.notes)),
@@ -247,14 +260,14 @@ export function resumeContent(
   };
 
   if (units) {
-    // A tailored resume holds exactly what its units hold, in their order:
+    // A tailored resume holds exactly what its units hold, in their order (courses aside, below):
     // a role, project, degree, course or publication without a unit was left out on purpose.
     const text = (id: string) => units.find((unit) => unit.id === id)?.text ?? "";
     const withUnit = <T extends { id: string }>(prefix: string, entries: T[]) =>
       units.flatMap((unit) => {
         if (!unit.id.startsWith(prefix)) return [];
         const entry = entries.find(({ id }) => `${prefix}${id}` === unit.id);
-        return entry ? [{ entry, text: unit.text }] : [];
+        return entry ? [{ entry, text: unit.text, skills: unit.skills }] : [];
       });
 
     // A version saved before resumes had their own headline shows the profile's.
@@ -265,13 +278,20 @@ export function resumeContent(
     content.languages = text("languages").trim();
     content.interests = text("interests").trim();
     // Each heading where its first role is: tailoring and the editor decide the groups' order by the units'.
+    // The Group order switch puts them back in the profile's, as the base resume has them.
     const roles = withUnit("experience:", profile.experience);
-    content.experience = experience(roles, [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
-    content.projects = withUnit("project:", profile.projects).map(({ entry, text }) => project(entry, text));
+    content.experience = experience(roles, profileGroupOrder ? profileOrder : [...new Set(roles.map(({ entry }) => groupOf(entry)))]);
+    content.projects = withUnit("project:", profile.projects).map(({ entry, text, skills }) => project(entry, text, skills));
     content.education = withUnit("education:", profile.education).map(({ entry, text }) =>
       education(entry, text),
     );
-    content.courses = withUnit("course:", resumeCourses(profile.courses)).map(({ entry, text }) => course(entry, text));
+    // Tailoring decides which courses stay and, for page-limit.ts to trim the
+    // least relevant first, keeps their units by relevance. The resume itself
+    // lists them in the profile's order, so they don't read out of date order.
+    content.courses = resumeCourses(profile.courses).flatMap((entry) => {
+      const unit = units.find(({ id }) => id === `course:${entry.id}`);
+      return unit ? [course(entry, unit.text)] : [];
+    });
     content.publications = withUnit("publication:", profile.publications).flatMap(({ entry, text }) =>
       text.trim() ? [publication(entry, text)] : [],
     );

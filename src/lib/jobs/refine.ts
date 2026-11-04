@@ -11,7 +11,7 @@ import { updateDocuments } from "@/lib/document-units";
 import { withoutPrivateParts } from "@/lib/letter-frame";
 import { prisma } from "@/lib/prisma";
 import { loadFactTexts, loadProfile } from "@/lib/profile-data";
-import { unitName } from "@/lib/unit-text";
+import { sameSkills, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 import { defineJob } from "./runner";
 
@@ -36,8 +36,8 @@ export const refineJob = defineJob({
     /** The user's message, saved before the job started. */
     messageId: z.string().min(1),
     request: z.string().min(1),
-    /** The unit picked with "Ask AI", if any. */
-    target: unitRef.nullable(),
+    /** The unit picked with "Ask AI", or an employer's roles picked together, if any. */
+    target: z.object({ document: z.enum(DocumentKind), unitIds: z.array(z.string().min(1)).min(1) }).nullable(),
     /** The document on screen. */
     viewing: z.enum(DocumentKind).nullable(),
   }),
@@ -57,7 +57,6 @@ export const refineJob = defineJob({
       const parsed = unitsSchema.safeParse(application.documents.find((document) => document.kind === kind)?.units);
       return parsed.success ? parsed.data : [];
     };
-    const resume = unitsOf(DocumentKind.RESUME);
     // The letter's sender and signature hold contact details, which never go to the model (E8-11).
     const letter = withoutPrivateParts(unitsOf(DocumentKind.COVER_LETTER));
 
@@ -68,16 +67,21 @@ export const refineJob = defineJob({
         ? { role: "user", text: message.targetUnit ? `About ${message.targetUnit}: ${message.text}` : message.text }
         : { role: "assistant", text: message.text },
     );
-    const targetUnit = target && unitsOf(target.document).find((unit) => unit.id === target.unitId);
+    const targetUnits = target ? target.unitIds.flatMap((unitId) => unitsOf(target.document).find((unit) => unit.id === unitId) ?? []) : [];
 
     const match = matchSchema.safeParse(application.match);
     const [provider, options, profile, facts] = await Promise.all([getAiProvider(), loadTaskOptions(), loadProfile(), loadFactTexts(applicationId)]);
+    // Each role and project with the skills it shows, its own or the profile's, so the model can change them.
+    const resume = unitsOf(DocumentKind.RESUME).map((unit) => {
+      const skills = unitSkills(unit, profile);
+      return skills ? { ...unit, skills } : unit;
+    });
     const { data, promptVersion } = await refineChat(
       provider,
       {
         request,
         history,
-        target: targetUnit ? `${targetUnit.label} (${targetUnit.id})` : null,
+        target: targetUnits.length > 0 ? `${targetName(targetUnits).label} (${targetUnits.map((unit) => unit.id).join(", ")})` : null,
         viewing,
         resume,
         letter,
@@ -99,11 +103,12 @@ export const refineJob = defineJob({
       for (const edit of data.edits) {
         const unit = documents[edit.document]?.find((entry) => entry.id === edit.unitId);
         if (!unit) continue;
-        if (unit.text !== edit.previousText) {
+        if (unit.text !== edit.previousText || (edit.previousSkills && !sameSkills(unitSkills(unit, profile) ?? [], edit.previousSkills))) {
           leftAlone.push(`the ${unitName(unit)}`);
           continue;
         }
         unit.text = edit.text;
+        if (edit.skills) unit.skills = edit.skills;
         if (edit.unverified?.length) unit.unverified = edit.unverified;
         else delete unit.unverified;
         applied.push(edit);

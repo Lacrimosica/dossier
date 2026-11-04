@@ -22,16 +22,22 @@
 }
 
 /* Keyboard focus counts, focus left behind by a click doesn't: it would keep a
-   second toolbar open next to the one under the pointer. */
-.frame:hover::before,
+   second toolbar open next to the one under the pointer. An employer's frame
+   holds its roles' frames, and gives way to the one in use, so only one part
+   is marked at a time. Hovered, edited or picked with Ask AI, a part looks the
+   same: it's clear which part an action is about, e.g. which of an
+   employer's roles. */
+.frame:hover:not(:has(.frame:hover))::before,
 .frame:focus-visible::before,
-.frame:has(:focus-visible)::before,
-.editing::before {
-  background: var(--color-hover);
+.frame:has(:focus-visible):not(:has(.frame:focus-visible, .frame :focus-visible))::before,
+.editing::before,
+.asked::before {
+  background: var(--color-selected);
+  outline: 2px dashed var(--color-primary);
 }
 
 .frame:focus-visible::before {
-  outline: 2px solid var(--color-ink);
+  outline-style: solid;
 }
 
 /* After a save or an AI change: a short yellow glow that fades out. */
@@ -70,9 +76,9 @@
   pointer-events: none;
 }
 
-.frame:hover > .toolbar,
+.frame:hover:not(:has(.frame:hover)) > .toolbar,
 .frame:focus-visible > .toolbar,
-.frame:has(:focus-visible) > .toolbar {
+.frame:has(:focus-visible):not(:has(.frame:focus-visible, .frame :focus-visible)) > .toolbar {
   opacity: 1;
   pointer-events: auto;
 }

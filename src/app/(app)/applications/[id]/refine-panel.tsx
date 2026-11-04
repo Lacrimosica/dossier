@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/cn";
 
 import type { Tab } from "./tabs";
@@ -47,6 +48,7 @@ export function RefinePanel({
   target,
   onClearTarget,
   onSend,
+  onClear,
   aiReady,
   focusRequest,
   children,
@@ -60,6 +62,8 @@ export function RefinePanel({
   onClearTarget: () => void;
   /** Resolves to whether the message was sent; the box keeps it otherwise. */
   onSend: (text: string) => Promise<boolean>;
+  /** Deletes the conversation, after the user confirms. */
+  onClear: () => void;
   aiReady: boolean;
   /** Goes up when the box should take focus, e.g. after "Ask AI". */
   focusRequest: number;
@@ -67,6 +71,7 @@ export function RefinePanel({
   children?: (message: ChatEntry) => ReactNode;
 }) {
   const [draft, setDraft] = useState("");
+  const [clearing, setClearing] = useState(false);
   const input = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -86,9 +91,21 @@ export function RefinePanel({
     >
       <div className="flex h-[min(100dvh,680px)] flex-col @min-[780px]:h-full">
         <div className="flex flex-col gap-1 px-6 pt-[26px] pb-3.5">
-          <h2 id="refine-heading" className="text-[15px] font-medium">
-            Refine with AI
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="refine-heading" className="text-[15px] font-medium">
+              Refine with AI
+            </h2>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                aria-disabled={thinking || undefined}
+                onClick={() => !thinking && setClearing(true)}
+                className="text-label text-muted underline underline-offset-3 hover:text-ink aria-disabled:cursor-not-allowed aria-disabled:no-underline"
+              >
+                Clear chat
+              </button>
+            )}
+          </div>
           <p className="text-meta leading-[1.45] text-muted">{SUBTITLES[tab]}</p>
         </div>
 
@@ -170,6 +187,14 @@ export function RefinePanel({
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={clearing}
+        onOpenChange={setClearing}
+        title="Clear the chat?"
+        description="The conversation is deleted, so its changes can't be undone from here any more. Your documents keep every change."
+        confirmLabel="Clear chat"
+        onConfirm={onClear}
+      />
     </aside>
   );
 }

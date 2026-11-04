@@ -69,6 +69,19 @@ describe("ResumeDocument", () => {
     expect(screen.getByRole("article", { name: "Resume" }).className).toMatch(/timeline/);
   });
 
+  it("puts courses in two columns when the theme says so, each with its dates after its name, even in a timeline", () => {
+    const courses = () => screen.getByRole("heading", { name: "Courses & certificates" }).closest("section")!;
+    const { unmount } = render(<ResumeDocument theme={theme("chronicle")} profile={profile} paper="A4" today={today} />);
+    expect(courses().innerHTML).not.toMatch(/courseColumns/);
+    expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Mar 2023 – May 2023Accessibility for Designers/);
+    unmount();
+
+    render(<ResumeDocument theme={{ ...theme("chronicle"), courseColumns: "TWO" }} profile={profile} paper="A4" today={today} />);
+    const grid = courses().querySelector("[class*=courseColumns]")!;
+    expect([...grid.children].map((child) => child.getAttribute("data-unit"))).toEqual(profile.courses.map((entry) => `course:${entry.id}`));
+    expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Accessibility for Designers.*Mar 2023 – May 2023/);
+  });
+
   it("leads a stacked head with the company or school and its dates, the title and place in italics under them", () => {
     render(<ResumeDocument theme={theme("brief")} profile={profile} paper="A4" today={today} showLocations />);
     const [northwind] = profile.experience;
@@ -90,6 +103,21 @@ describe("ResumeDocument", () => {
     };
     render(<ResumeDocument theme={theme("brief")} profile={promoted} paper="A4" today={today} />);
     expect(screen.getByText(/^Lead Product Designer/)).toHaveTextContent("Lead Product Designer | Apr 2023 – Present");
+  });
+
+  it("ends a promoted company's first role line with its place in a stacked head, leaving no line between them", () => {
+    const [northwind, ...rest] = profile.experience;
+    const promoted = {
+      ...profile,
+      experience: [{ ...northwind, id: "lead", role: "Lead Product Designer", startYear: 2023, startMonth: 4 }, { ...northwind, current: false, endYear: 2023, endMonth: 3 }, ...rest],
+    };
+    render(<ResumeDocument theme={theme("brief")} profile={promoted} paper="A4" today={today} showLocations />);
+    const company = screen.getByText(northwind.company).parentElement!;
+    expect([...company.children].map((cell) => cell.textContent)).toEqual([northwind.company, "Mar 2021 – Present"]);
+    const first = screen.getByText(/^Lead Product Designer/).parentElement!;
+    expect([...first.children].map((cell) => cell.textContent)).toEqual(["Lead Product Designer | Apr 2023 – Present", northwind.location]);
+    const second = screen.getByText(new RegExp(`^${northwind.role} \\|`)).parentElement!;
+    expect(second.children).toHaveLength(1);
   });
 
   describe("a role without a title or place (.scratch/optional-role-fields)", () => {
@@ -177,6 +205,22 @@ describe("ResumeDocument", () => {
     rerender(<ResumeDocument theme={theme("editorial")} profile={promoted} paper="A4" today={today} showLocations />);
     expect(heads()[0]).toBe(`Northwind Logistics, ${northwind.location}`);
     expect(screen.getByText(new RegExp(`^${rest[0].role}$`)).parentElement).toHaveTextContent(`${rest[0].company} · ${rest[0].location}`);
+
+    // The roles go to the group renderer together, so the chat can take them on at once.
+    const groups: string[][] = [];
+    rerender(
+      <ResumeDocument
+        theme={theme("editorial")}
+        profile={promoted}
+        paper="A4"
+        today={today}
+        renderGroup={({ ids, className, children }) => {
+          groups.push(ids);
+          return <div className={className}>{children}</div>;
+        }}
+      />,
+    );
+    expect(groups).toEqual([["experience:lead", `experience:${northwind.id}`]]);
   });
 
   it("shows the skills used in each role and the education notes", () => {

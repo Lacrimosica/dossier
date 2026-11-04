@@ -112,8 +112,11 @@ describe("resumeContent", () => {
     expect(companies(content)[0].roles[0].bullets[0]).toBe(
       "Led the redesign of the carrier portal used daily by 4,000+ dispatchers: a dense, high-stakes workflow",
     );
-    // Role skills still come from the profile (RES-6).
+    // Role skills still come from the profile (RES-6), unless the resume has its own.
     expect(companies(content)[0].roles[0].skills).toContain("Design systems");
+    const role = demoResumeUnits().find((unit) => unit.id.startsWith("experience:"))!;
+    const own = resumeContent(profile, { units: demoResumeUnits().map((unit) => (unit.id === role.id ? { ...unit, skills: ["Figma", "Kotlin"] } : unit)) });
+    expect(companies(own)[0].roles[0].skills).toEqual(["Figma", "Kotlin"]);
     expect(content.skills).toMatch(/^Design systems · User research · Figma · /);
     expect(content.languages).toBe("Dutch: Native · English: Fluent (C2) · German: Intermediate (B1)");
     expect(content.interests).toBe("Long-distance cycling · Risograph printing · Community garden volunteer");
@@ -147,6 +150,8 @@ describe("resumeContent", () => {
     // A tailored resume takes a project's bullets from its unit, and leaves out one without a unit.
     const tailored = resumeContent(profile, { units: [{ id: "project:p1", label: "Tidewater project", text: "Shipped a token pipeline" }] });
     expect(tailored.projects.map((project) => project.bullets)).toEqual([["Shipped a token pipeline"]]);
+    const ownSkills = resumeContent(profile, { units: [{ id: "project:p1", label: "Tidewater project", text: "Shipped it", skills: [] }] });
+    expect(ownSkills.projects[0].skills).toEqual([]);
     expect(resumeContent(profile, { units: [] }).projects).toEqual([]);
   });
 
@@ -186,14 +191,15 @@ describe("resumeContent", () => {
     expect(resumeContent(hidden).courses).toEqual([]);
   });
 
-  it("gives a tailored resume only the courses it has units for, in their order, never a hidden one", () => {
+  it("gives a tailored resume only the courses it has units for, in the profile's order, never a hidden one", () => {
+    // The units are in order of relevance, which page-limit.ts trims by; the resume reads in the profile's order.
     const units = [
       { id: "course:c2", label: "UX Writing Workshop", text: "Microcopy for forms" },
       { id: "course:c1", label: "Accessibility for Designers", text: "" },
     ];
     expect(resumeContent(profile, { units }).courses.map((entry) => [entry.id, entry.notes])).toEqual([
-      ["c2", "Microcopy for forms"],
       ["c1", ""],
+      ["c2", "Microcopy for forms"],
     ]);
     const hidden = { ...profile, courses: profile.courses.map((entry) => ({ ...entry, onResumes: entry.id !== "c2" })) };
     expect(resumeContent(hidden, { units }).courses.map((entry) => entry.id)).toEqual(["c1"]);
@@ -356,6 +362,22 @@ describe("resumeContent", () => {
         ["Esperienze professionali", ["Northwind Logistics"]],
         ["Esperienze nel terzo settore", ["Fieldnote"]],
       ]);
+    });
+
+    it("keeps the profile's group order on a tailored resume with the Group order switch on", () => {
+      const units = [
+        { id: `experience:${brik.id}`, label: "Studio Brik", text: "Built sites" },
+        { id: `experience:${northwind.id}`, label: "Northwind", text: "Led the team" },
+        { id: `experience:${fieldnote.id}`, label: "Fieldnote", text: "Ran research" },
+      ];
+      const content = resumeContent(grouped, { units, profileGroupOrder: true });
+      expect(headings(content)).toEqual([
+        ["Esperienze nel terzo settore", ["Fieldnote"]],
+        ["Esperienze professionali", ["Northwind Logistics"]],
+        ["Other experience", ["Studio Brik"]],
+      ]);
+      // The tailored text stays.
+      expect(content.experience[0].companies[0].roles[0].bullets).toEqual(["Ran research"]);
     });
   });
 });

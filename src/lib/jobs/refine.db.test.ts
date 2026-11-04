@@ -1,7 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { MockProvider } from "@/lib/ai/providers/mock";
-import { demoLetterUnits, demoResumeUnits } from "@/lib/demo-profile";
+import { demoLetterUnits, demoProfile, demoResumeUnits } from "@/lib/demo-profile";
+import { unitSkills } from "@/lib/unit-text";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import { refineJob } from "./refine";
@@ -28,7 +29,7 @@ const letter = [...demoLetterUnits(), { id: "sign-off", label: "Sign-off", text:
 const context = { id: "test-job", step: async () => {}, signal: new AbortController().signal };
 const reply = (answer: object) => new MockProvider({ reply: () => ({ edits: [], tone: null, declined: false, ...answer }) });
 
-async function ask(request: string, extra: { target?: { document: "RESUME" | "COVER_LETTER"; unitId: string } | null } = {}) {
+async function ask(request: string, extra: { target?: { document: "RESUME" | "COVER_LETTER"; unitIds: string[] } | null } = {}) {
   const message = await prisma().chatMessage.create({ data: { applicationId: "app-1", role: "USER", text: request } });
   return refineJob.run({ applicationId: "app-1", messageId: message.id, request, target: extra.target ?? null, viewing: "RESUME" }, context);
 }
@@ -64,11 +65,23 @@ describe("refineJob (E8-5)", () => {
     expect(saved).toMatchObject({
       role: "AI",
       text: "Trimmed your summary.",
-      writtenWith: "refine-chat@8",
+      writtenWith: "refine-chat@10",
       previousTone: null,
       edits: [{ document: "RESUME", unitId: "summary", text: "Designer of calm tools.", previousText: summary.text }],
     });
     expect((await units("RESUME")).find((unit) => unit.id === "summary")?.text).toBe("Designer of calm tools.");
+  });
+
+  it("changes a role's skills, which the model sees, and keeps them for Undo", async () => {
+    const role = resume.find((unit) => unit.id.startsWith("experience:"))!;
+    const before = unitSkills(role, demoProfile())!;
+    const mock = reply({ reply: "Put Figma first.", edits: [{ document: "RESUME", unitId: role.id, text: role.text, skills: [...before].reverse() }] });
+    provider.current = mock;
+    await ask("Reorder the skills on my first role");
+
+    expect(mock.calls[0].messages[0].content).toContain(`"skills": [\n      "${before[0]}"`);
+    expect((await units("RESUME")).find((unit) => unit.id === role.id)).toMatchObject({ text: role.text, skills: [...before].reverse() });
+    expect((await lastMessage()).edits).toEqual([expect.objectContaining({ unitId: role.id, skills: [...before].reverse(), previousSkills: before })]);
   });
 
   it("edits the email, which the model sees once there is one", async () => {
@@ -122,7 +135,7 @@ describe("refineJob (E8-5)", () => {
   it("sends the conversation so far and the picked unit", async () => {
     const mock = reply({ reply: "Done." });
     provider.current = mock;
-    await ask("Mention payments", { target: { document: "RESUME", unitId: "summary" } });
+    await ask("Mention payments", { target: { document: "RESUME", unitIds: ["summary"] } });
     const messages = mock.calls[0].messages;
     expect(messages.at(-2)).toEqual({ role: "assistant", content: "Here's what I tailored for Ledgerly." });
     expect(messages.at(-1)).toEqual({ role: "user", content: "About Summary (summary): Mention payments" });

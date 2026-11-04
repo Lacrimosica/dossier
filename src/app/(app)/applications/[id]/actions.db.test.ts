@@ -5,6 +5,7 @@ import { createTestClient, resetDatabase } from "@/test/db";
 import {
   addMatchSkill,
   addNote,
+  clearChat,
   deleteNote,
   leaveOutUnit,
   listVersions,
@@ -18,6 +19,7 @@ import {
   setApplicationTheme,
   setFollowThemeLayout,
   setInterviewDate,
+  setProfileGroupOrder,
   setShowPhoto,
   startRegenerating,
   startWritingEmail,
@@ -90,6 +92,17 @@ describe("setFollowThemeLayout (E8-2)", () => {
 
   it("says so when the application is gone", async () => {
     expect(await setFollowThemeLayout({ id: "gone", follow: true })).toEqual({ ok: false, error: "That application no longer exists." });
+  });
+});
+
+describe("setProfileGroupOrder", () => {
+  it("saves the group order switch on the application", async () => {
+    expect(await setProfileGroupOrder({ id: "app-1", follow: true })).toEqual({ ok: true, data: null });
+    expect(await prisma().application.findUniqueOrThrow({ where: { id: "app-1" } })).toMatchObject({ profileGroupOrder: true });
+  });
+
+  it("says so when the application is gone", async () => {
+    expect(await setProfileGroupOrder({ id: "gone", follow: true })).toEqual({ ok: false, error: "That application no longer exists." });
   });
 });
 
@@ -189,6 +202,13 @@ describe("saveUnit (E8-3)", () => {
   it("keeps a role's bullets one per line, without bullet characters", async () => {
     const result = await saveUnit({ ...edit, unitId: "experience:e1", expected: resume[1].text, text: "- Led the portal\n\n• Built the design system\n" });
     expect(result).toEqual({ ok: true, data: { text: "Led the portal\nBuilt the design system" } });
+  });
+
+  it("keeps a role's own skills on this resume, cleaned up, and only on a role or project", async () => {
+    await saveUnit({ ...edit, unitId: "experience:e1", expected: resume[1].text, text: resume[1].text, skills: [" Figma", "", "figma", "Kotlin "] });
+    expect((await units())[1]).toEqual({ ...resume[1], skills: ["Figma", "Kotlin"] });
+    await saveUnit({ ...edit, text: "Calm.", skills: ["Figma"] });
+    expect((await units())[0]).not.toHaveProperty("skills");
   });
 
   it("refuses to overwrite a change made while editing", async () => {
@@ -295,7 +315,7 @@ describe("sendMessage (E8-5)", () => {
   const messages = () => prisma().chatMessage.findMany({ where: { applicationId: "app-1" }, orderBy: { createdAt: "asc" } });
 
   it("saves the message and starts the reply", async () => {
-    const result = await sendMessage({ id: "app-1", text: " Shorter, please ", viewing: "RESUME", target: { document: "RESUME", unitId: "summary" } });
+    const result = await sendMessage({ id: "app-1", text: " Shorter, please ", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary"] } });
     expect(result.ok).toBe(true);
     const [message] = await messages();
     expect(message).toMatchObject({ role: "USER", text: "Shorter, please", targetUnit: "Summary" });
@@ -304,8 +324,21 @@ describe("sendMessage (E8-5)", () => {
       type: "refine",
       key: "refine:app-1",
       applicationId: "app-1",
-      input: { applicationId: "app-1", messageId: message.id, request: "Shorter, please", viewing: "RESUME", target: { document: "RESUME", unitId: "summary" } },
+      input: { applicationId: "app-1", messageId: message.id, request: "Shorter, please", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary"] } },
     });
+  });
+
+  it("takes several parts picked together, named together", async () => {
+    const result = await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary", "experience:e1"] } });
+    expect(result.ok).toBe(true);
+    expect((await messages())[0]).toMatchObject({ targetUnit: "Summary and Northwind role" });
+  });
+
+  it("won't ask about a part that's gone", async () => {
+    expect(
+      await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: { document: "RESUME", unitIds: ["summary", "experience:gone"] } }),
+    ).toMatchObject({ ok: false });
+    expect(await messages()).toEqual([]);
   });
 
   it("answers on the Job posting tab at once, in order", async () => {
@@ -375,9 +408,56 @@ describe("undoMessage (E8-6)", () => {
     expect(await prisma().chatMessage.findUniqueOrThrow({ where: { id: "m1" } })).toMatchObject({ undone: false });
   });
 
+  it("puts a role's skills back", async () => {
+    await prisma().document.update({
+      where: { applicationId_kind: { applicationId: "app-1", kind: "RESUME" } },
+      data: { units: [resume[0], { ...resume[1], skills: ["Kotlin"] }] },
+    });
+    const skillEdit = [{ document: "RESUME", unitId: "experience:e1", text: resume[1].text, previousText: resume[1].text, skills: ["Kotlin"], previousSkills: ["Figma", "Sketch"] }];
+    await prisma().chatMessage.create({ data: { id: "m3", applicationId: "app-1", role: "AI", text: "Done.", edits: skillEdit } });
+    expect(await undoMessage({ id: "app-1", messageId: "m3" })).toMatchObject({ ok: true });
+    expect((await units())[1]).toEqual({ ...resume[1], skills: ["Figma", "Sketch"] });
+  });
+
+  it("never overwrites skills changed since", async () => {
+    await prisma().document.update({
+      where: { applicationId_kind: { applicationId: "app-1", kind: "RESUME" } },
+      data: { units: [resume[0], { ...resume[1], skills: ["Mine"] }] },
+    });
+    const skillEdit = [{ document: "RESUME", unitId: "experience:e1", text: resume[1].text, previousText: resume[1].text, skills: ["Kotlin"], previousSkills: [] }];
+    await prisma().chatMessage.create({ data: { id: "m3", applicationId: "app-1", role: "AI", text: "Done.", edits: skillEdit } });
+    expect(await undoMessage({ id: "app-1", messageId: "m3" })).toMatchObject({ ok: false, error: expect.stringMatching(/^You've changed the Northwind role since/) });
+  });
+
   it("has nothing to undo in a reply without edits", async () => {
     await prisma().chatMessage.create({ data: { id: "m2", applicationId: "app-1", role: "AI", text: "I left it out." } });
     expect(await undoMessage({ id: "app-1", messageId: "m2" })).toEqual({ ok: false, error: "There's nothing to undo in that message." });
+  });
+});
+
+describe("clearChat", () => {
+  const messages = () => prisma().chatMessage.findMany({ where: { applicationId: "app-1" } });
+
+  it("deletes the conversation and keeps the documents", async () => {
+    await prisma().chatMessage.createMany({
+      data: [
+        { applicationId: "app-1", role: "USER", text: "Shorter" },
+        { applicationId: "app-1", role: "AI", text: "Done.", edits: [{ document: "RESUME", unitId: "summary", text: resume[0].text, previousText: "Long." }] },
+      ],
+    });
+    expect(await clearChat({ id: "app-1" })).toEqual({ ok: true, data: null });
+    expect(await messages()).toEqual([]);
+    expect(await units()).toEqual(resume);
+  });
+
+  it("waits for the reply that's on its way", async () => {
+    await sendMessage({ id: "app-1", text: "Shorter", viewing: "RESUME", target: null });
+    expect(await clearChat({ id: "app-1" })).toEqual({ ok: false, error: "I'm still working on your last message. Clear the chat when I'm done." });
+    expect(await messages()).toHaveLength(1);
+  });
+
+  it("says when the application is gone", async () => {
+    expect(await clearChat({ id: "nope" })).toEqual({ ok: false, error: "That application no longer exists." });
   });
 });
 

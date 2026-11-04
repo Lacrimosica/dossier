@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Switch } from "radix-ui";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 
-import { plainUnit, type UnitRenderer } from "@/components/documents/document-page";
+import { plainGroup, plainUnit, type GroupRenderer, type UnitRenderer } from "@/components/documents/document-page";
 import { DocumentPreview } from "@/components/documents/document-preview";
 import { DownloadPdfButton } from "@/components/documents/download-pdf-button";
 import { TailoredLetter, TailoredResume } from "@/components/documents/tailored-documents";
@@ -34,10 +34,11 @@ import type { WriteLetterResult } from "@/lib/jobs/write-letter";
 import type { FactItem, ProfileData } from "@/lib/profile";
 import type { RefineSuggestions } from "@/lib/refine-suggestions";
 import { hasSidebar, type ThemeData } from "@/lib/themes";
-import { cleanUnitText, isPublicationUnit, unitName } from "@/lib/unit-text";
+import { cleanUnitText, isPublicationUnit, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 import {
   addMatchSkill,
+  clearChat,
   leaveOutUnit,
   putBackTrimmed,
   restoreUnit,
@@ -46,6 +47,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setProfileGroupOrder,
   setShowLocations,
   setShowPhoto,
   startRegenerating,
@@ -69,7 +71,7 @@ import { ThemeMenu } from "./theme-menu";
 import { byPageLimit, TrimmedNotice } from "./trimmed-notice";
 
 import { aboutWords, type Tab } from "./tabs";
-import { UnitFrame } from "./unit-frame";
+import { GroupFrame, UnitFrame } from "./unit-frame";
 import { VersionHistory, type ViewedVersion } from "./version-history";
 import type { EmailView } from "@/lib/google/inbox-data";
 
@@ -90,10 +92,12 @@ type Rewrite = { jobId: string; revision: number };
 /** The tab each document is on. */
 const TAB_OF: Record<DocumentKind, Tab> = { RESUME: "resume", COVER_LETTER: "letter", EMAIL: "email" };
 
-/** The unit the next chat message is about ("Ask AI"). */
-type Target = { document: DocumentKind; unitId: string; label: string; name: string };
+/** The units the next chat message is about ("Ask AI"): one, or an employer's roles. */
+type Target = { document: DocumentKind; unitIds: string[]; label: string; name: string };
 
 const NO_MESSAGES: ChatEntry[] = [];
+
+const sameIds = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id));
 
 const NO_AI = "That needs an AI provider. Choose one in Settings → AI provider.";
 
@@ -114,6 +118,8 @@ export type ApplicationViewProps = {
     showPhoto: boolean | null;
     /** Whether the resume shows each role's location: the Locations switch, what tailoring decided, or the setting. */
     showLocations: boolean;
+    /** The Group order switch: the profile's group order instead of tailoring's. */
+    profileGroupOrder: boolean;
     archived: boolean;
     /** A job agent draft not approved yet (#195): it isn't in Applications. */
     awaitingReview?: boolean;
@@ -215,6 +221,7 @@ export function ApplicationView({
   const [photoChoice, showPhotoChoice] = useOptimistic(application.showPhoto);
   const showPhoto = photoChoice ?? profile.photo?.onResumes ?? false;
   const [showLocations, showLocationsChoice] = useOptimistic(application.showLocations);
+  const [profileGroupOrder, showProfileGroupOrder] = useOptimistic(application.profileGroupOrder);
   // A theme just picked from the Theme menu, until the page has it (#226).
   const [themeChoice, showThemeChoice] = useOptimistic<ThemeData | null>(null);
   const resumeTheme = themeChoice ?? resume?.theme;
@@ -237,6 +244,7 @@ export function ApplicationView({
   const [sending, showSending] = useOptimistic(NO_MESSAGES, (current, message: ChatEntry) => [...current, message]);
   // Replies being undone, shown as undone until the page has it.
   const [undoing, showUndoing] = useOptimistic<readonly string[], string>([], (current, id) => [...current, id]);
+  const [cleared, showCleared] = useOptimistic(false);
   const [chatFocus, focusChat] = useState(0);
   const [rewrites, setRewrites] = useState<Readonly<Record<string, Rewrite>>>(() =>
     Object.fromEntries(rewritingAtLoad.map(({ jobId, document, unitId }) => [keyOf(document, unitId), { jobId, revision: 0 }])),
@@ -285,11 +293,17 @@ export function ApplicationView({
       toastResult(await setShowLocations({ id: application.id, show }));
     });
 
-  const save = (kind: DocumentKind, unit: Unit, text: string) => {
+  const changeGroupOrder = (follow: boolean) =>
+    startTransition(async () => {
+      showProfileGroupOrder(follow);
+      toastResult(await setProfileGroupOrder({ id: application.id, follow }));
+    });
+
+  const save = (kind: DocumentKind, unit: Unit, text: string, skills?: string[]) => {
     const key = keyOf(kind, unit.id);
     startTransition(async () => {
       showSaving({ key, text: cleanUnitText(unit.id, text) });
-      const result = await saveUnit({ id: application.id, document: kind, unitId: unit.id, text, expected: unit.text });
+      const result = await saveUnit({ id: application.id, document: kind, unitId: unit.id, text, expected: unit.text, skills });
       if (!result.ok) {
         // The editor stays open with what was typed.
         toast(result.error);
@@ -371,9 +385,9 @@ export function ApplicationView({
     });
   };
 
-  /** "Ask AI" (APP-5): the next message is about this unit. */
-  const askAbout = (kind: DocumentKind, unit: Unit) => {
-    setTarget({ document: kind, unitId: unit.id, label: unit.label, name: unitName(unit) });
+  /** "Ask AI" (APP-5): the next message is about this unit, or these roles of one employer. */
+  const askAbout = (kind: DocumentKind, units: Unit[]) => {
+    setTarget({ document: kind, unitIds: units.map((unit) => unit.id), ...targetName(units) });
     focusChat((count) => count + 1);
   };
 
@@ -391,7 +405,7 @@ export function ApplicationView({
           id: application.id,
           text,
           viewing,
-          target: target && { document: target.document, unitId: target.unitId },
+          target: target && { document: target.document, unitIds: target.unitIds },
         });
         if (!result.ok) {
           toast(result.error);
@@ -545,6 +559,14 @@ export function ApplicationView({
       flashing.start(result.data.edited.map(({ document, unitId }) => keyOf(document, unitId)));
     });
 
+  /** "Clear chat": the conversation goes at once, and comes back if that fails. */
+  const clear = () =>
+    startTransition(async () => {
+      showCleared(true);
+      const result = await clearChat({ id: application.id });
+      if (!result.ok) toast(result.error);
+    });
+
   /** The document's units, with texts being saved in place. */
   const shown = (kind: DocumentKind, units: Unit[]) =>
     units.map((unit) => {
@@ -575,20 +597,37 @@ export function ApplicationView({
           className={className}
           head={head}
           unit={unit}
+          skills={kind === DocumentKind.RESUME ? unitSkills(unit, profile) : null}
           editing={editing === key}
           saving={editing === key && saving[key] !== undefined}
           busy={key in rewrites}
           flashing={flashing.keys.has(key)}
+          asked={target?.document === kind && target.unitIds.length === 1 && target.unitIds[0] === id}
           onEdit={() => setEditing(key)}
           onCancel={() => setEditing(null)}
-          onSave={(text) => save(kind, unit, text)}
+          onSave={(text, skills) => save(kind, unit, text, skills)}
           onRegenerate={written ? () => void regenerate(kind, unit, { stored: stored.has(id) }) : undefined}
           // The chat only edits parts the letter stores.
-          onAskAi={written && stored.has(id) ? () => askAbout(kind, unit) : undefined}
+          onAskAi={written && stored.has(id) ? () => askAbout(kind, [unit]) : undefined}
           onLeaveOut={kind === DocumentKind.RESUME ? () => leaveOut(unit) : undefined}
         >
           {children}
         </UnitFrame>
+      );
+    };
+
+  /** An employer's roles in the resume preview, which Ask AI can take on together. */
+  const groupsOf =
+    (units: Unit[]): GroupRenderer =>
+    function renderRoleGroup({ ids, className, children }) {
+      const roles = ids.flatMap((id) => units.find((unit) => unit.id === id) ?? []);
+      if (roles.length < 2) return plainGroup({ ids, className, children });
+      const { name } = targetName(roles);
+      const asked = target?.document === DocumentKind.RESUME && sameIds(target.unitIds, ids);
+      return (
+        <GroupFrame label={name} className={className} asked={asked} onAskAi={() => askAbout(DocumentKind.RESUME, roles)}>
+          {children}
+        </GroupFrame>
       );
     };
 
@@ -735,6 +774,10 @@ export function ApplicationView({
                   {[...profile.experience, ...profile.education].some((entry) => entry.location.trim()) && (
                     <PreviewSwitch label="Locations" checked={showLocations} onCheckedChange={changeLocations} />
                   )}
+                  {/* Without groups, there's one heading and no order to choose. */}
+                  {profile.experienceGroups.length > 0 && (
+                    <PreviewSwitch label="Profile's group order" checked={profileGroupOrder} onCheckedChange={changeGroupOrder} />
+                  )}
                   {historyButton(DocumentKind.RESUME)}
                 </span>
               }
@@ -746,10 +789,12 @@ export function ApplicationView({
                 followThemeLayout={followLayout}
                 showPhoto={photoChoice}
                 showLocations={showLocations}
+                profileGroupOrder={profileGroupOrder}
                 language={application.language}
                 includeReferences={includeReferences}
                 privacyConsent={privacyConsent}
                 renderUnit={viewed(DocumentKind.RESUME) ? plainUnit : unitsOf(DocumentKind.RESUME, resumeUnits)}
+                renderGroup={viewed(DocumentKind.RESUME) ? plainGroup : groupsOf(resumeUnits)}
               />
             </DocumentPreview>
           ) : (
@@ -834,12 +879,13 @@ export function ApplicationView({
         />
         <RefinePanel
           tab={tab}
-          messages={[...messages, ...sending]}
+          messages={cleared ? [] : [...messages, ...sending]}
           thinking={reply !== null}
           suggestions={tab === "resume" ? suggestions.resume : tab === "letter" ? suggestions.letter : tab === "email" && email ? suggestions.email : []}
           target={target}
           onClearTarget={() => setTarget(null)}
           onSend={send}
+          onClear={clear}
           aiReady={aiReady}
           focusRequest={chatFocus}
         >

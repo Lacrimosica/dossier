@@ -6,6 +6,7 @@ import { toast } from "@/components/toast";
 import { copyText } from "@/lib/copy-text";
 import { demoLetterUnits, demoProfile, demoResumeUnits } from "@/lib/demo-profile";
 import { BUILT_IN_THEMES } from "@/lib/themes";
+import { unitSkills } from "@/lib/unit-text";
 
 import { retry } from "@/lib/jobs/actions";
 import type { JobView } from "@/lib/jobs/runner";
@@ -13,6 +14,7 @@ import type { JobView } from "@/lib/jobs/runner";
 import {
   addMatchSkill,
   addNote,
+  clearChat,
   deleteNote,
   leaveOutUnit,
   listVersions,
@@ -25,6 +27,7 @@ import {
   sendMessage,
   setApplicationTheme,
   setFollowThemeLayout,
+  setProfileGroupOrder,
   setShowLocations,
   setShowPhoto,
   startRegenerating,
@@ -41,11 +44,13 @@ vi.mock("./actions", () => ({
   setFollowThemeLayout: vi.fn(async () => ({ ok: true, data: null })),
   setShowPhoto: vi.fn(async () => ({ ok: true, data: null })),
   setShowLocations: vi.fn(async () => ({ ok: true, data: null })),
+  setProfileGroupOrder: vi.fn(async () => ({ ok: true, data: null })),
   saveUnit: vi.fn(async ({ text }: { text: string }) => ({ ok: true, data: { text } })),
   startRegenerating: vi.fn(async () => ({ ok: true, data: "job-1" })),
   restoreUnit: vi.fn(async () => ({ ok: true, data: null })),
   sendMessage: vi.fn(async () => ({ ok: true, data: { jobId: "reply-1" } })),
   undoMessage: vi.fn(async () => ({ ok: true, data: { edited: [{ document: "RESUME", unitId: "summary" }] } })),
+  clearChat: vi.fn(async () => ({ ok: true, data: null })),
   addMatchSkill: vi.fn(async () => ({ ok: true, data: { name: "Kubernetes" } })),
   addNote: vi.fn(async () => ({ ok: true, data: null })),
   updateNote: vi.fn(async () => ({ ok: true, data: null })),
@@ -102,6 +107,7 @@ const props: ApplicationViewProps = {
     followThemeLayout: false,
     showPhoto: null,
     showLocations: false,
+    profileGroupOrder: false,
     archived: false,
     nextInterviewAt: null,
   },
@@ -143,6 +149,7 @@ beforeEach(() => {
   vi.mocked(restoreUnit).mockClear();
   vi.mocked(sendMessage).mockClear();
   vi.mocked(undoMessage).mockClear();
+  vi.mocked(clearChat).mockClear();
   vi.mocked(startWritingEmail).mockClear();
   vi.mocked(undoEmailRewrite).mockClear();
   vi.mocked(toast).mockClear();
@@ -254,6 +261,19 @@ describe("the document tabs (E8-2)", () => {
     expect(screen.getByRole("switch", { name: "Locations" })).toBeInTheDocument();
   });
 
+  it("has a group order switch only while the profile has experience groups", async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<ApplicationView {...props} />);
+    expect(screen.queryByRole("switch", { name: "Profile's group order" })).not.toBeInTheDocument();
+    unmount();
+
+    render(<ApplicationView {...props} profile={{ ...props.profile, experienceGroups: [{ id: "g1", name: "Design" }] }} />);
+    const toggle = screen.getByRole("switch", { name: "Profile's group order" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    await user.click(toggle);
+    expect(setProfileGroupOrder).toHaveBeenCalledWith({ id: "app-1", follow: true });
+  });
+
   it("changes the resume's and cover letter's theme together from the Theme menu (#226)", async () => {
     const user = userEvent.setup();
     let answer: (result: { ok: true; data: null }) => void = () => {};
@@ -353,6 +373,25 @@ describe("editing a unit (E8-3)", () => {
     expect(screen.queryByRole("button", { name: "Leave out" })).not.toBeInTheDocument();
   });
 
+  it("edits a role's skills with its bullets, sending them only when they changed", async () => {
+    const user = userEvent.setup();
+    const role = demoResumeUnits().find((unit) => unit.id.startsWith("experience:"))!;
+    const before = unitSkills(role, props.profile)!;
+    render(<ApplicationView {...props} />);
+    await user.click(within(screen.getByRole("group", { name: role.label })).getByRole("button", { name: "Edit" }));
+    const skills = screen.getByRole("textbox", { name: "Skills, separated by commas" });
+    expect(skills).toHaveValue(before.join(", "));
+    await user.clear(skills);
+    await user.type(skills, "Figma, Kotlin");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saveUnit).toHaveBeenLastCalledWith(expect.objectContaining({ unitId: role.id, text: role.text, skills: ["Figma", " Kotlin"] }));
+
+    await user.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: "Edit" }));
+    expect(screen.queryByRole("textbox", { name: "Skills, separated by commas" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(vi.mocked(saveUnit).mock.lastCall?.[0].skills).toBeUndefined();
+  });
+
   it("swaps in a text box and saves what was written", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<ApplicationView {...props} />);
@@ -386,7 +425,7 @@ describe("editing a unit (E8-3)", () => {
     const role = screen.getByRole("group", { name: "Studio Brik role" });
     await user.click(within(role).getByRole("button", { name: "Edit" }));
     expect(role).toHaveTextContent(/^UX Designer, Studio Brik/);
-    expect(within(role).getByRole("textbox")).toHaveAccessibleDescription("One bullet per line");
+    expect(within(role).getByRole("textbox", { name: "Edit Studio Brik role" })).toHaveAccessibleDescription("One bullet per line");
   });
 
   it("cancels with Escape and keeps the text", async () => {
@@ -589,15 +628,38 @@ describe("the Refine with AI panel (E8-5)", () => {
     expect(input()).toHaveFocus();
     expect(input()).toHaveAttribute("placeholder", "What should change in the summary?");
     expect(within(panel()).getByText("About: Summary")).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Summary" }).className).toMatch(/asked/);
 
     await user.type(input(), "Mention payments{Enter}");
     expect(sendMessage).toHaveBeenCalledWith({
       id: "app-1",
       text: "Mention payments",
       viewing: "RESUME",
-      target: { document: "RESUME", unitId: "summary" },
+      target: { document: "RESUME", unitIds: ["summary"] },
     });
     expect(within(panel()).queryByRole("button", { name: "Stop asking about the summary" })).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Summary" }).className).not.toMatch(/asked/);
+  });
+
+  it("asks about all of an employer's roles together", async () => {
+    const user = userEvent.setup();
+    const profile = demoProfile();
+    const [first, ...rest] = profile.experience;
+    const promoted = { ...profile, experience: [{ ...first, id: "lead", role: "Lead Product Designer" }, first, ...rest] };
+    const units = demoResumeUnits();
+    const role = units.find((unit) => unit.id === `experience:${first.id}`)!;
+    const resumeUnits = [...units.slice(0, units.indexOf(role)), { ...role, id: "experience:lead", text: "Led the team" }, ...units.slice(units.indexOf(role))];
+    render(<ApplicationView {...props} profile={promoted} resume={{ ...props.resume!, units: resumeUnits }} />);
+
+    const group = screen.getByRole("group", { name: `${role.label}s` });
+    await user.click(within(group).getByRole("button", { name: "Ask AI about all roles" }));
+    expect(within(panel()).getByText(`About: All 2 ${role.label}s`)).toBeInTheDocument();
+    expect(group.className).toMatch(/asked/);
+
+    await user.type(input(), "Condense them{Enter}");
+    expect(sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ target: { document: "RESUME", unitIds: ["experience:lead", `experience:${first.id}`] } }),
+    );
   });
 
   it("drops the picked unit with ×", async () => {
@@ -606,6 +668,7 @@ describe("the Refine with AI panel (E8-5)", () => {
     await user.click(within(screen.getByRole("group", { name: "Summary" })).getByRole("button", { name: "Ask AI" }));
     await user.click(screen.getByRole("button", { name: "Stop asking about the summary" }));
     expect(input()).toHaveAttribute("placeholder", "Ask for a change, e.g. “sound more confident”");
+    expect(screen.getByRole("group", { name: "Summary" }).className).not.toMatch(/asked/);
   });
 
   it("shows the reply's edits, switching to the document they're on", async () => {
@@ -708,6 +771,46 @@ describe("undoing an AI change (E8-6)", () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith(why));
     // Back once the action has finished.
     expect(await within(log()).findByRole("button", { name: "Undo" })).toBeInTheDocument();
+  });
+});
+
+describe("clearing the chat", () => {
+  const reply = { id: "m3", role: "AI" as const, text: "Trimmed your summary.", targetUnit: null, opening: false, canUndo: true, undone: false };
+  const log = () => screen.getByRole("log", { name: "Conversation" });
+
+  it("asks first, then empties the conversation", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    const dialog = screen.getByRole("alertdialog", { name: "Clear the chat?" });
+    await user.click(within(dialog).getByRole("button", { name: "Clear chat" }));
+    expect(clearChat).toHaveBeenCalledWith({ id: "app-1" });
+    expect(within(log()).queryByText("Trimmed your summary.")).not.toBeInTheDocument();
+  });
+
+  it("keeps the conversation on Cancel", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(clearChat).not.toHaveBeenCalled();
+    expect(within(log()).getByText("Trimmed your summary.")).toBeInTheDocument();
+  });
+
+  it("has nothing to clear in an empty chat", () => {
+    render(<ApplicationView {...props} messages={[]} />);
+    expect(screen.queryByRole("button", { name: "Clear chat" })).not.toBeInTheDocument();
+  });
+
+  it("brings the conversation back when it can't clear it", async () => {
+    const user = userEvent.setup();
+    const why = "I'm still working on your last message. Clear the chat when I'm done.";
+    vi.mocked(clearChat).mockResolvedValueOnce({ ok: false, error: why });
+    render(<ApplicationView {...props} messages={[reply]} />);
+    await user.click(screen.getByRole("button", { name: "Clear chat" }));
+    await user.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Clear chat" }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(why));
+    expect(await within(log()).findByText("Trimmed your summary.")).toBeInTheDocument();
   });
 });
 

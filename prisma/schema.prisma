@@ -313,6 +313,13 @@ enum DateStyle {
   STACKED
 }
 
+/// Courses & certificates on a resume: one under another, or side by side in
+/// two columns, since each is only a line or two.
+enum CourseColumns {
+  ONE
+  TWO
+}
+
 /// The profile photo's shape on a resume (#224). The square shapes show the middle of its 3:4 crop.
 enum PhotoShape {
   CIRCLE
@@ -356,6 +363,7 @@ model Theme {
   dateStyle     DateStyle     @default(INLINE)
   photoShape    PhotoShape    @default(CIRCLE)
   photoPosition PhotoPosition @default(HEADER_END)
+  courseColumns CourseColumns @default(ONE)
   documents     Document[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -498,6 +506,9 @@ model Application {
   /// Settings → "Work locations on resumes". Written when tailoring decided
   /// it from the posting.
   showLocations       Boolean?
+  /// The tailored resume's experience groups in the profile's order, not the
+  /// order tailoring or the editor gave its roles (.scratch/experience-groups).
+  profileGroupOrder   Boolean           @default(false)
   archivedAt          DateTime?
   /// The Gmail thread the application was sent in, when it went out through Gmail (E15-2).
   emailThreadId       String?

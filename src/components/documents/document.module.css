@@ -247,6 +247,8 @@
   color: var(--doc-muted);
   break-inside: avoid;
   text-wrap: pretty;
+  /* Keep the line breaks typed in Settings, e.g. "Torino, [data]" and "Firma" on lines of their own. */
+  white-space: pre-line;
 }
 
 /* Courses and certificates: short, so closer together than roles. */
@@ -260,6 +262,42 @@
 
 .nowrap {
   white-space: nowrap;
+}
+
+/*
+ * Courses in two columns (the theme's Courses): side by side, each with its
+ * dates on a line of their own under the name, since a column is too narrow
+ * to put them beside it. Rows keep the gap single-column courses have.
+ */
+.courseColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: calc(var(--u) * 5) calc(var(--u) * 20);
+}
+
+.courseColumns > .course + .course {
+  margin-top: 0;
+}
+
+.courseColumns .entryHead {
+  display: block;
+}
+
+.courseColumns .dates {
+  display: block;
+  font-size: 0.9em;
+}
+
+/* A timeline's date column doesn't fit in a column of its own. */
+.timeline .courseColumns .course {
+  padding-inline-start: 0;
+}
+
+.timeline .courseColumns .dates {
+  float: none;
+  width: auto;
+  margin-inline-start: 0;
+  line-height: inherit;
 }
 
 .courseDetails {
@@ -489,8 +527,8 @@
   align-items: baseline;
 }
 
-/* A promoted role's line sits right under its company's. */
-.stacked .companyRole {
+/* The first promoted role's line sits right under its company's; the later ones keep .companyRole's small gap, to tell the roles apart. */
+.stacked .entryHead + .companyRole {
   margin-top: calc(var(--u) * 2);
 }
 
