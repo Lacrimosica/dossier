@@ -18,23 +18,33 @@ import {
   reorderEntries,
   restoreEducation,
   saveEducation,
+  setEducationSchool,
   sortEntriesByDate,
 } from "./actions";
 import { EntryList } from "./entry-list";
 import { MonthYearField } from "./month-year-field";
+import { SharedNameField, useSaveSharedName, type SharedNameNoun } from "./shared-name-field";
 import { useTrackSave } from "@/components/save-tracker";
 import type { UpdateProfile } from "./skills-section";
+
+const schoolNoun: SharedNameNoun<"school"> = { field: "school", one: "entry", many: "entries" };
 
 function EducationForm({
   entry,
   onChange,
   onMove,
   autoFocus,
+  schools,
+  onSchoolChange,
 }: {
   entry: EducationItem;
   onChange: (entry: EducationItem) => void;
   onMove: () => void;
   autoFocus: boolean;
+  /** Every entry's school. */
+  schools: string[];
+  /** Saves at once, apart from the autosaved fields: on this entry, or on every entry at its school. */
+  onSchoolChange: (school: string, everywhere: boolean) => void;
 }) {
   const track = useTrackSave();
   const { flush } = useAutosave(entry, (value) => track(saveEducation(value)));
@@ -50,11 +60,13 @@ function EducationForm({
         onChange={(event) => set({ degree: event.target.value })}
         autoFocus={autoFocus}
       />
-      <Input
+      <SharedNameField
         label="School"
         placeholder="Springfield University"
         value={entry.school}
-        onChange={(event) => set({ school: event.target.value })}
+        names={schools}
+        noun={schoolNoun}
+        onSave={onSchoolChange}
       />
       <Input
         label="Location"
@@ -150,6 +162,12 @@ function useMoveToCourses(profile: ProfileData, update: UpdateProfile, order: En
 /** Education (PRO-7): degrees and longer programmes. Shorter courses have their own section. */
 export function EducationSection({ profile, update, order }: { profile: ProfileData; update: UpdateProfile; order: EntryOrder }) {
   const moveToCourses = useMoveToCourses(profile, update, order);
+  const saveSchool = useSaveSharedName({
+    noun: schoolNoun,
+    entries: profile.education,
+    setEntries: (change) => update((current) => ({ ...current, education: change(current.education) })),
+    save: ({ id, name, everywhere }) => setEducationSchool({ id, school: name, everywhere }),
+  });
   return (
     <EntryList
       items={profile.education}
@@ -174,6 +192,8 @@ export function EducationSection({ profile, update, order }: { profile: ProfileD
           onChange={onChange}
           onMove={() => void moveToCourses(entry, profile.education.findIndex((item) => item.id === entry.id))}
           autoFocus={autoFocus}
+          schools={profile.education.map((item) => item.school)}
+          onSchoolChange={(school, everywhere) => void saveSchool(entry, school, everywhere)}
         />
       )}
     />

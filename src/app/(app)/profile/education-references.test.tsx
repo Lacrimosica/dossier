@@ -7,13 +7,14 @@ import type { ProfileData } from "@/lib/profile";
 
 import { toast } from "@/components/toast";
 
-import { createReference, moveEducationToCourses, removeCourse, restoreEducation, saveEducation, saveReference } from "./actions";
+import { createReference, moveEducationToCourses, removeCourse, restoreEducation, saveEducation, saveReference, setEducationSchool } from "./actions";
 import { EducationSection } from "./education-section";
 import { ReferencesSection } from "./references-section";
 
 vi.mock("./actions", () => ({
   createEducation: vi.fn(),
   saveEducation: vi.fn(async () => ({ ok: true, data: null })),
+  setEducationSchool: vi.fn(async ({ id }: { id: string }) => ({ ok: true, data: [id] })),
   removeEducation: vi.fn(async () => ({ ok: true, data: null })),
   restoreEducation: vi.fn(),
   moveEducationToCourses: vi.fn(),
@@ -48,8 +49,8 @@ const profile: ProfileData = {
 };
 
 let latest: ProfileData;
-function Harness({ section }: { section: "education" | "references" }) {
-  const [state, setState] = useState(profile);
+function Harness({ section, education = profile.education }: { section: "education" | "references"; education?: ProfileData["education"] }) {
+  const [state, setState] = useState({ ...profile, education });
   useEffect(() => {
     latest = state;
   });
@@ -63,6 +64,23 @@ function Harness({ section }: { section: "education" | "references" }) {
 
 describe("Education", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("asks before changing a school other entries have, and changes it on all of them", async () => {
+    const user = userEvent.setup();
+    const bachelor = { ...profile.education[0], id: "d2", degree: "BSc Industrial Design", school: "TU DELFT" };
+    vi.mocked(setEducationSchool).mockResolvedValueOnce({ ok: true, data: ["d1", "d2"] });
+    render(<Harness section="education" education={[...profile.education, bachelor]} />);
+
+    await user.click(screen.getByRole("button", { name: /MSc Design/, expanded: false }));
+    expect(screen.getByText("Also on 1 other entry.")).toBeInTheDocument();
+    await user.clear(screen.getByLabelText("School"));
+    await user.type(screen.getByLabelText("School"), "Delft University of Technology{Enter}");
+
+    expect(screen.getByRole("alertdialog", { name: "Change the school of all 2 entries?" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Change all 2" }));
+    expect(setEducationSchool).toHaveBeenCalledWith({ id: "d1", school: "Delft University of Technology", everywhere: true });
+    expect(latest.education.map((entry) => entry.school)).toEqual(["Delft University of Technology", "Delft University of Technology"]);
+  });
 
   it("summarises an entry: degree, school and dates", () => {
     render(<Harness section="education" />);

@@ -7,10 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAutosave } from "@/hooks/use-autosave";
 import { formatDateRange, type CourseItem, type EntryOrder, type ProfileData } from "@/lib/profile";
 
-import { createCourse, removeCourse, reorderEntries, restoreCourse, saveCourse, sortEntriesByDate } from "./actions";
+import { createCourse, removeCourse, reorderEntries, restoreCourse, saveCourse, setCourseProvider, sortEntriesByDate } from "./actions";
 import { EntryList } from "./entry-list";
 import { MonthYearField } from "./month-year-field";
+import { SharedNameField, useSaveSharedName, type SharedNameNoun } from "./shared-name-field";
 import type { UpdateProfile } from "./skills-section";
+
+const providerNoun: SharedNameNoun<"provider"> = { field: "provider", one: "course", many: "courses" };
 
 const optional = <span className="font-normal text-muted">(optional)</span>;
 
@@ -23,10 +26,16 @@ function CourseForm({
   entry,
   onChange,
   autoFocus,
+  providers,
+  onProviderChange,
 }: {
   entry: CourseItem;
   onChange: (entry: CourseItem) => void;
   autoFocus: boolean;
+  /** Every course's provider. */
+  providers: string[];
+  /** Saves at once, apart from the autosaved fields: on this course, or on every course it ran. */
+  onProviderChange: (provider: string, everywhere: boolean) => void;
 }) {
   const track = useTrackSave();
   const { flush } = useAutosave(entry, (value) => track(saveCourse(value)));
@@ -42,12 +51,14 @@ function CourseForm({
         onChange={(event) => set({ name: event.target.value })}
         autoFocus={autoFocus}
       />
-      <Input
+      <SharedNameField
         className="col-span-2"
         label="Provider"
         placeholder="Who ran it: a school, studio, trainer or platform"
         value={entry.provider}
-        onChange={(event) => set({ provider: event.target.value })}
+        names={providers}
+        noun={providerNoun}
+        onSave={onProviderChange}
       />
       <MonthYearField
         label="When"
@@ -95,6 +106,12 @@ function CourseForm({
  * from degrees. Tailored resumes keep only the ones that help with the job.
  */
 export function CoursesSection({ profile, update, order }: { profile: ProfileData; update: UpdateProfile; order: EntryOrder }) {
+  const saveProvider = useSaveSharedName({
+    noun: providerNoun,
+    entries: profile.courses,
+    setEntries: (change) => update((current) => ({ ...current, courses: change(current.courses) })),
+    save: ({ id, name, everywhere }) => setCourseProvider({ id, provider: name, everywhere }),
+  });
   return (
     <EntryList
       items={profile.courses}
@@ -113,7 +130,15 @@ export function CoursesSection({ profile, update, order }: { profile: ProfileDat
       create={() => createCourse({})}
       remove={(entry) => removeCourse({ id: entry.id })}
       restore={(entry) => restoreCourse(entry)}
-      renderForm={(entry, { onChange, autoFocus }) => <CourseForm entry={entry} onChange={onChange} autoFocus={autoFocus} />}
+      renderForm={(entry, { onChange, autoFocus }) => (
+        <CourseForm
+          entry={entry}
+          onChange={onChange}
+          autoFocus={autoFocus}
+          providers={profile.courses.map((item) => item.provider)}
+          onProviderChange={(provider, everywhere) => void saveProvider(entry, provider, everywhere)}
+        />
+      )}
     />
   );
 }

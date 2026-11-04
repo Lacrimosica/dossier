@@ -42,6 +42,8 @@ import {
   saveProject,
   setProjectSkill,
   saveExperience,
+  setCourseProvider,
+  setEducationSchool,
   setExperienceCompany,
   saveReference,
   removeLanguage,
@@ -197,6 +199,25 @@ describe("profile actions", () => {
     expect(await prisma().experience.findUniqueOrThrow({ where: { id: entry.id } })).toMatchObject({ company: "Fieldnote", startYear: 2018, endMonth: 2 });
   });
 
+  it("changes a school or a provider on one entry or on all that have it", async () => {
+    await prisma().education.createMany({ data: [{ id: "a", school: "TU Delft" }, { id: "b", school: " tu  delft " }, { id: "c", school: "ETH" }, { id: "e", school: "" }, { id: "f", school: "" }] });
+    await expect(setEducationSchool({ id: "b", school: "Delft", everywhere: true })).resolves.toEqual({ ok: true, data: ["a", "b"] });
+    await expect(setEducationSchool({ id: "c", school: "ETH Zurich", everywhere: false })).resolves.toEqual({ ok: true, data: ["c"] });
+    // No school isn't a school they share.
+    await expect(setEducationSchool({ id: "e", school: "MIT", everywhere: true })).resolves.toEqual({ ok: true, data: ["e"] });
+    expect((await prisma().education.findMany({ orderBy: { id: "asc" } })).map((entry) => entry.school)).toEqual(["Delft", "Delft", "ETH Zurich", "MIT", ""]);
+
+    await prisma().course.createMany({ data: [{ id: "a", provider: "Le Wagon" }, { id: "b", provider: "LE WAGON" }, { id: "c", provider: "Coursera" }] });
+    await expect(setCourseProvider({ id: "a", provider: "Le Wagon GmbH", everywhere: true })).resolves.toEqual({ ok: true, data: ["a", "b"] });
+    await expect(setCourseProvider({ id: "gone", provider: "X", everywhere: true })).resolves.toEqual({ ok: true, data: [] });
+    expect((await prisma().course.findMany({ orderBy: { id: "asc" } })).map((course) => course.provider)).toEqual(["Le Wagon GmbH", "Le Wagon GmbH", "Coursera"]);
+
+    // The autosave leaves the name alone, so a late one can't undo a rename.
+    const late = { id: "c", name: "Data", provider: "Old", duration: "", link: "", notes: "", onResumes: true, startYear: null, startMonth: null, endYear: null, endMonth: null };
+    await saveCourse(late);
+    expect(await prisma().course.findUniqueOrThrow({ where: { id: "c" } })).toMatchObject({ name: "Data", provider: "Coursera" });
+  });
+
   it("gives every spelling of a company the name chosen, renames a company, and remembers spellings kept apart", async () => {
     await prisma().experience.createMany({
       data: [
@@ -288,6 +309,7 @@ describe("profile actions", () => {
     const degree = { ...school.data, degree: "MSc", school: "TU Delft", location: "Delft, Netherlands", startYear: 2013, endYear: 2015 };
     const reference = { ...person.data, name: "Jane Doe", email: "jane.doe@example.com" };
     await saveEducation(degree);
+    await setEducationSchool({ id: degree.id, school: degree.school, everywhere: false });
     await saveReference(reference);
     expect(await prisma().education.findUniqueOrThrow({ where: { id: degree.id } })).toMatchObject({ school: "TU Delft", location: "Delft, Netherlands", endYear: 2015 });
 
@@ -424,6 +446,7 @@ describe("courses & certificates", () => {
 
     const course = { ...created.data, name: "UX Writing Workshop", provider: "Content Design London", duration: "3 weekend sessions", startYear: 2021, startMonth: 10, onResumes: false };
     await saveCourse(course);
+    await setCourseProvider({ id: course.id, provider: course.provider, everywhere: false });
     expect((await loadProfile()).courses).toEqual([course]);
 
     await removeCourse({ id: course.id });
@@ -451,6 +474,7 @@ describe("courses & certificates", () => {
     if (!created.ok) throw new Error("create failed");
     const entry = { ...created.data, degree: "Accessibility for Designers", school: "Deque University", location: "Online", notes: "WCAG audits", startYear: 2023, startMonth: 3, endYear: 2023, endMonth: 5 };
     await saveEducation(entry);
+    await setEducationSchool({ id: entry.id, school: entry.school, everywhere: false });
 
     const moved = await moveEducationToCourses({ id: entry.id });
     if (!moved.ok) throw new Error(moved.error);

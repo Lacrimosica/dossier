@@ -157,6 +157,16 @@ export const saveInterests = action(
   },
 );
 
+/**
+ * The entries a name change reaches: this one, or with `everywhere` all with
+ * the same name, case and spacing aside. None if it was removed in another tab.
+ */
+function idsToRename<T extends { id: string }>(entries: T[], name: (entry: T) => string, id: string, everywhere: boolean): string[] {
+  const entry = entries.find((other) => other.id === id);
+  const key = entry ? companyKey(name(entry)) : null;
+  return entries.filter((other) => other.id === id || (everywhere && key !== null && companyKey(name(other)) === key)).map((other) => other.id);
+}
+
 // ─── Experience (PRO-5, PRO-6) ───────────────────────────────────────────────
 
 const year = z.number().int().min(1900).max(2100).nullable();
@@ -388,15 +398,8 @@ export const unifyCompanyName = action(
 export const setExperienceCompany = action(
   z.object({ id, company: text(200), everywhere: z.boolean() }),
   async ({ id, company, everywhere }) => {
-    const role = await prisma.experience.findUnique({ where: { id }, select: { company: true } });
-    if (!role) return [];
-    const key = companyKey(role.company);
-    const ids =
-      everywhere && key
-        ? (await prisma.experience.findMany({ select: { id: true, company: true } }))
-            .filter((other) => companyKey(other.company) === key)
-            .map((other) => other.id)
-        : [id];
+    const roles = await prisma.experience.findMany({ select: { id: true, company: true } });
+    const ids = idsToRename(roles, (role) => role.company, id, everywhere);
     await prisma.experience.updateMany({ where: { id: { in: ids } }, data: { company } });
     return ids;
   },
@@ -516,10 +519,22 @@ export const createEducation = action(z.object({}), async () => {
   return educationItem(await prisma.education.create({ data: { sort } }));
 });
 
-export const saveEducation = action(educationFields, async ({ id, ...data }) => {
+/** Autosaves an entry. The school is set with setEducationSchool, like a role's company (saveExperience). */
+export const saveEducation = action(educationFields.omit({ school: true }), async ({ id, ...data }) => {
   await prisma.education.updateMany({ where: { id }, data });
   return null;
 });
+
+/** Sets an entry's school when its field is left; with `everywhere`, on every entry at that school. Answers with the entries changed. */
+export const setEducationSchool = action(
+  z.object({ id, school: text(200), everywhere: z.boolean() }),
+  async ({ id, school, everywhere }) => {
+    const entries = await prisma.education.findMany({ select: { id: true, school: true } });
+    const ids = idsToRename(entries, (entry) => entry.school, id, everywhere);
+    await prisma.education.updateMany({ where: { id: { in: ids } }, data: { school } });
+    return ids;
+  },
+);
 
 export const removeEducation = action(z.object({ id }), async ({ id }) => {
   await prisma.education.deleteMany({ where: { id } });
@@ -602,11 +617,25 @@ export const createCourse = action(z.object({}), async () => {
   return courseItem(await prisma.course.create({ data: { sort } }));
 });
 
-/** Autosaves a course. Saving one that was just removed does nothing. */
-export const saveCourse = action(courseFields, async ({ id, ...data }) => {
+/**
+ * Autosaves a course. Saving one that was just removed does nothing. The
+ * provider is set with setCourseProvider, like a role's company (saveExperience).
+ */
+export const saveCourse = action(courseFields.omit({ provider: true }), async ({ id, ...data }) => {
   await prisma.course.updateMany({ where: { id }, data });
   return null;
 });
+
+/** Sets a course's provider when its field is left; with `everywhere`, on every course it ran. Answers with the courses changed. */
+export const setCourseProvider = action(
+  z.object({ id, provider: text(200), everywhere: z.boolean() }),
+  async ({ id, provider, everywhere }) => {
+    const courses = await prisma.course.findMany({ select: { id: true, provider: true } });
+    const ids = idsToRename(courses, (course) => course.provider, id, everywhere);
+    await prisma.course.updateMany({ where: { id: { in: ids } }, data: { provider } });
+    return ids;
+  },
+);
 
 export const removeCourse = action(z.object({ id }), async ({ id }) => {
   await prisma.course.deleteMany({ where: { id } });
