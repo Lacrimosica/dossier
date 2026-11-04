@@ -9,6 +9,7 @@ import { action, ActionError } from "@/lib/action";
 import { isAiConfigured } from "@/lib/ai/config";
 import { editsSchema, extractedSchema, HEADLINE_UNIT, matchSchema, trimmedSchema, unitsSchema, withSkillAdded } from "@/lib/application-data";
 import { WRITTEN_EMAIL_UNITS } from "@/lib/application-email";
+import { documentLabels } from "@/lib/document-labels";
 import { updateDocuments } from "@/lib/document-units";
 import { DOCUMENT_LABELS } from "@/lib/file-name";
 import { syncInterviewToCalendar } from "@/lib/google/availability";
@@ -20,6 +21,7 @@ import { regenerateUnitJob, unitJobKey } from "@/lib/jobs/regenerate-unit";
 import { findUnfinishedJobs, startJob } from "@/lib/jobs/runner";
 import { emailJobKey, writeEmailJob } from "@/lib/jobs/write-email";
 import { letterJobKey, writeLetterJob } from "@/lib/jobs/write-letter";
+import { addToResume, offResume } from "@/lib/off-resume";
 import { prisma } from "@/lib/prisma";
 import { loadProfile } from "@/lib/profile-data";
 import { findOrCreateSkill } from "@/lib/profile-entries";
@@ -455,6 +457,30 @@ export const putBackTrimmed = action(z.object({ id: z.string().min(1), index: z.
   await prisma.document.update({ where: { id: row.id }, data: { trimmed: rest.length > 0 ? rest : Prisma.DbNull } });
   refresh(id);
   return null;
+});
+
+/**
+ * "Add" on what's in the profile but not on the tailored resume: puts it on as
+ * the profile has it. `key` is an item of offResume(), worked out again here,
+ * so the profile may have changed since the page was drawn. Returns the part
+ * that changed.
+ */
+export const addFromProfile = action(z.object({ id: z.string().min(1), key: z.string().min(1) }), async ({ id, key }) => {
+  const application = await prisma.application.findUnique({ where: { id }, select: { language: true } });
+  if (!application) throw new ActionError(GONE);
+  const profile = await loadProfile();
+  const labels = documentLabels(application.language);
+  const unitId = await updateDocuments(id, async (documents, tx) => {
+    const units = documents[DocumentKind.RESUME];
+    if (!units) throw new ActionError(PART_GONE);
+    const row = await tx.document.findUniqueOrThrow({ where: { applicationId_kind: { applicationId: id, kind: DocumentKind.RESUME } }, select: { trimmed: true } });
+    const trimmed = trimmedSchema.safeParse(row.trimmed);
+    const item = offResume(profile, units, trimmed.success ? trimmed.data : [], labels).find((entry) => entry.key === key);
+    if (!item) throw new ActionError("That's on the resume already, or no longer in your profile. Reload the page to see what's there now.");
+    return addToResume(units, item, profile);
+  });
+  refresh(id);
+  return { unitId };
 });
 
 // ─── Versions (E8-10, APP-13) ────────────────────────────────────────────────

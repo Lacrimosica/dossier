@@ -34,11 +34,13 @@ import type { WriteLetterResult } from "@/lib/jobs/write-letter";
 import type { FactItem, ProfileData } from "@/lib/profile";
 import type { RefineSuggestions } from "@/lib/refine-suggestions";
 import { hasSidebar, type ThemeData } from "@/lib/themes";
+import { offResume, type OffResumeItem } from "@/lib/off-resume";
 import { cleanUnitText, isPublicationUnit, targetName, unitName, unitSkills } from "@/lib/unit-text";
 
 import {
   addMatchSkill,
   clearChat,
+  addFromProfile,
   leaveOutUnit,
   putBackTrimmed,
   restoreUnit,
@@ -542,6 +544,16 @@ export function ApplicationView({
       toast(pageLimit ? "Put back. The resume may run over its page limit now." : "Put back.");
     });
 
+  /** "Add" on something in the profile that isn't on the resume. It goes on as the profile has it, not tailored. */
+  const addToResume = (item: OffResumeItem) =>
+    startTransition(async () => {
+      const result = await addFromProfile({ id: application.id, key: item.key });
+      if (!result.ok) return toast(result.error);
+      flashing.start([keyOf(DocumentKind.RESUME, result.data.unitId)]);
+      const written = item.kind === "entry" && !isPublicationUnit(item.key);
+      toast(written ? "Added as your profile has it. Regenerate it to tailor it to this job." : `Added ${item.name}.`);
+    });
+
   /** "Leave out" on a part of the tailored resume (#217), with Undo on the toast. */
   const leaveOut = (unit: Unit) =>
     startTransition(async () => {
@@ -632,6 +644,7 @@ export function ApplicationView({
     };
 
   const resumeUnits = resume && shown(DocumentKind.RESUME, resume.units);
+  const notOnResume = resume ? offResume(profile, resume.units, resume.trimmed ?? [], documentLabels(application.language)) : [];
   // Every part of the letter, those it doesn't store yet as they've always been drawn (E8-11).
   const letterUnits =
     letter &&
@@ -760,8 +773,8 @@ export function ApplicationView({
               notice={
                 viewed(DocumentKind.RESUME) ? (
                   versionBanner(viewed(DocumentKind.RESUME)!)
-                ) : resume.trimmed?.length ? (
-                  <TrimmedNotice items={resume.trimmed} onPutBack={putBack} />
+                ) : resume.trimmed?.length || notOnResume.length > 0 ? (
+                  <TrimmedNotice items={resume.trimmed ?? []} onPutBack={putBack} offResume={notOnResume} onAdd={addToResume} />
                 ) : undefined
               }
               label={

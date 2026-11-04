@@ -145,6 +145,8 @@ The skills under a role or project come from the profile entry until a resume ha
 
 "Ask AI" points the next chat message at a part of a document, highlighted in the preview until it's sent. An employer with several roles is drawn through `renderGroup` (`GroupRenderer`, `src/components/documents/document-page.tsx`), and its frame offers "Ask AI about all roles": the message's target is then all their unit ids (`target.unitIds`), named with `targetName()`. The chat can rewrite any of them, but can't remove or merge roles; it points to Leave out instead.
 
+The note above a tailored resume says what isn't on it. `Document.trimmed` holds what the page limit or Leave out took off, each with Put back. Under it, `offResume()` (`src/lib/off-resume.ts`, pure and shared with the browser) lists what the profile has and the resume doesn't, each with Add: what tailoring passed over and what was added to the profile since. It compares the two on every load, so there's nothing stored to keep up to date. A role, project, degree, course or publication has no unit; a skill, language or interest isn't in its section's line, matched whole by name, so "Go" isn't found in "Google". Anything in `trimmed` isn't listed again, and a section left out whole doesn't offer its items. Bullets added to a role already on the resume aren't listed, because they can't be told from the ones tailoring rewrote. `addFromProfile` works the list out again and `addToResume()` puts the item on as the profile has it, untailored, without the AI: a role stays within its experience group so the headings keep their order, and it doesn't check the page limit.
+
 To try the AI features without a hosted provider, run a small model in Docker:
 
 ```bash
