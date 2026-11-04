@@ -70,7 +70,12 @@ test("leaves a publication out of a tailored resume, and puts it back", async ({
   await publication.hover();
   // Written by the candidate: no Regenerate or Ask AI.
   await expect(publication.getByRole("button")).toHaveText(["Edit", "Leave out"]);
-  await publication.getByRole("button", { name: "Leave out" }).click();
+  // The preview adds its second sheet a moment after loading, which can move the
+  // publication out from under the pointer and hide its toolbar, so hover again.
+  await expect(async () => {
+    await publication.hover({ timeout: 2000 });
+    await publication.getByRole("button", { name: "Leave out" }).click({ timeout: 2000 });
+  }).toPass();
   await expect(publication).toHaveCount(0);
   const notice = page.getByRole("note");
   await expect(notice).toContainText("Left out of this resume:");
@@ -80,5 +85,6 @@ test("leaves a publication out of a tailored resume, and puts it back", async ({
   await expect(page.locator('[data-unit^="publication:"]')).toHaveCount(0);
   await page.getByRole("note").getByRole("button", { name: /^Put back the Publication/ }).click();
   await expect(page.locator('[data-unit^="publication:"]')).toContainText("Trust in automated scheduling");
-  await expect(page.getByRole("note")).toHaveCount(0);
+  // The demo resume keeps one of the two courses, so the note stays for the other.
+  await expect(page.getByRole("note")).not.toContainText("Left out");
 });

@@ -3,6 +3,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createTestClient, resetDatabase } from "@/test/db";
 
 import {
+  addFromProfile,
   addMatchSkill,
   addNote,
   clearChat,
@@ -597,6 +598,41 @@ describe("leaveOutUnit (#217)", () => {
     await leaveOutUnit({ id: "app-1", unitId: "summary" });
     expect(await leaveOutUnit({ id: "app-1", unitId: "summary" })).toMatchObject({ ok: false, error: expect.stringMatching(/^That part of the document no longer exists/) });
     expect((await document()).trimmed).toHaveLength(1);
+  });
+});
+
+describe("addFromProfile", () => {
+  const document = () => prisma().document.findUniqueOrThrow({ where: { applicationId_kind: { applicationId: "app-1", kind: "RESUME" } } });
+
+  it("puts a role added to the profile on the resume, in the profile's words", async () => {
+    const role = await prisma().experience.create({ data: { role: "Designer", company: "Fieldnote", bullets: "Ran research\nShipped the app" } });
+    expect(await addFromProfile({ id: "app-1", key: `experience:${role.id}` })).toEqual({ ok: true, data: { unitId: `experience:${role.id}` } });
+    expect((await document()).units).toEqual([...resume, { id: `experience:${role.id}`, label: "Fieldnote role", text: "Ran research\nShipped the app" }]);
+  });
+
+  it("adds a skill to the line, making it if the resume has none", async () => {
+    const skill = await prisma().skill.create({ data: { name: "Kubernetes" } });
+    expect(await addFromProfile({ id: "app-1", key: `skill:${skill.id}` })).toEqual({ ok: true, data: { unitId: "skills" } });
+    expect((await document()).units).toEqual([...resume, { id: "skills", label: "Skills", text: "Kubernetes" }]);
+  });
+
+  it("says so when it's there already, or no longer in the profile", async () => {
+    const role = await prisma().experience.create({ data: { role: "Designer", company: "Fieldnote" } });
+    await addFromProfile({ id: "app-1", key: `experience:${role.id}` });
+    expect(await addFromProfile({ id: "app-1", key: `experience:${role.id}` })).toMatchObject({ ok: false, error: expect.stringMatching(/^That's on the resume already/) });
+    expect(await addFromProfile({ id: "app-1", key: "experience:gone" })).toMatchObject({ ok: false, error: expect.stringMatching(/^That's on the resume already/) });
+  });
+
+  it("won't add what's waiting in the Left out list, so Put back stays the way back", async () => {
+    const role = await prisma().experience.create({ data: { role: "Designer", company: "Fieldnote" } });
+    const cut = { kind: "unit", unit: { id: `experience:${role.id}`, label: "Fieldnote role", text: "Tailored" }, index: 1, byHand: true };
+    await prisma().document.updateMany({ where: { applicationId: "app-1" }, data: { trimmed: [cut] } });
+    expect(await addFromProfile({ id: "app-1", key: `experience:${role.id}` })).toMatchObject({ ok: false });
+    expect((await document()).units).toEqual(resume);
+  });
+
+  it("says so when the application is gone", async () => {
+    expect(await addFromProfile({ id: "gone", key: "skill:s" })).toEqual({ ok: false, error: "That application no longer exists." });
   });
 });
 

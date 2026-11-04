@@ -16,6 +16,7 @@ import {
   addNote,
   clearChat,
   deleteNote,
+  addFromProfile,
   leaveOutUnit,
   listVersions,
   loadVersion,
@@ -58,6 +59,7 @@ vi.mock("./actions", () => ({
   restoreNote: vi.fn(async () => ({ ok: true, data: null })),
   putBackTrimmed: vi.fn(async () => ({ ok: true, data: null })),
   leaveOutUnit: vi.fn(async () => ({ ok: true, data: { index: 2 } })),
+  addFromProfile: vi.fn(async () => ({ ok: true, data: { unitId: "skills" } })),
   listVersions: vi.fn(async () => ({ ok: true, data: [] })),
   loadVersion: vi.fn(),
   restoreVersion: vi.fn(async () => ({ ok: true, data: null, toast: "Restored the resume as it was then." })),
@@ -986,9 +988,52 @@ describe("one-page trimming on the Resume tab (E10-10)", () => {
     expect(toast).toHaveBeenLastCalledWith("Put back.");
   });
 
-  it("says nothing when nothing was left out", () => {
-    render(<ApplicationView {...props} />);
+  it("says nothing when the resume has all the profile does", () => {
+    // The demo resume keeps one of the two courses.
+    render(<ApplicationView {...props} profile={{ ...props.profile, courses: props.profile.courses.slice(0, 1) }} />);
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
+  });
+});
+
+describe("what's in the profile but not on the resume", () => {
+  const withAdded = {
+    ...props.profile,
+    skills: [...props.profile.skills, { id: "skill-new", name: "Kubernetes" }],
+  };
+
+  it("lists an entry tailoring passed over, and adds it as the profile has it", async () => {
+    const user = userEvent.setup();
+    vi.mocked(addFromProfile).mockResolvedValueOnce({ ok: true, data: { unitId: "course:c2" } });
+    render(<ApplicationView {...props} />);
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("In your profile, not on this resume:UX Writing WorkshopAdd");
+    await user.click(within(note).getByRole("button", { name: "Add UX Writing Workshop to this resume" }));
+    expect(addFromProfile).toHaveBeenCalledWith({ id: "app-1", key: "course:c2" });
+    expect(toast).toHaveBeenLastCalledWith("Added as your profile has it. Regenerate it to tailor it to this job.");
+  });
+
+  it("lists a skill added to the profile since, under its section", async () => {
+    const user = userEvent.setup();
+    render(<ApplicationView {...props} profile={withAdded} />);
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent("Skills+ Kubernetes");
+    await user.click(within(note).getByRole("button", { name: "Add Kubernetes to this resume" }));
+    expect(addFromProfile).toHaveBeenCalledWith({ id: "app-1", key: "skill:skill-new" });
+    expect(toast).toHaveBeenLastCalledWith("Added Kubernetes.");
+  });
+
+  it("lists it after what was left out, in the same note", () => {
+    const trimmed = [{ kind: "unit" as const, unit: { id: "experience:e3", label: "Studio Brik role", text: "Built things" }, index: 3 }];
+    render(<ApplicationView {...props} resume={{ units: demoResumeUnits().filter((unit) => unit.id !== "experience:e3"), theme: theme("editorial"), trimmed }} />);
+    expect(screen.getByRole("note")).toHaveTextContent(/^Left out to fit the page limit:Studio Brik rolePut backIn your profile, not on this resume:UX Writing WorkshopAdd$/);
+  });
+
+  it("says why it couldn't be added", async () => {
+    const user = userEvent.setup();
+    vi.mocked(addFromProfile).mockResolvedValueOnce({ ok: false, error: "That's on the resume already." });
+    render(<ApplicationView {...props} />);
+    await user.click(screen.getByRole("button", { name: "Add UX Writing Workshop to this resume" }));
+    expect(toast).toHaveBeenLastCalledWith("That's on the resume already.");
   });
 });
 

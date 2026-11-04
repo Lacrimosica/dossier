@@ -58,6 +58,11 @@ export function isCourseUnit(unitId: string): boolean {
   return unitId.startsWith("course:");
 }
 
+/** What a tailored resume calls its parts for the entries that have them. */
+export const roleUnitLabel = (entry: { company: string; role: string }) => `${entry.company || entry.role} role`;
+export const projectUnitLabel = (entry: { name: string }) => `${entry.name || "Untitled"} project`;
+export const educationUnitLabel = (entry: { degree: string; school: string }) => entry.degree || entry.school;
+
 /** Text for a unit as written in the editor: a role's or project's bullets cleaned up, anything else trimmed. */
 export function cleanUnitText(unitId: string, text: string): string {
   return isBulletUnit(unitId) ? bulletLines(text) : text.trim();

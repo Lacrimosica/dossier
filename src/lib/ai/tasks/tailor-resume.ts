@@ -5,6 +5,7 @@ import { publicationLabel } from "@/lib/citation";
 import { documentLabels, ENGLISH_LABELS, languagesLine, type DocumentLabels } from "@/lib/document-labels";
 import { resumeCourses, resumePublications, sameName, type ProfileData } from "@/lib/profile";
 import type { RoleLocations } from "@/lib/settings";
+import { educationUnitLabel, projectUnitLabel, roleUnitLabel } from "@/lib/unit-text";
 
 import { claimSources, guardUnits } from "../fact-guard";
 import type { AIProvider } from "../provider";
@@ -182,16 +183,16 @@ export function resumeUnits(
     { id: "summary", label: "Summary", text: answer.summary.trim() },
     ...inGroupOrder(profile, answer.groupOrder ?? []).map((entry) => {
       const bullets = (roles.get(entry.id) ?? entry.bullets.split("\n")).map((line) => line.trim()).filter(Boolean);
-      return { id: `experience:${entry.id}`, label: `${entry.company || entry.role} role`, text: bullets.join("\n") };
+      return { id: `experience:${entry.id}`, label: roleUnitLabel(entry), text: bullets.join("\n") };
     }),
     ...profile.projects.map((entry) => {
       const bullets = (projects.get(entry.id) ?? entry.bullets.split("\n")).map((line) => line.trim()).filter(Boolean);
-      return { id: `project:${entry.id}`, label: `${entry.name || "Untitled"} project`, text: bullets.join("\n") };
+      return { id: `project:${entry.id}`, label: projectUnitLabel(entry), text: bullets.join("\n") };
     }),
     { id: "skills", label: "Skills", text: skills.join(" · ") },
     ...profile.education.map((entry) => ({
       id: `education:${entry.id}`,
-      label: entry.degree || entry.school,
+      label: educationUnitLabel(entry),
       text: (notes.get(entry.id) ?? entry.notes).trim(),
     })),
     ...courseUnits(profile, answer.courses),
