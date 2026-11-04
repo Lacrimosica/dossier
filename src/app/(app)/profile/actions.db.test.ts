@@ -42,6 +42,7 @@ import {
   saveProject,
   setProjectSkill,
   saveExperience,
+  setExperienceCompany,
   saveReference,
   removeLanguage,
   removeReference,
@@ -196,7 +197,7 @@ describe("profile actions", () => {
     expect(await prisma().experience.findUniqueOrThrow({ where: { id: entry.id } })).toMatchObject({ company: "Fieldnote", startYear: 2018, endMonth: 2 });
   });
 
-  it("gives every spelling of a company the name chosen, and remembers spellings kept apart", async () => {
+  it("gives every spelling of a company the name chosen, renames a company, and remembers spellings kept apart", async () => {
     await prisma().experience.createMany({
       data: [
         { id: "a", company: "ACME" },
@@ -208,6 +209,12 @@ describe("profile actions", () => {
     await expect(unifyCompanyName({ names: ["ACME", "Acme Inc."], to: "Acme Inc." })).resolves.toEqual({ ok: true, data: ["a", "b", "c"] });
     const roles = await prisma().experience.findMany({ orderBy: { id: "asc" } });
     expect(roles.map((role) => role.company)).toEqual(["Acme Inc.", "Acme Inc.", "Acme Inc.", "Brightwave"]);
+
+    await expect(setExperienceCompany({ id: "b", company: "Acme Group", everywhere: true })).resolves.toEqual({ ok: true, data: ["a", "b", "c"] });
+    await expect(setExperienceCompany({ id: "d", company: "Brightwave GmbH", everywhere: false })).resolves.toEqual({ ok: true, data: ["d"] });
+    expect((await prisma().experience.findMany({ orderBy: { id: "asc" } })).map((role) => role.company)).toEqual(["Acme Group", "Acme Group", "Acme Group", "Brightwave GmbH"]);
+    // A role removed in another tab: nothing to change.
+    await expect(setExperienceCompany({ id: "gone", company: "X", everywhere: true })).resolves.toEqual({ ok: true, data: [] });
 
     await keepCompaniesApart({ fingerprint: "apple inc\napple ltd" });
     await keepCompaniesApart({ fingerprint: "apple inc\napple ltd" });

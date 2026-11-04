@@ -19,6 +19,7 @@ import {
   reorderEntries,
   restoreExperience,
   saveExperience,
+  setExperienceCompany,
   setExperienceSkill,
   sortEntriesByDate,
   unifyCompanyName,
@@ -38,6 +39,7 @@ vi.mock("./actions", () => ({
   restoreExperienceGroup: vi.fn(),
   setExperienceGroup: vi.fn(async () => ({ ok: true, data: null })),
   saveExperience: vi.fn(async () => ({ ok: true, data: null })),
+  setExperienceCompany: vi.fn(async ({ id }: { id: string }) => ({ ok: true, data: [id] })),
   removeExperience: vi.fn(async () => ({ ok: true, data: null })),
   restoreExperience: vi.fn(),
   reorderEntries: vi.fn(async () => ({ ok: true, data: null })),
@@ -349,6 +351,58 @@ describe("roles at one company", () => {
     expect(latest.experience.find((role) => role.id === "e3")?.company).toBe("Northwind Logistics");
     expect(screen.queryByRole("note")).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "2 roles at Northwind Logistics" })).toBeInTheDocument();
+  });
+
+  it("saves a role's company when the field is left, even when it leaves its company's box", async () => {
+    const user = userEvent.setup();
+    render(<Harness experience={[northwind, fieldnote]} />);
+    await user.click(header(/Product Designer.*Fieldnote/));
+    const company = screen.getByLabelText("Company");
+    await user.clear(company);
+    await user.type(company, "Northwind Logistics");
+    expect(setExperienceCompany).not.toHaveBeenCalled();
+    await user.tab();
+    expect(setExperienceCompany).toHaveBeenCalledWith({ id: "e2", company: "Northwind Logistics", everywhere: false });
+    expect(screen.getByRole("group", { name: "2 roles at Northwind Logistics" })).toBeInTheDocument();
+    expect(latest.experience.find((role) => role.id === "e2")?.company).toBe("Northwind Logistics");
+  });
+
+  it("asks before changing a company that other roles have, and changes it on all of them", async () => {
+    const user = userEvent.setup();
+    vi.mocked(setExperienceCompany).mockResolvedValueOnce({ ok: true, data: ["e1", "e3"] });
+    render(<Harness experience={[northwind, fieldnote, junior]} />);
+    await user.click(header(/Product Designer II/));
+    const company = screen.getByLabelText("Company");
+    await user.clear(company);
+    await user.type(company, "Northwind Group{Enter}");
+
+    const dialog = screen.getByRole("alertdialog", { name: "Change the company of all 2 roles?" });
+    expect(dialog).toHaveTextContent("Change it to “Northwind Group” on all of them");
+    expect(setExperienceCompany).not.toHaveBeenCalled();
+    await user.click(within(dialog).getByRole("button", { name: "Change all 2" }));
+
+    expect(setExperienceCompany).toHaveBeenCalledWith({ id: "e3", company: "Northwind Group", everywhere: true });
+    expect(latest.experience.map((role) => role.company)).toEqual(["Northwind Group", "Fieldnote", "Northwind Group"]);
+    expect(screen.getByRole("group", { name: "2 roles at Northwind Group" })).toBeInTheDocument();
+    expect(toast).toHaveBeenCalledWith("Changed the company of 2 roles.");
+  });
+
+  it("changes only the one role, or nothing on Cancel", async () => {
+    const user = userEvent.setup();
+    render(<Harness experience={[northwind, fieldnote, junior]} />);
+    await user.click(header(/Product Designer II/));
+    const company = screen.getByLabelText("Company");
+    await user.clear(company);
+    await user.type(company, "Northwind Group{Enter}");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(setExperienceCompany).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Company")).toHaveValue("northwind logistics");
+
+    await user.clear(screen.getByLabelText("Company"));
+    await user.type(screen.getByLabelText("Company"), "Northwind Group{Enter}");
+    await user.click(screen.getByRole("button", { name: "Only this role" }));
+    expect(setExperienceCompany).toHaveBeenCalledWith({ id: "e3", company: "Northwind Group", everywhere: false });
+    expect(latest.experience.map((role) => role.company)).toEqual(["Northwind Logistics", "Fieldnote", "Northwind Group"]);
   });
 
   it("stops offering when they're different companies", async () => {

@@ -5,6 +5,7 @@ import { useId, useMemo, useState, type ReactNode } from "react";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +26,7 @@ import {
   restoreExperience,
   restoreExperienceGroup,
   saveExperience,
+  setExperienceCompany,
   setExperienceGroup,
   setExperienceSkill,
   sortEntriesByDate,
@@ -43,6 +45,8 @@ function ExperienceForm({
   onChange,
   autoFocus,
   companies,
+  sameCompany,
+  onCompanyChange,
   groups,
   onGroupChange,
 }: {
@@ -51,6 +55,10 @@ function ExperienceForm({
   autoFocus: boolean;
   /** The companies of the other roles, offered while typing so a promotion gets the same name. */
   companies: string[];
+  /** How many other roles have this role's company: changing it asks whether to change theirs too. */
+  sameCompany: number;
+  /** Saves at once, apart from the autosaved fields: on this role, or on every role at its company. */
+  onCompanyChange: (company: string, everywhere: boolean) => void;
   /** The experience groups; the Group field shows only when there are some. */
   groups: GroupItem[];
   /** Saves at once, apart from the autosaved fields: the role moves to that group's list. */
@@ -59,13 +67,30 @@ function ExperienceForm({
   const companyList = useId();
   const track = useTrackSave();
   // Autosave the text and dates only; skill links save on their own when toggled.
-  const { id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak } = entry;
+  const { id, role, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak } = entry;
   const fields = useMemo(
-    () => ({ id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak }),
-    [id, role, company, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak],
+    () => ({ id, role, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak }),
+    [id, role, location, bullets, startYear, startMonth, endYear, endMonth, current, careerBreak],
   );
   const { flush } = useAutosave(fields, (value) => track(saveExperience(value)));
   const set = (change: Partial<ExperienceItem>) => onChange({ ...entry, ...change });
+
+  // The company is saved when the field is left, not as you type: a keystroke
+  // that moved the role into or out of its company's box remounted this form,
+  // and the autosave lost it. A rename from elsewhere ("Use one name") shows here.
+  const [companyDraft, setCompanyDraft] = useState(entry.company);
+  const [shownCompany, setShownCompany] = useState(entry.company);
+  if (entry.company !== shownCompany) {
+    setShownCompany(entry.company);
+    setCompanyDraft(entry.company);
+  }
+  const [asking, setAsking] = useState(false);
+  const commitCompany = () => {
+    if (companyDraft === entry.company) return;
+    if (sameCompany > 0) setAsking(true);
+    else onCompanyChange(companyDraft, false);
+  };
+  const roleCount = sameCompany + 1;
 
   return (
     <div className="grid grid-cols-2 gap-[18px]" onBlur={flush}>
@@ -92,8 +117,30 @@ function ExperienceForm({
             placeholder="Acme Inc."
             hint={companies.length > 0 ? "Roles with the same company name show together." : undefined}
             list={companies.length > 0 ? companyList : undefined}
-            value={entry.company}
-            onChange={(event) => set({ company: event.target.value })}
+            value={companyDraft}
+            onChange={(event) => setCompanyDraft(event.target.value)}
+            onBlur={commitCompany}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              // Or the same Enter would press the dialog's Cancel, focused as it opens.
+              event.preventDefault();
+              commitCompany();
+            }}
+          />
+          <ConfirmDialog
+            open={asking}
+            onOpenChange={setAsking}
+            title={companyDraft.trim() ? `Change the company of all ${roleCount} roles?` : `Remove the company from all ${roleCount} roles?`}
+            description={
+              companyDraft.trim()
+                ? `“${entry.company.trim()}” is the company of ${roleCount} roles. Change it to “${companyDraft.trim()}” on all of them, and they’ll still show together, on your resume too.`
+                : `“${entry.company.trim()}” is the company of ${roleCount} roles. Leave it empty on all of them, or only on this one.`
+            }
+            tone="primary"
+            confirmLabel={`Change all ${roleCount}`}
+            onConfirm={() => onCompanyChange(companyDraft, true)}
+            alternative={{ label: "Only this role", onSelect: () => onCompanyChange(companyDraft, false) }}
+            onCancel={() => setCompanyDraft(entry.company)}
           />
           {companies.length > 0 && (
             <datalist id={companyList}>
@@ -182,6 +229,12 @@ const otherCompanies = (experience: ExperienceItem[], entry: ExperienceItem) => 
   return [...names.values()];
 };
 
+/** How many other roles have this role's company, case and spacing aside. */
+const sameCompanyCount = (experience: ExperienceItem[], entry: ExperienceItem) => {
+  const own = companyKey(entry.company);
+  return own ? experience.filter((role) => role.id !== entry.id && companyKey(role.company) === own).length : 0;
+};
+
 /**
  * Work experience (PRO-5): one card open at a time, autosaved, with Undo on
  * Remove. Roles at the same company show and move together, and spellings
@@ -239,6 +292,25 @@ export function ExperienceSection({
       experience: current.experience.map((role) => (renamed.has(role.id) ? { ...role, company: to } : role)),
     }));
     toast(`Renamed to “${to}”. Those roles now show together.`);
+  }
+
+  /** Saves a role's company, and with `everywhere` the company of every role at the same one. */
+  async function changeCompany(entry: ExperienceItem, company: string, everywhere: boolean) {
+    const key = companyKey(entry.company);
+    const renamed = (role: ExperienceItem) => role.id === entry.id || (everywhere && key !== null && companyKey(role.company) === key);
+    const before = new Map(profile.experience.filter(renamed).map((role) => [role.id, role.company]));
+    const setCompanies = (name: (id: string) => string) =>
+      update((current) => ({
+        ...current,
+        experience: current.experience.map((role) => (before.has(role.id) ? { ...role, company: name(role.id) } : role)),
+      }));
+    setCompanies(() => company);
+    const result = await track(setExperienceCompany({ id: entry.id, company, everywhere }));
+    if (!result.ok) {
+      setCompanies((id) => before.get(id)!);
+      return toast(result.error);
+    }
+    if (everywhere) toast(`Changed the company of ${result.data.length} roles.`);
   }
 
   async function keepApart(fingerprint: string) {
@@ -348,6 +420,8 @@ export function ExperienceSection({
             onChange={onChange}
             autoFocus={autoFocus}
             companies={otherCompanies(profile.experience, entry)}
+            sameCompany={sameCompanyCount(profile.experience, entry)}
+            onCompanyChange={(company, everywhere) => void changeCompany(entry, company, everywhere)}
             groups={groups}
             onGroupChange={(groupId) => void moveToGroup(entry, groupId)}
           />

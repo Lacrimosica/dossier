@@ -219,8 +219,12 @@ export const createExperience = action(z.object({ groupId: id.nullish() }), asyn
   return experienceItem(await prisma.experience.create({ data: { sort, groupId: await experienceGroupId(groupId) } }));
 });
 
-/** Autosaves a role. Saving one that was just removed does nothing. */
-export const saveExperience = action(experienceFields, async ({ id, ...data }) => {
+/**
+ * Autosaves a role. Saving one that was just removed does nothing. The company
+ * isn't autosaved: it's set with setExperienceCompany, so a debounced save
+ * can't put back a name that was just changed on every role at the company.
+ */
+export const saveExperience = action(experienceFields.omit({ company: true }), async ({ id, ...data }) => {
   await prisma.experience.updateMany({ where: { id }, data });
   return null;
 });
@@ -372,6 +376,28 @@ export const unifyCompanyName = action(
     const roles = await prisma.experience.findMany({ select: { id: true, company: true } });
     const ids = roles.filter((role) => keys.has(companyKey(role.company))).map((role) => role.id);
     await prisma.experience.updateMany({ where: { id: { in: ids } }, data: { company: to } });
+    return ids;
+  },
+);
+
+/**
+ * Sets a role's company when its Company field is left. With `everywhere`, it
+ * goes on every role at the same company (companyKey), so renaming a company
+ * keeps its roles together. Answers with the roles renamed.
+ */
+export const setExperienceCompany = action(
+  z.object({ id, company: text(200), everywhere: z.boolean() }),
+  async ({ id, company, everywhere }) => {
+    const role = await prisma.experience.findUnique({ where: { id }, select: { company: true } });
+    if (!role) return [];
+    const key = companyKey(role.company);
+    const ids =
+      everywhere && key
+        ? (await prisma.experience.findMany({ select: { id: true, company: true } }))
+            .filter((other) => companyKey(other.company) === key)
+            .map((other) => other.id)
+        : [id];
+    await prisma.experience.updateMany({ where: { id: { in: ids } }, data: { company } });
     return ids;
   },
 );

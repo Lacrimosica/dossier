@@ -18,6 +18,9 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   onConfirm,
+  onCancel,
+  alternative,
+  tone = "danger",
   returnFocusTo,
 }: {
   open: boolean;
@@ -27,6 +30,12 @@ export function ConfirmDialog({
   /** Says what happens, e.g. "Delete application". */
   confirmLabel: string;
   onConfirm: () => void;
+  /** Cancel or Escape, apart from the dialog closing after a choice. */
+  onCancel?: () => void;
+  /** A second choice beside the confirm button, e.g. "Only this role". */
+  alternative?: { label: string; onSelect: () => void };
+  /** "primary" for a change that isn't destructive, like renaming. */
+  tone?: "danger" | "primary";
   returnFocusTo?: RefObject<HTMLElement | null>;
 }) {
   return (
@@ -34,6 +43,7 @@ export function ConfirmDialog({
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
         <AlertDialog.Content
+          onEscapeKeyDown={onCancel}
           onCloseAutoFocus={(event) => {
             if (!returnFocusTo?.current?.isConnected) return;
             event.preventDefault();
@@ -43,8 +53,15 @@ export function ConfirmDialog({
           <AlertDialog.Title className="font-serif text-[22px] leading-tight">{title}</AlertDialog.Title>
           <AlertDialog.Description className="text-sm text-muted">{description}</AlertDialog.Description>
           <div className="mt-2 flex justify-end gap-2">
-            <AlertDialog.Cancel className={buttonClassName("secondary", "sm")}>Cancel</AlertDialog.Cancel>
-            <AlertDialog.Action className={buttonClassName("danger", "sm")} onClick={onConfirm}>
+            <AlertDialog.Cancel className={buttonClassName("secondary", "sm")} onClick={onCancel}>
+              Cancel
+            </AlertDialog.Cancel>
+            {alternative && (
+              <AlertDialog.Action className={buttonClassName("secondary", "sm")} onClick={alternative.onSelect}>
+                {alternative.label}
+              </AlertDialog.Action>
+            )}
+            <AlertDialog.Action className={buttonClassName(tone, "sm")} onClick={onConfirm}>
               {confirmLabel}
             </AlertDialog.Action>
           </div>
