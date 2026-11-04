@@ -563,6 +563,114 @@
   background: color-mix(in srgb, var(--accent) 10%, #fff);
 }
 
+/*
+ * Block markers: a line down the side of a block, or a pale tint behind it,
+ * to show where it starts and ends when headings alone don't. They go on
+ * companies (.marked, set by the resume) or whole sections (.markSections).
+ *
+ * The line is drawn from backgrounds, not a border, because backgrounds are
+ * sliced at a page break: the small tick at each end only prints where the
+ * block really starts and ends, and a line that runs off the page without one
+ * reads as continuing. A tint is cloned instead, so each page's piece keeps
+ * its padding and looks finished.
+ *
+ * --mark-pad is how far the content steps in, --mark-at where the line sits.
+ * Layouts with a column of their own at the start keep their width and put
+ * the line in the gap beside that column, so the dates or titles stay outside
+ * the line. Everything stays inside the page margins, so turning a marker on
+ * can make a long resume wrap a little sooner.
+ */
+.markLine,
+.markTint {
+  --mark-pad: 10;
+  --mark-at: 0;
+  --mark-side: left;
+}
+
+:is(.markLine, .markTint)[dir="rtl"] {
+  --mark-side: right;
+}
+
+.markLine {
+  --mark-color: color-mix(in srgb, var(--accent) 45%, #fff);
+  --mark-width: calc(var(--u) * 1.2);
+  --mark-tick: calc(var(--u) * 5);
+}
+
+/* Set on the block itself, so a company inside a side-headings section doesn't inherit that section's. */
+.marked,
+.markAligned {
+  --mark-pad: 10;
+}
+
+.markLine .markAligned {
+  padding-inline-start: calc(var(--u) * var(--mark-pad));
+}
+
+.markLine .marked,
+.markLine.markSections .section {
+  padding-inline-start: calc(var(--u) * var(--mark-pad));
+  background:
+    linear-gradient(var(--mark-color), var(--mark-color)) var(--mark-side) calc(var(--u) * var(--mark-at)) top 0 / var(--mark-width) 100% no-repeat,
+    linear-gradient(var(--mark-color), var(--mark-color)) var(--mark-side) calc(var(--u) * var(--mark-at)) top 0 / var(--mark-tick) var(--mark-width) no-repeat,
+    linear-gradient(var(--mark-color), var(--mark-color)) var(--mark-side) calc(var(--u) * var(--mark-at)) bottom 0 / var(--mark-tick) var(--mark-width) no-repeat;
+}
+
+.markTint .markAligned {
+  padding-inline: calc(var(--u) * var(--mark-pad)) calc(var(--u) * 10);
+}
+
+.markTint .marked,
+.markTint.markSections .section {
+  padding-block: calc(var(--u) * 8);
+  padding-inline: calc(var(--u) * var(--mark-pad)) calc(var(--u) * 10);
+  background: color-mix(in srgb, var(--accent) 7%, #fff);
+  box-decoration-break: clone;
+}
+
+/*
+ * A block's padding is room to break in, which would leave an empty piece of
+ * tint at the foot of a page with its title on the next. So the first line
+ * stays at the block's start; a promoted role's own head can still start a page.
+ */
+.markTint.markSections .sectionTitle,
+.markTint .marked :not(.companyRole) > .entryHead:first-child,
+.markTint .marked > .entryHead:first-child {
+  break-before: avoid;
+}
+
+/* A tinted sidebar is already one block; a tint on each section inside it would be a tint on a tint. */
+.markTint.markSections .sidebarPanel .section {
+  padding: 0;
+  background: none;
+}
+
+/* Timeline: the line runs between the dates and the text; a tint also takes in the dates. */
+.timeline.markLine :is(.marked, .markAligned) {
+  --mark-pad: var(--date-width);
+  --mark-at: calc(var(--date-width) - 6);
+}
+
+.timeline.markTint :is(.marked, .markAligned) {
+  --mark-pad: calc(var(--date-width) + 10);
+}
+
+/* Side headings: the same, between each section's title and its content. */
+.sideHeadings.markLine.markSections .section {
+  --mark-pad: var(--side-heading-width);
+  --mark-at: calc(var(--side-heading-width) - 8);
+}
+
+.sideHeadings.markTint.markSections .section {
+  --mark-pad: calc(var(--side-heading-width) + 10);
+}
+
+/* An accent bar heading becomes the top of its section's line, instead of a second line beside it. */
+.headingBar.markLine.markSections:not(.sideHeadings) .sectionTitle {
+  margin-inline-start: calc(var(--u) * var(--mark-pad) * -1);
+  padding-inline-start: calc(var(--u) * (var(--mark-pad) - 3));
+}
+
 /* ─── Paged preview ────────────────────────────────────────────────────── */
 
 /*

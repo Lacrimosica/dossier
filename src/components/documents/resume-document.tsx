@@ -1,7 +1,7 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import { CitationText } from "@/components/citation";
-import { PhotoPosition, PhotoShape, type PaperSize, type ThemeLayout } from "@/generated/prisma/enums";
+import { MarkerScope, PhotoPosition, PhotoShape, type PaperSize, type ThemeLayout } from "@/generated/prisma/enums";
 import { HEADLINE_UNIT } from "@/lib/application-data";
 import { cn } from "@/lib/cn";
 import { documentLabels } from "@/lib/document-labels";
@@ -73,6 +73,12 @@ export function ResumeDocument({
   const { lang, dir } = documentLanguage(language, sampleText(content));
   const { shape, position } = resolved.photo;
   const heads = { timeline: resolved.timeline, stacked: resolved.stacked };
+  // Which companies carry the marker. With only the promoted ones marked, the
+  // others still step in as far, so all of Experience keeps one left edge.
+  // Whole sections are marked from the page's class, as the section doesn't know its theme.
+  const companyMarks = resolved.marker && resolved.markerScope !== MarkerScope.SECTIONS;
+  const severalRolesMark = companyMarks ? styles.marked : undefined;
+  const oneRoleMark = companyMarks ? (resolved.markerScope === MarkerScope.COMPANIES ? styles.marked : styles.markAligned) : undefined;
   const photo = (size: "header" | "sidebar", className?: string) =>
     content.photo && <ResumePhoto key="photo" src={content.photo} name={content.name} shape={shape} size={size} className={className} />;
 
@@ -141,14 +147,14 @@ export function ResumeDocument({
             });
           if (company.roles.length === 1) {
             const [only] = company.roles;
-            return <Fragment key={only.id}>{role(only, styles.entry, company.company, company.location)}</Fragment>;
+            return <Fragment key={only.id}>{role(only, cn(styles.entry, oneRoleMark), company.company, company.location)}</Fragment>;
           }
           // A promotion: the company once, with its whole span, then each role (companyGroups).
           return (
             <Fragment key={company.roles[0].id}>
               {renderGroup({
                 ids: company.roles.map((entry) => `experience:${entry.id}`),
-                className: styles.entry,
+                className: cn(styles.entry, severalRolesMark),
                 children: (
                   <>
                     {/* A stacked head would give the place a line of its own, between the company and its first role, so it ends that role's line, where a single role's place goes. */}

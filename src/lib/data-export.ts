@@ -17,6 +17,8 @@ import {
   HeaderStyle,
   HeadingStyle,
   LanguageLevel,
+  MarkerScope,
+  MarkerStyle,
   PhotoPosition,
   PhotoShape,
   PostingSource,
@@ -190,6 +192,9 @@ const theme = z.object({
   photoPosition: z.enum(PhotoPosition).optional(),
   /** Absent in files before courses could go in two columns. */
   courseColumns: z.enum(CourseColumns).optional(),
+  /** Absent in files before themes could mark blocks with a line or tint. */
+  markerStyle: z.enum(MarkerStyle).optional(),
+  markerScope: z.enum(MarkerScope).optional(),
   createdAt: date,
   updatedAt: date,
 });

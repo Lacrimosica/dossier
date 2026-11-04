@@ -20,7 +20,7 @@ test("duplicates, exports, deletes and imports a theme", async ({ page }) => {
   const exported = JSON.parse(await readFile((await download.path())!, "utf8"));
   expect(exported).toMatchObject({
     format: "dossier-theme",
-    version: 3,
+    version: 5,
     theme: {
       name: `${original} copy`,
       headerStyle: expect.any(String),
@@ -28,6 +28,8 @@ test("duplicates, exports, deletes and imports a theme", async ({ page }) => {
       dateStyle: expect.any(String),
       photoShape: expect.any(String),
       photoPosition: expect.any(String),
+      markerStyle: expect.any(String),
+      markerScope: expect.any(String),
     },
   });
 

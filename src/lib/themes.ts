@@ -4,6 +4,8 @@ import {
   Density,
   HeaderStyle,
   HeadingStyle,
+  MarkerScope,
+  MarkerStyle,
   PaperSize,
   PhotoPosition,
   PhotoShape,
@@ -40,6 +42,9 @@ export type ThemeData = {
   photoPosition: PhotoPosition;
   /** Courses & certificates in one column, or two side by side. */
   courseColumns: CourseColumns;
+  /** How blocks of content show where they start and end, and which blocks. */
+  markerStyle: MarkerStyle;
+  markerScope: MarkerScope;
 };
 
 /** What a theme that doesn't say otherwise has: the look of the first six built-ins. */
@@ -50,6 +55,8 @@ export const THEME_STYLE_DEFAULTS = {
   photoShape: PhotoShape.CIRCLE,
   photoPosition: PhotoPosition.HEADER_END,
   courseColumns: CourseColumns.ONE,
+  markerStyle: MarkerStyle.NONE,
+  markerScope: MarkerScope.SECTIONS,
 } satisfies Partial<ThemeData>;
 type StyleField = keyof typeof THEME_STYLE_DEFAULTS;
 
@@ -233,6 +240,18 @@ export const COURSE_COLUMNS: Record<CourseColumns, { label: string }> = {
   [CourseColumns.TWO]: { label: "Two columns" },
 };
 
+export const MARKER_STYLES: Record<MarkerStyle, { label: string }> = {
+  [MarkerStyle.NONE]: { label: "None" },
+  [MarkerStyle.LINE]: { label: "Line" },
+  [MarkerStyle.TINT]: { label: "Tint" },
+};
+
+export const MARKER_SCOPES: Record<MarkerScope, { label: string }> = {
+  [MarkerScope.MULTI_ROLE]: { label: "Companies with several roles" },
+  [MarkerScope.COMPANIES]: { label: "All companies" },
+  [MarkerScope.SECTIONS]: { label: "All sections" },
+};
+
 /**
  * Photo shapes (#224), with their size in page units in the header and in the
  * sidebar. The photo is cropped 3:4; the square shapes show its middle.
@@ -289,6 +308,9 @@ export function resolveTheme(theme: ThemeData, layout: ThemeLayout = theme.layou
     stacked: theme.dateStyle === DateStyle.STACKED,
     /** Courses side by side; each then has its dates on its own line, whatever the date style. */
     courseColumns: theme.courseColumns === CourseColumns.TWO,
+    /** The line or tint on a block of content; null without one. */
+    marker: theme.markerStyle === MarkerStyle.NONE ? null : theme.markerStyle,
+    markerScope: theme.markerScope,
     photo: {
       shape: theme.photoShape,
       // Only a sidebar layout has a sidebar to put it in.
