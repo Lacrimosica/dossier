@@ -527,8 +527,8 @@
   align-items: baseline;
 }
 
-/* A promoted role's line sits right under its company's. */
-.stacked .companyRole {
+/* The first promoted role's line sits right under its company's; the later ones keep .companyRole's small gap, to tell the roles apart. */
+.stacked .entryHead + .companyRole {
   margin-top: calc(var(--u) * 2);
 }
 

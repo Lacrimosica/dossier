@@ -105,6 +105,21 @@ describe("ResumeDocument", () => {
     expect(screen.getByText(/^Lead Product Designer/)).toHaveTextContent("Lead Product Designer | Apr 2023 – Present");
   });
 
+  it("ends a promoted company's first role line with its place in a stacked head, leaving no line between them", () => {
+    const [northwind, ...rest] = profile.experience;
+    const promoted = {
+      ...profile,
+      experience: [{ ...northwind, id: "lead", role: "Lead Product Designer", startYear: 2023, startMonth: 4 }, { ...northwind, current: false, endYear: 2023, endMonth: 3 }, ...rest],
+    };
+    render(<ResumeDocument theme={theme("brief")} profile={promoted} paper="A4" today={today} showLocations />);
+    const company = screen.getByText(northwind.company).parentElement!;
+    expect([...company.children].map((cell) => cell.textContent)).toEqual([northwind.company, "Mar 2021 – Present"]);
+    const first = screen.getByText(/^Lead Product Designer/).parentElement!;
+    expect([...first.children].map((cell) => cell.textContent)).toEqual(["Lead Product Designer | Apr 2023 – Present", northwind.location]);
+    const second = screen.getByText(new RegExp(`^${northwind.role} \\|`)).parentElement!;
+    expect(second.children).toHaveLength(1);
+  });
+
   describe("a role without a title or place (.scratch/optional-role-fields)", () => {
     const [northwind, ...rest] = profile.experience;
     const withRole = (change: Partial<typeof northwind>) => ({ ...profile, experience: [{ ...northwind, ...change }, ...rest] });

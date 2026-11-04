@@ -151,9 +151,10 @@ export function ResumeDocument({
                 className: styles.entry,
                 children: (
                   <>
-                    <EntryHead title={company.company} place={company.location} dates={company.dates} {...heads} />
-                    {company.roles.map((entry) => (
-                      <Fragment key={entry.id}>{role(entry, styles.companyRole, "", entry.location, true)}</Fragment>
+                    {/* A stacked head would give the place a line of its own, between the company and its first role, so it ends that role's line, where a single role's place goes. */}
+                    <EntryHead title={company.company} place={heads.stacked ? "" : company.location} dates={company.dates} {...heads} />
+                    {company.roles.map((entry, index) => (
+                      <Fragment key={entry.id}>{role(entry, styles.companyRole, "", entry.location || (heads.stacked && index === 0 ? company.location : ""), true)}</Fragment>
                     ))}
                   </>
                 ),
