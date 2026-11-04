@@ -82,6 +82,38 @@ describe("ResumeDocument", () => {
     expect(screen.getByText("Accessibility for Designers").closest("[data-unit]")).toHaveTextContent(/^Accessibility for Designers.*Mar 2023 – May 2023/);
   });
 
+  it("marks what the theme says: companies with several roles, all companies or whole sections", () => {
+    const [first, second] = profile.experience;
+    const promoted = { ...profile, experience: [{ ...first, id: "lead", company: second.company }, ...profile.experience.slice(1)] };
+    const page = () => screen.getByRole("article", { name: "Resume" });
+    const blocks = (mark: string) => page().querySelectorAll(`[class*=${mark}]`).length;
+    const draw = (markerStyle: "NONE" | "LINE" | "TINT", markerScope: "MULTI_ROLE" | "COMPANIES" | "SECTIONS") =>
+      render(<ResumeDocument theme={{ ...theme("editorial"), markerStyle, markerScope }} profile={promoted} paper="A4" today={today} />);
+
+    let view = draw("NONE", "COMPANIES");
+    expect(page().className).not.toMatch(/mark/);
+    expect(blocks("marked")).toBe(0);
+    view.unmount();
+
+    view = draw("LINE", "MULTI_ROLE");
+    expect(page().className).toMatch(/markLine/);
+    expect(blocks("marked")).toBe(1);
+    // The other companies line up with the marked one, without a line.
+    expect(blocks("markAligned")).toBeGreaterThan(0);
+    view.unmount();
+
+    view = draw("TINT", "COMPANIES");
+    expect(page().className).toMatch(/markTint/);
+    expect(blocks("marked")).toBeGreaterThan(1);
+    expect(blocks("markAligned")).toBe(0);
+    view.unmount();
+
+    view = draw("LINE", "SECTIONS");
+    expect(page().className).toMatch(/markSections/);
+    expect(blocks("marked")).toBe(0);
+    view.unmount();
+  });
+
   it("leads a stacked head with the company or school and its dates, the title and place in italics under them", () => {
     render(<ResumeDocument theme={theme("brief")} profile={profile} paper="A4" today={today} showLocations />);
     const [northwind] = profile.experience;

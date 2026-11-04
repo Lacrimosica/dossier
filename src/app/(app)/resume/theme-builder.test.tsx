@@ -139,6 +139,16 @@ describe("ThemeBuilder", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ density: "AIRY" }));
     await userEvent.click(within(group("Courses")).getByRole("radio", { name: "Two columns" }));
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ courseColumns: "TWO" }));
+    await userEvent.click(within(group("Block markers")).getByRole("radio", { name: "Line" }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ markerStyle: "LINE" }));
+  });
+
+  it("only asks what to mark once there's a marker", () => {
+    const { rerender } = render(<ThemeBuilder draft={{ ...draftFrom(BUILT_IN_THEMES[0]) }} onChange={vi.fn()} onSave={vi.fn()} onCancel={vi.fn()} saving={false} />);
+    expect(screen.queryByRole("radiogroup", { name: "Mark" })).not.toBeInTheDocument();
+    rerender(<ThemeBuilder draft={{ ...draftFrom(BUILT_IN_THEMES[0]), markerStyle: "TINT" }} onChange={vi.fn()} onSave={vi.fn()} onCancel={vi.fn()} saving={false} />);
+    expect(within(screen.getByRole("radiogroup", { name: "Mark" })).getAllByRole("radio").map((radio) => radio.textContent)).toEqual(["Companies with several roles", "All companies", "All sections"]);
+    expect(within(screen.getByRole("radiogroup", { name: "Mark" })).getByRole("radio", { name: "All sections" })).toBeChecked();
   });
 
   it("left-aligns sidebar layouts", () => {

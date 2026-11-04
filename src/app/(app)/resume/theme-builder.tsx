@@ -5,7 +5,7 @@ import { useId, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PhotoPosition, ThemeFont } from "@/generated/prisma/enums";
+import { MarkerStyle, PhotoPosition, ThemeFont } from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
 import {
   ACCENTS,
@@ -16,6 +16,8 @@ import {
   HEADER_STYLES,
   HEADING_STYLES,
   LAYOUTS,
+  MARKER_SCOPES,
+  MARKER_STYLES,
   PHOTO_POSITIONS,
   PHOTO_SHAPES,
   SIDEBAR_STYLES,
@@ -139,6 +141,16 @@ export function ThemeBuilder({ draft, onChange, onSave, onCancel, saving }: Them
         onChange={set("courseColumns")}
         hint="Courses & certificates, one under another or side by side."
       />
+      <Choices
+        label="Block markers"
+        value={draft.markerStyle}
+        options={options(MARKER_STYLES)}
+        onChange={set("markerStyle")}
+        hint="Shows where a block of content starts and ends, across pages too."
+      />
+      {draft.markerStyle !== MarkerStyle.NONE && (
+        <Choices label="Mark" value={draft.markerScope} options={options(MARKER_SCOPES)} onChange={set("markerScope")} />
+      )}
       <Choices label="Spacing" value={draft.density} options={options(DENSITIES)} onChange={set("density")} />
       <div className="flex gap-2 pt-1.5">
         <Button type="submit" className="flex-1" disabled={saving}>

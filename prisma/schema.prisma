@@ -320,6 +320,22 @@ enum CourseColumns {
   TWO
 }
 
+/// How a resume shows where a block of content starts and ends: not at all,
+/// with a thin line down its side, or on a pale tint of the accent.
+enum MarkerStyle {
+  NONE
+  LINE
+  TINT
+}
+
+/// The blocks a theme's marker goes on: companies with several roles, every
+/// company, or each whole section from its title down.
+enum MarkerScope {
+  MULTI_ROLE
+  COMPANIES
+  SECTIONS
+}
+
 /// The profile photo's shape on a resume (#224). The square shapes show the middle of its 3:4 crop.
 enum PhotoShape {
   CIRCLE
@@ -364,6 +380,8 @@ model Theme {
   photoShape    PhotoShape    @default(CIRCLE)
   photoPosition PhotoPosition @default(HEADER_END)
   courseColumns CourseColumns @default(ONE)
+  markerStyle   MarkerStyle   @default(NONE)
+  markerScope   MarkerScope   @default(SECTIONS)
   documents     Document[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt

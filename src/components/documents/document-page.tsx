@@ -1,6 +1,6 @@
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
-import type { PaperSize } from "@/generated/prisma/enums";
+import { MarkerScope, MarkerStyle, type PaperSize } from "@/generated/prisma/enums";
 import { cn } from "@/lib/cn";
 import { hasRightToLeft, type TextDirection } from "@/lib/document-language";
 import { CONTACT_SEPARATOR } from "@/lib/resume-content";
@@ -52,6 +52,9 @@ function themeClasses(theme: ResolvedTheme) {
     theme.stacked && styles.stacked,
     theme.heading.marker === "bar" && styles.headingBar,
     theme.heading.marker === "band" && styles.headingBand,
+    theme.marker === MarkerStyle.LINE && styles.markLine,
+    theme.marker === MarkerStyle.TINT && styles.markTint,
+    theme.marker && theme.markerScope === MarkerScope.SECTIONS && styles.markSections,
   );
 }
 
