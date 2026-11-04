@@ -47,7 +47,7 @@ docker/bin/yarn prisma migrate dev --name <name> && docker compose restart app  
 - Pages/layouts call `verifySession()`; `src/proxy.ts` is only an optimistic check.
 - User-facing copy is plain, friendly, full sentences (see existing toasts/errors and `src/lib/messages.ts`).
 - Comments explain *why*, in prose, often citing an issue (`#221`) or PRD id (`E6-5`, `SET-6`). Match that style and density.
-- Privacy is a feature: jobs hold personal data only until retention sweeps; never log personal data; AI never sends anything for the user; strict mode means no invented facts.
+- Privacy is a feature: jobs hold personal data only until retention sweeps; never log personal data; AI never sends anything for the user; strict mode means no invented facts. New personal data on screen needs a `data-private` tag (see Privacy mode in DEVELOPMENT.md).
 - Tests sit next to code: `*.test.ts` (node), `*.test.tsx` (jsdom + Testing Library), `*.db.test.ts` (real Postgres `dossier_test`, `resetDatabase()` from `src/test/db.ts`). Coverage thresholds in `vitest.config.mts` ratchet — don't lower them.
 - Accessibility is enforced: `e2e/accessibility.spec.ts` runs axe (WCAG 2.2 AA) on every screen.
 - When behaviour changes, update DEVELOPMENT.md / README.md as well. Data export/import (`data-export.ts`, `data-import.ts`) must include any new model.

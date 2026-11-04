@@ -203,7 +203,7 @@ export function RefinePanel({
 function Bubble({ message }: { message: ChatEntry }) {
   if (message.role === "USER") {
     return (
-      <div className="max-w-[92%] rounded-card border border-primary bg-primary px-3.5 py-[11px] text-[13.5px] leading-[1.55] text-pretty whitespace-pre-wrap text-on-primary">
+      <div data-private className="max-w-[92%] rounded-card border border-primary bg-primary px-3.5 py-[11px] text-[13.5px] leading-[1.55] text-pretty whitespace-pre-wrap text-on-primary">
         {message.targetUnit && <p className="mb-1 text-xs opacity-70">About: {message.targetUnit}</p>}
         {message.text}
       </div>
@@ -212,7 +212,7 @@ function Bubble({ message }: { message: ChatEntry }) {
   const blocks = messageBlocks(message.text);
   const foot = message.opening && blocks.length > 1 && blocks.at(-1)?.kind === "text" ? blocks.pop() : null;
   return (
-    <div className="flex max-w-[92%] flex-col gap-2 rounded-card border border-line-card bg-card px-3.5 py-[11px] text-[13.5px] leading-[1.55] text-pretty">
+    <div data-private className="flex max-w-[92%] flex-col gap-2 rounded-card border border-line-card bg-card px-3.5 py-[11px] text-[13.5px] leading-[1.55] text-pretty">
       {blocks.map((block, index) =>
         block.kind === "list" ? (
           <ul key={index} className="flex list-disc flex-col gap-1 pl-[1.1em]">

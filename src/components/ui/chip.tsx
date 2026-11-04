@@ -60,7 +60,7 @@ export function RemovableChip({
         className,
       )}
     >
-      {children}
+      <span data-private>{children}</span>
       {meta && <span className="text-xs text-muted">{meta}</span>}
       <button
         type="button"

@@ -215,6 +215,49 @@
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
+
+  [data-lens-glass] {
+    display: none;
+  }
+
+  /* Privacy mode, for working with someone beside you: personal details blur
+     where they stand, so nothing moves and screen readers still read them.
+     Screen only, so a printed page or a PDF is never blurred. Scaled to the
+     text, since a blur that hides body text leaves a big heading readable. */
+  @media screen {
+    :root[data-privacy="on"] [data-private],
+    :root[data-privacy="on"] :is(input:is(:not([type]), [type="text"], [type="email"], [type="tel"], [type="url"], [type="search"]), textarea):not(:placeholder-shown, :hover, :focus) {
+      filter: blur(max(5px, 0.45em));
+    }
+
+    /* A peek at one line while pointing at it or tabbing to it, or the lists
+       can't be told apart. A photo or posting (data-private="solid") doesn't
+       peek: a resting mouse would lay all of it open. */
+    :root[data-privacy="on"] [data-private]:not([data-private="solid"]):is(:hover, :focus-within, :focus-visible),
+    :root[data-privacy="on"] :is(a, button, [data-private-group]):is(:hover, :focus-visible) [data-private]:not([data-private="solid"]),
+    :root[data-privacy="on"] [data-private-group]:has(:focus-visible) [data-private]:not([data-private="solid"]) {
+      filter: none;
+    }
+
+    /* A document gets a lens instead: it's read a little at a time, under the
+       mouse, so the rest stays hidden. Without a mouse over it the circle sits
+       off the page, so all of it is blurred. */
+    :root[data-privacy="on"] [data-lens-glass] {
+      display: block;
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      --lens-mask: radial-gradient(circle 110px at var(--lens-x, -500px) var(--lens-y, -500px), transparent 90%, #000 100%);
+      -webkit-mask-image: var(--lens-mask);
+      mask-image: var(--lens-mask);
+    }
+
+    /* A browser that can't blur behind an element would show the document whole. */
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      :root[data-privacy="on"] [data-private-lens] {
+        filter: blur(6px);
+      }
+    }
+  }
 }
 
 /* The height of the screen's panel, page bar included (the window less the

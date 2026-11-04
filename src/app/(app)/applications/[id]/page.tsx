@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { cache } from "react";
 
 import { activityTimeline } from "@/lib/activity";
@@ -18,6 +19,7 @@ import { loadConversation } from "@/lib/google/inbox-data";
 import { refineSuggestions } from "@/lib/refine-suggestions";
 import { loadThemes } from "@/lib/theme-data";
 import { userTimeZone } from "@/lib/time-zone";
+import { parsePrivacyMode, PRIVACY_COOKIE } from "@/lib/ui-preferences";
 
 import { ApplicationView } from "./application-view";
 import { metaLine } from "./meta";
@@ -33,6 +35,8 @@ const pullCalendar = cache((id: string) => pullInterviewEvents({ applicationId: 
 export async function generateMetadata({ params }: PageProps<"/applications/[id]">): Promise<Metadata> {
   const { id } = await params;
   await pullCalendar(id);
+  // The browser tab is as easy to read over a shoulder as the page.
+  if (parsePrivacyMode((await cookies()).get(PRIVACY_COOKIE)?.value)) return { title: "Application" };
   const application = await loadApplication(id);
   return { title: application.title.trim() || "Untitled application" };
 }

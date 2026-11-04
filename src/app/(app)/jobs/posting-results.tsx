@@ -325,7 +325,7 @@ function PostingList({
               )}
             >
               <span className="flex items-start justify-between gap-3">
-                <span className="text-field font-medium text-pretty">{title}</span>
+                <span data-private className="text-field font-medium text-pretty">{title}</span>
                 <span className="flex shrink-0 items-center gap-1.5">
                   <StateBadges state={posting.state} />
                   {posting.state.score ? (
@@ -337,7 +337,7 @@ function PostingList({
                   )}
                 </span>
               </span>
-              <span className="text-meta text-muted">{[posting.company, posting.place, posting.remote ? "Remote" : ""].filter(Boolean).join(" · ")}</span>
+              <span data-private className="text-meta text-muted">{[posting.company, posting.place, posting.remote ? "Remote" : ""].filter(Boolean).join(" · ")}</span>
               <span className="flex items-center justify-between gap-3">
                 <span className="min-w-0 truncate text-xs text-muted">
                   {[postedAgo(posting.postedAt, now), posting.via && `via ${posting.via}`, posting.salary].filter(Boolean).join(" · ")}
@@ -479,9 +479,9 @@ function PostingDetail({
     >
       <div className="flex flex-col gap-1.5">
         <h2 id={headingId} className="font-serif text-section text-pretty">
-          {posting.title || "Untitled posting"}
+          <span data-private>{posting.title || "Untitled posting"}</span>
         </h2>
-        <p className="text-sm text-muted">{[posting.company, posting.place, posting.remote ? "Remote" : "", posting.salary].filter(Boolean).join(" · ")}</p>
+        <p data-private className="text-sm text-muted">{[posting.company, posting.place, posting.remote ? "Remote" : "", posting.salary].filter(Boolean).join(" · ")}</p>
         {(ago || posting.via) && (
           <p className="text-meta text-muted">{[ago && `Posted ${ago === "Today" || ago === "Yesterday" ? ago.toLowerCase() : ago}`, posting.via && `via ${posting.via}`].filter(Boolean).join(" · ")}</p>
         )}
@@ -551,7 +551,7 @@ function PostingDetail({
                 This is only the start of the posting. When you start an application, you can paste the rest from the posting&apos;s page.
               </p>
             )}
-            <div className="text-sm leading-relaxed whitespace-pre-line">{text.text || "The source didn't send a description."}</div>
+            <div data-private="solid" className="text-sm leading-relaxed whitespace-pre-line">{text.text || "The source didn't send a description."}</div>
           </>
         )}
       </div>

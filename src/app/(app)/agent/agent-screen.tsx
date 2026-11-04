@@ -285,8 +285,8 @@ function CandidateCard({ candidate, children }: { candidate: AgentCandidateView;
     <Card padding="none" className="flex flex-col gap-3.5 px-6 py-5">
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="font-serif text-[20px] leading-tight text-pretty">{candidate.title}</h3>
-          {candidate.company && <p className="text-sm text-ink">{candidate.company}</p>}
+          <h3 data-private className="font-serif text-[20px] leading-tight text-pretty">{candidate.title}</h3>
+          {candidate.company && <p data-private className="text-sm text-ink">{candidate.company}</p>}
           {candidate.facts && <p className="text-meta text-muted">{candidate.facts}</p>}
           {candidate.origin && <p className="text-xs text-muted">{candidate.origin}</p>}
           {/* As the source's terms ask (E14-2); the origin names the others. */}
@@ -295,7 +295,7 @@ function CandidateCard({ candidate, children }: { candidate: AgentCandidateView;
         <ScoreBadge score={candidate.score} />
       </div>
       {candidate.reasons.length > 0 && (
-        <ul aria-label="Why it fits" className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
+        <ul aria-label="Why it fits" data-private className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
           {candidate.reasons.map((reason, index) => (
             <li key={index}>{reason}</li>
           ))}

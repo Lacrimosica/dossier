@@ -210,7 +210,7 @@ function LanguagesCard({ profile, update }: { profile: ProfileData; update: Upda
         <ul className="flex flex-col border-t border-line" aria-label="Your languages">
           {profile.languages.map((language) => (
             <li key={language.id} className="flex items-center gap-3 border-b border-line py-2.5">
-              <span className="min-w-0 flex-1 text-field">{language.name}</span>
+              <span data-private className="min-w-0 flex-1 text-field">{language.name}</span>
               <Select
                 aria-label={`${language.name} level`}
                 selectClassName="w-auto text-sm"

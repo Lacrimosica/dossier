@@ -91,7 +91,7 @@ describe("DocumentPreview", () => {
       </DocumentPreview>,
     );
     expect(screen.getByText("A4 · 2 pages")).toBeInTheDocument();
-    const sheets = container.querySelectorAll("article ~ [aria-hidden]");
+    const sheets = container.querySelectorAll("article ~ [aria-hidden]:not([data-lens-glass])");
     expect(sheets).toHaveLength(2);
     expect((sheets[1] as HTMLElement).style.top).toMatch(/937\.14/);
   });

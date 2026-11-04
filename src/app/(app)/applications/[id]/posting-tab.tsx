@@ -88,6 +88,7 @@ export function PostingTab({
                 href={posting.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                data-private
                 className="break-all text-muted underline underline-offset-2 hover:text-ink"
               >
                 {shortLink(posting.url)}
@@ -104,7 +105,7 @@ export function PostingTab({
         <div className={match && match.items.length > 0 ? "flex flex-col gap-2.5 border-t border-line pt-5" : "flex flex-col gap-2.5"}>
           <h2 className="text-[15px] font-medium">Original posting</h2>
           {posting.text.trim() ? (
-            <p className="text-sm leading-[1.65] whitespace-pre-wrap text-document">{posting.text}</p>
+            <p data-private="solid" className="text-sm leading-[1.65] whitespace-pre-wrap text-document">{posting.text}</p>
           ) : (
             <p className="text-sm text-muted">No posting was saved with this application.</p>
           )}

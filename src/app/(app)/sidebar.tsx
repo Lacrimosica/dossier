@@ -7,6 +7,7 @@ import type { Release } from "@/lib/releases";
 import type { ColorScheme } from "@/lib/ui-preferences";
 
 import { NavLinks } from "./nav-links";
+import { PrivacyToggle } from "./privacy-toggle";
 import { RepositoryLink } from "./repository-link";
 import { SidebarFrame } from "./sidebar-frame";
 import { ThemeToggle } from "./theme-toggle";
@@ -20,8 +21,8 @@ function initials(name: string): string {
 
 /**
  * The signed-in sidebar: brand header, "+ New application", navigation, a
- * notice while a newer release is out, the theme switch and a link to the
- * repository, and the account footer.
+ * notice while a newer release is out, the privacy and theme switches and a
+ * link to the repository, and the account footer.
  */
 export function Sidebar({
   userName,
@@ -29,6 +30,7 @@ export function Sidebar({
   currentVersion,
   collapsed,
   colorScheme,
+  privacy,
   counts,
 }: {
   userName: string;
@@ -38,6 +40,8 @@ export function Sidebar({
   collapsed: boolean;
   /** The scheme the switch chose last, if any. */
   colorScheme?: ColorScheme;
+  /** Whether privacy mode was left on. */
+  privacy: boolean;
   /** Badges by nav item, e.g. replies waiting in the inbox. */
   counts?: Record<string, number>;
 }) {
@@ -76,6 +80,7 @@ export function Sidebar({
       )}
 
       <div className="flex flex-col gap-0.5 border-t border-line p-2 group-data-collapsed/sidebar:px-1">
+        <PrivacyToggle serverOn={privacy} />
         <ThemeToggle serverScheme={colorScheme} />
         <RepositoryLink />
       </div>
@@ -83,13 +88,14 @@ export function Sidebar({
       <div className="flex items-center gap-2 border-t border-line px-4 py-3 group-data-collapsed/sidebar:flex-col group-data-collapsed/sidebar:px-1">
         <span
           aria-hidden="true"
+          data-private
           title={userName}
           className="grid size-[26px] shrink-0 place-items-center rounded-full bg-primary text-[11px] font-semibold text-on-primary"
         >
           {initials(userName)}
         </span>
         <span className="flex min-w-0 flex-1 flex-col group-data-collapsed/sidebar:hidden">
-          <span className="truncate text-xs font-medium">{userName}</span>
+          <span data-private className="truncate text-xs font-medium">{userName}</span>
           <span className="truncate text-[11px] text-muted">Self-hosted · v{currentVersion}</span>
         </span>
         <form action={signOut}>

@@ -55,7 +55,7 @@ export function TrimmedNotice({
           <ul className="flex flex-col gap-1">
             {items.map((item, index) => (
               <li key={index} className="flex flex-wrap items-baseline justify-between gap-x-4">
-                <span className="text-ink">
+                <span data-private className="text-ink">
                   {describe(item)}
                   {!allByPageLimit && byPageLimit(item) && <span className="text-muted"> · to fit the page limit</span>}
                 </span>
@@ -79,7 +79,7 @@ export function TrimmedNotice({
             <ul className="flex flex-col gap-1">
               {entries.map((item) => (
                 <li key={item.key} className="flex flex-wrap items-baseline justify-between gap-x-4">
-                  <span className="text-ink">{item.name}</span>
+                  <span data-private className="text-ink">{item.name}</span>
                   <button type="button" aria-label={`Add ${item.name} to this resume`} onClick={() => onAdd(item)} className={ACTION}>
                     Add
                   </button>
@@ -96,7 +96,7 @@ export function TrimmedNotice({
                 onClick={() => onAdd(item)}
                 className="min-h-6 rounded-full border border-line-card px-2 text-muted hover:text-ink"
               >
-                + {item.name}
+                + <span data-private>{item.name}</span>
               </button>
             ));
             if (unitId !== "skills") {

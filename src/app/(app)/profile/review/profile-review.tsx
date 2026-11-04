@@ -224,7 +224,7 @@ function FixCard({ fix, profile, checked, onCheckedChange }: { fix: ProfileFix; 
     <Card className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h3 className="text-[15px] font-medium">{title}</h3>
-        <p className="text-sm">{fix.reason}</p>
+        <p data-private className="text-sm">{fix.reason}</p>
       </div>
 
       {fix.kind === "mergeSkills" ? (
@@ -266,7 +266,7 @@ function Side({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-3 rounded-card border border-line p-4">
       <p className="text-label text-muted">{label}</p>
-      {children}
+      <div data-private>{children}</div>
     </div>
   );
 }

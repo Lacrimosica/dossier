@@ -72,19 +72,19 @@ function Message({ email, aiReady, timeZone, initiallyOpen }: { email: EmailView
           <span aria-hidden className="text-muted">
             {open ? "▾" : "▸"}
           </span>
-          <span className="font-medium">{who}</span>
-          {!outgoing && email.fromName && <span className="truncate text-meta text-muted">&lt;{email.fromAddress}&gt;</span>}
+          <span data-private className="font-medium">{who}</span>
+          {!outgoing && email.fromName && <span data-private className="truncate text-meta text-muted">&lt;{email.fromAddress}&gt;</span>}
           {email.kind && !outgoing && <KindChip kind={email.kind} />}
         </span>
         <span className="text-meta text-muted">{formatWhen(email.sentAt, timeZone)}</span>
       </button>
       {!open && (
-        <p className="truncate px-6 pb-4 pl-[46px] text-meta text-muted">{email.summary || email.subject || email.body.slice(0, 140)}</p>
+        <p data-private className="truncate px-6 pb-4 pl-[46px] text-meta text-muted">{email.summary || email.subject || email.body.slice(0, 140)}</p>
       )}
       {open && (
         <div className="flex flex-col gap-4 px-6 pb-5">
-          {email.subject && <p className="text-meta text-muted">{email.subject}</p>}
-          <div className="text-field leading-[1.6] break-words whitespace-pre-wrap">{email.body || <span className="text-muted">No text.</span>}</div>
+          {email.subject && <p data-private className="text-meta text-muted">{email.subject}</p>}
+          <div data-private="solid" className="text-field leading-[1.6] break-words whitespace-pre-wrap">{email.body || <span className="text-muted">No text.</span>}</div>
           {!outgoing && <Reading email={email} aiReady={aiReady} timeZone={timeZone} />}
         </div>
       )}
@@ -138,7 +138,7 @@ function Reading({ email, aiReady, timeZone }: { email: EmailView; aiReady: bool
   return (
     <>
       <Panel title="What I read">
-        <p className="text-sm">{email.summary}</p>
+        <p data-private className="text-sm">{email.summary}</p>
         {email.questions.length > 0 && (
           <ul className="flex list-disc flex-col gap-1 pl-5 text-meta text-muted">
             {email.questions.map((question) => (

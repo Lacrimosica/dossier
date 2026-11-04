@@ -80,6 +80,7 @@ export function Table({
           {rows.map((row) => (
             <tr
               key={row.id}
+              data-private-group
               onClick={(event) => {
                 // The select, the menu and the link handle their own clicks.
                 if (!(event.target instanceof Element) || event.target.closest("a, button, select, [role=menu]")) return;
@@ -89,10 +90,10 @@ export function Table({
             >
               <td className="py-3.5 pr-4 pl-5">
                 <Link href={`/applications/${row.id}`} className="block truncate text-field font-medium text-ink">
-                  {row.role}
+                  <span data-private>{row.role}</span>
                 </Link>
                 <span className="block truncate text-meta text-muted">
-                  {row.company}
+                  <span data-private>{row.company}</span>
                   {row.archived && <span className="ml-2 rounded-[6px] bg-track px-1.5 text-xs">Archived</span>}
                 </span>
               </td>

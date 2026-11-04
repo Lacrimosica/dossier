@@ -183,6 +183,7 @@ function ChatPanel({ profile, aiReady, strict, onProfileChange }: { profile: Pro
           {messages.map((message) => (
             <div key={message.id} className={cn("flex flex-col gap-2", message.role === "user" ? "items-end" : "items-start")}>
               <div
+                data-private
                 className={cn(
                   "max-w-[92%] rounded-card border px-3.5 py-[11px] text-[13.5px] leading-[1.55] text-pretty whitespace-pre-wrap",
                   message.role === "user" ? "border-primary bg-primary text-on-primary" : "border-line-card bg-card",
@@ -310,9 +311,9 @@ function ChangeCard({
   return (
     <section aria-label={label} className={cn("flex w-[92%] flex-col gap-2 rounded-card border border-line-card bg-card px-3.5 py-3", done && "opacity-70")}>
       <p className="text-label text-muted">{view.action}</p>
-      {view.title && <p className="text-sm font-medium text-pretty">{view.title}</p>}
+      {view.title && <p data-private className="text-sm font-medium text-pretty">{view.title}</p>}
       {view.details.length > 0 && (
-        <ul className="flex flex-col gap-0.5 text-meta text-pretty">
+        <ul data-private className="flex flex-col gap-0.5 text-meta text-pretty">
           {view.details.map((line, index) => (
             <li key={index}>{line}</li>
           ))}

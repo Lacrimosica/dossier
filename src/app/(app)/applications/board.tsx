@@ -147,7 +147,7 @@ function Card({
 }) {
   const { setNodeRef, listeners } = useDraggable({ id: row.id });
   return (
-    <li ref={setNodeRef} {...listeners} className={cn("relative touch-manipulation", dimmed && "opacity-40")}>
+    <li ref={setNodeRef} {...listeners} data-private-group className={cn("relative touch-manipulation", dimmed && "opacity-40")}>
       <CardFace row={row} onOpen={onOpen} />
       <div className="absolute top-2 right-2">
         <RowMenu row={row} onMove={onMove} />
@@ -167,7 +167,7 @@ function CardFace({ row, lifted = false, onOpen }: { row: ApplicationRow; lifted
       )}
     >
       <p className="flex items-baseline justify-between gap-2 text-label text-muted">
-        {row.company || "No company"}
+        <span data-private>{row.company || "No company"}</span>
         {row.archived && <span className="rounded-[6px] bg-track px-1.5 text-xs">Archived</span>}
       </p>
       {/* The link covers the card, so clicking anywhere opens it. */}
@@ -177,7 +177,8 @@ function CardFace({ row, lifted = false, onOpen }: { row: ApplicationRow; lifted
         draggable={false}
         className="text-field leading-[1.35] font-medium text-pretty text-ink after:absolute after:inset-0 after:rounded-[10px] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-primary"
       >
-        {row.role}
+        {/* Inside the link: a filter on the link itself would shrink its card-wide overlay to the text. */}
+        <span data-private>{row.role}</span>
       </Link>
       {place && <p className="text-label text-muted">{place}</p>}
       {row.status === "DRAFT" && row.deadline && (

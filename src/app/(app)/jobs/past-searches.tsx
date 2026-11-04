@@ -56,7 +56,7 @@ export function PastSearches({ days, countries }: { days: PastSearchDay[]; count
               return (
                 <li key={search.id} className="flex items-center justify-between gap-4 rounded-card border border-line-card bg-card px-4 py-3 hover:border-line-strong">
                   <Link href={searchRunHref(search.id)} className="flex min-w-0 flex-col gap-0.5 text-ink hover:text-ink">
-                    <span className="truncate text-field font-medium">{what}</span>
+                    <span data-private className="truncate text-field font-medium">{what}</span>
                     <span className="text-meta text-muted">
                       {search.time} · {search.found === 1 ? "1 posting" : `${search.found} postings`} · {SOURCE_INFO[search.source].name}
                     </span>

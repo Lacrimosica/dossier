@@ -164,7 +164,7 @@ export function CalendarCard({
                     <ItemLink item={item} className="flex items-start gap-3 px-2.5 py-1.5 text-control">
                       <span aria-hidden="true" className={cn("mt-[7px] size-1.5 shrink-0 rounded-full", itemDot(item))} />
                       <span className="w-[84px] shrink-0 text-muted tabular-nums">{itemTime(item, timeZone)}</span>{" "}
-                      <span className={cn("min-w-0 break-words", item.kind === "interview" && "font-medium")}>{item.title}</span>
+                      <span data-private className={cn("min-w-0 break-words", item.kind === "interview" && "font-medium")}>{item.title}</span>
                     </ItemLink>
                   </li>
                 ))}

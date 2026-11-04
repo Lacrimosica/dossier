@@ -73,6 +73,7 @@ export function DocumentPreview({
   children: ReactNode;
 }) {
   const pageRef = useRef<HTMLDivElement>(null);
+  const lensRef = useRef<HTMLDivElement>(null);
   const paged = useSyncExternalStore(never, canPage, () => false);
   const [pages, setPages] = useState(1);
   // The page's height and top padding in page units, for the sheets and page-end lines.
@@ -115,6 +116,18 @@ export function DocumentPreview({
         {notice && <div className="w-[calc(var(--u)*640)]">{typeof notice === "function" ? notice(pages) : notice}</div>}
         <div
           ref={pageRef}
+          // Tagged here and not on the document, so the print pages never carry it.
+          data-private-lens
+          onPointerMove={(event) => {
+            // Written straight to the style: a state change would measure the document again on every move.
+            const box = event.currentTarget.getBoundingClientRect();
+            lensRef.current?.style.setProperty("--lens-x", `${event.clientX - box.left}px`);
+            lensRef.current?.style.setProperty("--lens-y", `${event.clientY - box.top}px`);
+          }}
+          onPointerLeave={() => {
+            lensRef.current?.style.removeProperty("--lens-x");
+            lensRef.current?.style.removeProperty("--lens-y");
+          }}
           className={cn("relative isolate w-fit", paged ? styles.paged : "shadow-page")}
           style={
             {
@@ -128,6 +141,8 @@ export function DocumentPreview({
           }
         >
           {children}
+          {/* Privacy mode's blur, with a clear circle around the mouse (globals.css). Over the document, not on it, so it's still the one document, and clicks pass through. */}
+          <div ref={lensRef} aria-hidden="true" data-lens-glass className="pointer-events-none absolute inset-0 z-20" />
           {sheets &&
             Array.from({ length: pages }, (_, index) => (
               <div

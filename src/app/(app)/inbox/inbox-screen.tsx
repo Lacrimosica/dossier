@@ -124,10 +124,12 @@ function Row({ email, timeZone, quiet }: { email: EmailView; timeZone?: string; 
         <StatusDot status={application.status} className="mt-1.5" />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex flex-wrap items-baseline gap-x-2 text-field font-medium">
-            {[application.company, application.role].filter(Boolean).join(", ")}
-            <span className="text-meta font-normal text-muted">· {email.fromName || email.fromAddress}</span>
+            <span data-private>{[application.company, application.role].filter(Boolean).join(", ")}</span>
+            <span className="text-meta font-normal text-muted">
+              · <span data-private>{email.fromName || email.fromAddress}</span>
+            </span>
           </span>
-          <span className="text-meta leading-[1.45] text-muted">{email.summary || email.subject}</span>
+          <span data-private className="text-meta leading-[1.45] text-muted">{email.summary || email.subject}</span>
         </span>
         <span className="mt-px flex flex-none flex-col items-end gap-0.5 text-meta text-muted">
           <span>{formatWhen(email.sentAt, timeZone)}</span>
@@ -151,8 +153,8 @@ function Unmatched({ email, timeZone, applications }: { email: EmailView; timeZo
     <li className="-mx-2.5 flex flex-col gap-2.5 border-t border-line px-2.5 py-[13px]">
       <div className="flex items-start justify-between gap-3">
         <span className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-field font-medium">{email.fromName || email.fromAddress}</span>
-          <span className="truncate text-meta text-muted">{email.subject || email.body.slice(0, 120)}</span>
+          <span data-private className="text-field font-medium">{email.fromName || email.fromAddress}</span>
+          <span data-private className="truncate text-meta text-muted">{email.subject || email.body.slice(0, 120)}</span>
         </span>
         <span className="flex-none text-meta text-muted">{formatWhen(email.sentAt, timeZone)}</span>
       </div>

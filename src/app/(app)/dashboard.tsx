@@ -180,7 +180,7 @@ function WorthALook({ items, quietDays }: { items: DashboardFigures["attention"]
                 <StatusDot status={item.status} className="mt-1.5" />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-field font-medium">
-                    {[item.company, item.role].filter(Boolean).join(", ")}
+                    <span data-private>{[item.company, item.role].filter(Boolean).join(", ")}</span>
                     {item.soon && <span className="ml-2 rounded-[6px] bg-warning-surface px-2 py-[3px] align-[1px] text-xs font-normal text-warning">Soon</span>}
                   </span>
                   <span className="text-meta leading-[1.45] text-muted">{item.reason}</span>

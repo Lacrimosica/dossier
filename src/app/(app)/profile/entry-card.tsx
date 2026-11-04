@@ -93,8 +93,8 @@ export function EntryCard({
           )}
         >
           <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
-            <span className="text-[15.5px] font-medium">{title}</span>
-            <span className="text-control text-muted">{subtitle || "Not filled in yet"}</span>
+            <span data-private className="text-[15.5px] font-medium">{title}</span>
+            <span data-private className="text-control text-muted">{subtitle || "Not filled in yet"}</span>
             {meta && <span className="text-meta text-muted tabular-nums">{meta}</span>}
             {footnote && <span className="mt-[3px] text-label text-muted">{footnote}</span>}
           </span>

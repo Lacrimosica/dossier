@@ -1,10 +1,11 @@
-// How the app looks, as the browser last chose it: the colour scheme and
-// whether the sidebar is collapsed. Both live in cookies, so the server
-// renders the right one from the first paint, with no flash and no inline
-// script. Read on the server and the client alike.
+// How the app looks, as the browser last chose it: the colour scheme, whether
+// the sidebar is collapsed and whether privacy mode is on. All live in cookies,
+// so the server renders the right one from the first paint, with no flash and
+// no inline script. Read on the server and the client alike.
 
 export const COLOR_SCHEME_COOKIE = "dossier_theme";
 export const SIDEBAR_COOKIE = "dossier_sidebar";
+export const PRIVACY_COOKIE = "dossier_privacy";
 
 export type ColorScheme = "light" | "dark";
 
@@ -16,6 +17,11 @@ export function parseColorScheme(value: string | undefined): ColorScheme | undef
 /** Whether the sidebar was left collapsed. */
 export function parseSidebarCollapsed(value: string | undefined): boolean {
   return value === "collapsed";
+}
+
+/** Whether privacy mode was left on. */
+export function parsePrivacyMode(value: string | undefined): boolean {
+  return value === "on";
 }
 
 const YEAR_SECONDS = 365 * 24 * 60 * 60;

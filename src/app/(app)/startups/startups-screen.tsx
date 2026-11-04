@@ -295,12 +295,12 @@ function StartupCard({ startup: initial, headline, aiReady, today }: { startup: 
         <ScoreBadge score={startup.score} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <h3 className="font-serif text-section">{startup.company}</h3>
+            <h3 data-private className="font-serif text-section">{startup.company}</h3>
             <span className="rounded-full border border-line-field px-2 py-0.5 text-xs text-muted">
               {info.name} · {info.kind}
             </span>
           </div>
-          <p className="text-sm text-pretty">{startup.summary}</p>
+          <p data-private className="text-sm text-pretty">{startup.summary}</p>
           <p className="text-meta text-muted">{[startup.location, startup.remote && !/remote/i.test(startup.location) ? "Remote" : "", startup.stage, posted].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
@@ -428,7 +428,7 @@ function Emails({ emails, company, headline, peopleChecked }: { emails: StartupE
         {emails.map((entry) => (
           <li key={entry.email} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
             <span className="w-20 text-meta text-muted">{entry.label}</span>
-            <a href={mailto(entry.email, company, headline)} className="font-medium underline underline-offset-2">
+            <a href={mailto(entry.email, company, headline)} data-private className="font-medium underline underline-offset-2">
               {entry.email}
             </a>
             <button type="button" onClick={() => copy(entry.email)} className="text-meta text-muted underline underline-offset-2 hover:text-ink">

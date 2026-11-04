@@ -226,6 +226,21 @@ docker compose exec -e JOBS_LIVE=arbeitsagentur app yarn vitest run src/lib/job-
 docker compose exec -e JOBS_LIVE=adzuna -e ADZUNA_TEST_APP_ID=… -e ADZUNA_TEST_KEY=… app yarn vitest run src/lib/job-search/sources.live.test.ts
 ```
 
+## Privacy mode
+
+The sidebar's **Privacy mode** switch is for working with someone beside you. It blurs names, roles, companies, the photo, documents and filled-in fields, and the browser tab of an application stops naming the role. It's a cookie (`dossier_privacy`, in `ui-preferences.ts`) that the root layout turns into `data-privacy="on"` on `<html>`, so a page is blurred from its first paint and after a reload. It's for this browser only and stays on until switched off.
+
+The blur is CSS in `globals.css`, for the screen only, so PDFs and printing never get it. It hides details from eyes, not from the page: the data is still in the DOM, and screen readers still read it. It isn't a lock, so don't treat it as one.
+
+Anything new that shows personal data on screen needs tagging:
+
+- `data-private`: blurred, with a peek on hover or keyboard focus. Short text, such as a name or a role. A link or button around it peeks as a whole; so does an element marked `data-private-group`, such as a board card, whose link overlay would otherwise take the hover.
+- `data-private="solid"`: blurred until the switch is off. Posting text, email bodies and the photo, which a resting mouse would otherwise lay open.
+- `DocumentPreview` has its own lens: a `backdrop-filter` layer over the document, with a clear circle cut out of its mask at the mouse. You can read a resume a little at a time without switching off, and clicks pass through. A browser without `backdrop-filter` blurs the whole document instead.
+- Filled-in text fields and textareas blur without a tag, until they're hovered or focused.
+
+Put the tag inside a link that has a card-wide `after:` overlay, not on the link: a filter makes an element the containing block of what's absolutely positioned in it, so the overlay would shrink to the text. Dialogs and toasts aren't tagged, as they only appear when you act.
+
 ## Your data
 
 Settings → Your data exports everything (profile, custom themes, settings, applications with their history, documents, chat and notes, and the postings kept from Find jobs) as one JSON file, and imports such a file to restore it. An import replaces all data in one transaction, after writing a backup of the current data to `DOSSIER_DATA_DIR/backups` (default `/data`; `./data` in development, which git ignores). "Download all PDFs" zips every tailored document there too, in `downloads`, and removes the zip once it's downloaded.

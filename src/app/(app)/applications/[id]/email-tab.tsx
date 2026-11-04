@@ -103,7 +103,7 @@ export function EmailTab({
         <Field label="Subject" onCopy={subject ? () => void copy(subject, "subject") : undefined}>
           {renderUnit({ id: "subject", children: subject })}
         </Field>
-        <div className="px-7 pt-6 pb-7">
+        <div data-private="solid" className="px-7 pt-6 pb-7">
           {renderUnit({ id: "body", className: "text-field leading-[1.6] break-words whitespace-pre-wrap", children: body })}
         </div>
 
@@ -153,7 +153,9 @@ function Field({ label, onCopy, children }: { label: string; onCopy?: () => void
   return (
     <div className="flex items-baseline gap-4 border-b border-line px-7 py-3.5">
       <span className="w-14 shrink-0 text-meta text-muted">{label}</span>
-      <div className="min-w-0 flex-1 text-field break-words">{children}</div>
+      <div data-private className="min-w-0 flex-1 text-field break-words">
+        {children}
+      </div>
       {onCopy && (
         <Button variant="text" size="sm" className="py-0!" aria-label={`Copy the ${label === "To" ? "recipient" : label.toLowerCase()}`} onClick={onCopy}>
           Copy

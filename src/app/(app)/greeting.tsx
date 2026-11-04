@@ -23,7 +23,11 @@ export function Greeting({ name, serverPeriod }: { name: string; serverPeriod: D
   return (
     <>
       Good {period}
-      {name && `, ${name}`}
+      {name && (
+        <>
+          , <span data-private>{name}</span>
+        </>
+      )}
     </>
   );
 }

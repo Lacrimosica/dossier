@@ -122,7 +122,7 @@ export function GoogleSection({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p role="status" className="flex items-center gap-2 text-control">
                 <span aria-hidden className="size-2 flex-none rounded-full bg-success" />
-                Connected as <span className="font-medium">{connection.email}</span>
+                Connected as <span data-private className="font-medium">{connection.email}</span>
               </p>
               <Button variant="danger-outline" size="sm" onClick={() => setConfirming(true)}>
                 Disconnect

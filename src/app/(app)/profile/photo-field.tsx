@@ -100,7 +100,7 @@ export function PhotoField({ photo, onChange }: { photo: ProfilePhoto | null; on
       <div className="flex h-24 w-[72px] flex-none items-center justify-center overflow-hidden rounded-control border border-line-field bg-paper text-faint">
         {photo ? (
           // eslint-disable-next-line @next/next/no-img-element -- a data URL: there's nothing for next/image to optimise.
-          <img src={photo.src} alt="Your photo" className="size-full object-cover" />
+          <img src={photo.src} alt="Your photo" data-private="solid" className="size-full object-cover" />
         ) : (
           <UserRound aria-hidden size={32} strokeWidth={1.5} />
         )}
